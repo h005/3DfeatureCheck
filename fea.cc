@@ -54,8 +54,12 @@ void Fea::setFeature()
             //used for check the image
 //            render->showImage();
 
+//            qDebug()<<" set feature "<<path<<endl;
+//            std::cout<<path.toStdString()<<std::endl;
 
             render->storeImage(path,QString::number(t_case));
+
+//            qDebug()<<" store Image ok "<<endl;
 
             setMat(render->p_img,render->p_width,render->p_height);
 
@@ -80,8 +84,7 @@ void Fea::setFeature()
 
 //            setGaussianCurvature(t_case,render->p_isVertexVisible,render->p_vecMesh,render->p_indiceArray);
 
-//            setMeshSaliency(t_case,render->p_vertices,render->p_isVertexVisible,render->p_vecMesh,render->p_indiceArray);
-            setMeshSaliency(a,render->p_vertices,render->p_isVertexVisible);
+//            setMeshSaliency(a,render->p_vertices,render->p_isVertexVisible);
 
 
 //            setAbovePreference(output,render->p_model);
@@ -120,7 +123,7 @@ void Fea::setMatrixPara(QString matrixPath)
     for(int i=0;i<16;i++)
     {
         scanf("%f",&tmp);
-        m_model[i/4][i%4] = tmp;
+        m_view[i/4][i%4] = tmp;
     }
 
     for(int i=0;i<16;i++)
@@ -131,15 +134,15 @@ void Fea::setMatrixPara(QString matrixPath)
 
     scanf("%d %d",&t_case,&NUM);
 
-    m_model = glm::transpose(m_model);
-    m_view = glm::lookAt(glm::vec3(0.f,0.f,3.f),
-                         glm::vec3(0.f),
-                         glm::vec3(0.f,1.f,0.f));
+//    m_model = glm::transpose(m_model);
+
+//    m_view = glm::mat4(1.f);
+    m_model = m_abv;
 
     m_projection = glm::perspective(glm::pi<float>() / 2, 1.f, 0.1f, 100.f);
 
 
-    std::cout<<t_case<<std::endl;
+    std::cout<<t_case<<" "<<NUM<<std::endl;
 
 }
 
@@ -739,11 +742,14 @@ void Fea::setAbovePreference(glm::mat4 &model2, glm::mat4 &model)
         glm::vec4 z = glm::vec4(0.0,0.0,1.0,1.0);
         glm::vec4 yyy = model*model2*z;
     //    the theta between yyy and (0,1,0,1)
+//        qDebug()<<"........."<<endl;
+//        qDebug()<<yyy.x<<" "<<yyy.y<<" "<<yyy.z<<" "<<yyy.w<<endl;
         double norm_yyy = 0.0;
         glm::vec4 tmp0 = yyy*yyy;
         for(int i=0;i<4;i++)
             norm_yyy += tmp0[i];
 
+//        qDebug()<<norm_yyy<<endl;
         double cosTheta = (yyy.y + 1.0) / sqrt(norm_yyy) / sqrt(2.0);
 
         double theta = acos(cosTheta);
@@ -1154,11 +1160,25 @@ void Fea::printOut()
     }
     printf("\n");
 
-    QString log = output;
-    int pos = log.lastIndexOf('.');
-    log.replace(pos,6,".log");
-    freopen(log.toStdString().c_str(),"w",stdout);
-    printf("%d\n",t_case+1);
+//    QString log = output;
+//    int pos = log.lastIndexOf('.');
+//    log.replace(pos,6,".log");
+    freopen(matrixPath.toStdString().c_str(),"w",stdout);
+    for(int i=0;i<4;i++)
+    {
+        for(int j=0;j<4;j++)
+            printf("%f ",m_view[i][j]);
+        printf("\n");
+    }
+
+    for(int i=0;i<4;i++)
+    {
+        for(int j=0;j<4;j++)
+            printf("%f ",m_abv[i][j]);
+        printf("\n");
+    }
+
+    printf("%d %d\n",t_case+1,NUM);
 
     freopen("CON","a+",stdout);
     image.release();
@@ -1178,12 +1198,27 @@ void Fea::set_tCase()
 
 void Fea::computeModel(glm::mat4 &m_model_tmp)
 {
-    float angle_x = PI/MAX_LEN;
-    float angle_y = 2*PI/MAX_LEN;
-    glm::mat4 rotateX = glm::rotate(glm::mat4(1.f),angle_x*(t_case/MAX_LEN)*180,glm::vec3(1.0,0.0,0.0));
-    glm::mat4 rotateY = glm::rotate(glm::mat4(1.f),angle_y*(t_case%MAX_LEN)*180,glm::vec3(0.0,1.0,0.0));
+    float angle_x = 180.0/MAX_LEN;
+    float angle_y = 2.0*180.0/MAX_LEN;
+    int tmp = t_case / MAX_LEN;
+    float angle = angle_x * tmp;
+    qDebug()<<"computeModel.... x "<<angle<<endl;
+    glm::mat4 rotateX = glm::rotate(glm::mat4(1.f),angle,glm::vec3(1.0,0.0,0.0));
+    tmp = t_case % MAX_LEN;
+    angle = angle_y * tmp;
+    qDebug()<<"computeModel.... y "<<angle<<endl;
+    glm::mat4 rotateY = glm::rotate(glm::mat4(1.f),angle,glm::vec3(0.0,1.0,0.0));
     m_model_tmp = m_model * rotateX * rotateY;
 
+    qDebug()<<"........compute Model matrix......"<<endl;
+    for(int i=0;i<4;i++)
+    {
+        for(int j=0;j<4;j++)
+            std::cout<<m_model_tmp[i][j]<<" ";
+        std::cout<<std::endl;
+    }
+//    m_model_tmp = m_model;
+//    m_model_tmp = glm::transpose(m_model_tmp);
 //    glm::rotate()
 }
 

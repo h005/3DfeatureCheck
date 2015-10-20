@@ -1,4 +1,4 @@
-#ifndef FEA_H
+﻿#ifndef FEA_H
 #define FEA_H
 
 #include <QString>
@@ -15,7 +15,7 @@
 #define NumHistDepth 15
 #define NumHistViewEntropy 15
 #define PI 3.1415926
-#define MAX_LEN 128
+#define MAX_LEN 64
 
 
 class Fea

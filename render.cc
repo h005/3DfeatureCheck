@@ -165,7 +165,7 @@ void Render::paintGL()
 
 //    m_helper.draw();
 
-    glViewport(0,0,800,800);
+//    glViewport(0,0,800,800);
 }
 
 void Render::initial()
@@ -320,26 +320,28 @@ void Render::storeImage(QString path,QString fileName)
     rgbImg.convertTo(rgbImg,CV_8UC3);
 
     // fileName  = path + name
-    int len = path.length();
+//    int len = path.length();
     QString outputDepthFile = fileName;
+    outputDepthFile.append(".jpg");
     QString outputDepth = path;
-    outputDepthFile.remove(0,len);
+//    outputDepthFile.remove(0,len);
     outputDepth.append("depth/");
     outputDepth.append(outputDepthFile);
     std::cout<< outputDepth.toStdString() << std::endl;
     std::cout<<depthImg.type()<<std::endl;
     // imwrite has a bug maybe need recompile
     // ref http://stackoverflow.com/questions/6923296/opencv-imwrite-2-2-causes-exception-with-message-opencv-error-unspecified-erro
-    //  cv::imwrite(outputDepth.toStdString(),depthImg);
+//      cv::imwrite(outputDepth.toStdString(),depthImg);
     cvSaveImage(outputDepth.toStdString().c_str(),&(IplImage(depthImg)));
 
     QString outputRgbFile = fileName;
+    outputRgbFile.append(".jpg");
     QString outputRgb = path;
-    outputRgbFile.remove(0,len);
+//    outputRgbFile.remove(0,len);
     outputRgb.append("rgb/");
     outputRgb.append(outputRgbFile);
     std::cout<< outputRgb.toStdString() << std::endl;
-    //  cv::imwrite(outputRgb.toStdString(),rgbImg);
+//      cv::imwrite(outputRgb.toStdString(),rgbImg);
     cvSaveImage(outputRgb.toStdString().c_str(),&(IplImage(rgbImg)));
 
 
