@@ -1120,7 +1120,7 @@ void Fea::computeModel(glm::mat4 &m_view_tmp,glm::mat4 &m_model_tmp)
     angle = - angle_z * tmp;
     glm::mat4 rotateZ = glm::rotate(glm::mat4(1.f),angle,glm::vec3(0.0,0.0,1.0));
     m_model_tmp = m_model * rotateZ;
-    return rotateX;
+//    return rotateX;
 
 }
 
