@@ -13,7 +13,6 @@ Fea::Fea(QString modelFile, QString path)
     feaArray = new double[12];
 
     memset(feaArray,0,sizeof(double)*12);
-
     // read in
     exImporter = new ExternalImporter<MyMesh>();
 
@@ -23,27 +22,45 @@ Fea::Fea(QString modelFile, QString path)
         return ;
     }
 
+
+    // If the file did not provide vertex normals, then calculate them
+    if (!mesh.has_vertex_normals())
+    {
+        std::cout << "we need calculate vertex normal first" << std::endl;
+        // allocate memory for normals storage
+        // we need face normals to update the vertex normals
+        mesh.request_face_normals();
+        mesh.request_vertex_normals();
+
+        // let the mesh update the normals
+        mesh.update_normals();
+        // dispose the face normals, as we don't need them anymore
+        mesh.release_face_normals();
+    }
+
     glm::mat4 tmpPara;
     render = new Render(mesh,tmpPara,tmpPara,tmpPara);
 
+    render->resize(QSize(800,800));
     render->show();
+
 }
 
 void Fea::setFeature()
 {
     glm::mat4 m_model_tmp;
 
-//    render->setMeshSaliencyPara(exImporter);
+    glm::mat4 m_view_tmp;
+
     MeanCurvature<MyMesh> a(mesh);
 
     for(; t_case < NUM ; t_case++)
     {
         // render
-//        render->setMVP(model[t_case],view[t_case],projection[t_case]);
 
-        computeModel(m_model_tmp);
+        computeModel(m_view_tmp,m_model_tmp);
 
-        render->setMVP(m_model_tmp,m_view,m_projection);
+        render->setMVP(m_model_tmp,m_view_tmp,m_projection);
 
         bool res = render->rendering(t_case);
 
@@ -154,6 +171,7 @@ Fea::~Fea()
 
 void Fea::setMat(float *img, int width, int height)
 {
+    image.release();
     cv::Mat image0 = cv::Mat(width,height,CV_32FC1,img);
     image0.convertTo(image,CV_8UC1,255.0);
     // release memory
@@ -209,16 +227,6 @@ void Fea::setVisSurfaceArea(std::vector<GLfloat> &vertex,
 
     std::cout<<"fea visSurfaceArea "<< feaArray[1]<<std::endl;
     // used for test
-/*
-    freopen("vertices.txt","w",stdout);
-    for(int i=0;i<vertex.size();i+=3)
-        printf("%f %f %f\n",vertex[i],vertex[i+1],vertex[i+2]);
-    fclose(stdout);
-    freopen("face.txt","w",stdout);
-    for(int i=0;i<face.size();i+=3)
-        printf("%d %d %d\n",face[i],face[i+1],face[i+2]);
-    fclose(stdout);
-*/
 }
 
 void Fea::setViewpointEntropy(std::vector<GLfloat> &vertex, std::vector<GLuint> &face)
@@ -349,9 +357,7 @@ void Fea::setSilhouetteCE()
         CvPoint2D64f a = cvPoint2D64f((double)a0->x,(double)a0->y);
         CvPoint2D64f b = cvPoint2D64f((double)b0->x,(double)b0->y);
         CvPoint2D64f c = cvPoint2D64f((double)c0->x,(double)c0->y);
-//        std::cout<<a0->x<<" "<<a0->y<<std::endl;
-//        std::cout<<b0->x<<" "<<b0->y<<std::endl;
-//        std::cout<<c0->x<<" "<<c0->y<<std::endl;
+
         if(getCurvature(&a,&b,&c,curva))
         {
 //            std::cout << curva << std::endl;
@@ -362,16 +368,7 @@ void Fea::setSilhouetteCE()
 
     std::cout<<"fea silhouetteCurvature "<<feaArray[4]<<std::endl;
     std::cout<<"fea silhouetteCurvatureExtrema "<<feaArray[5]<<std::endl;
-/*
-    freopen("contour.txt","w",stdout);
-    for(int i=0;i<contour->total;i++)
-    {
-        CvPoint *point = CV_GET_SEQ_ELEM(CvPoint,
-                                         contour,i);
-        printf("%d %d\n",point->x,point->y);
-    }
-    fclose(stdout);
-*/
+
 }
 
 void Fea::setMaxDepth(float *array,int len)
@@ -420,13 +417,6 @@ void Fea::setDepthDistribute(GLfloat *zBuffer, int num)
 
     std::cout<<"fea depthDistriubute "<<feaArray[7]<<std::endl;
     delete []hist;
-//    hist = NULL;
-/*
-    freopen("depth.txt","w",stdout);
-    for(int i=0;i<num;i++)
-        printf("%lf\n",zBuffer[i]);
-    fclose(stdout);
-*/
 }
 
 void Fea::setMeanCurvature(MyMesh mesh, std::vector<bool> &isVertexVisible)
@@ -471,11 +461,6 @@ void Fea::setMeanCurvature(int t_case,
 //        }
 
         std::vector<bool> isVerVis;
-//        printf("setMeanCurvature... vertex size %d\n",isVertexVisible.size());
-//        printf("setMeanCurvature... indiceArray[%d] size %d\n",i,indiceArray[i].size());
-        // 这里有一个bug，这样直接push进去是错的，顶点的数量是5641，而索引的数量是33834
-        // 可以写一个set，存在于索引的顶点，按照顺序push进去
-        // fixed...
         std::set<int> verIndice;
         for(int j=0;j<indiceArray[i].size();j++)
             verIndice.insert(indiceArray[i][j]);
@@ -749,17 +734,12 @@ void Fea::setAbovePreference(glm::mat4 &model2, glm::mat4 &model)
         for(int i=0;i<4;i++)
             norm_yyy += tmp0[i];
 
-//        qDebug()<<norm_yyy<<endl;
         double cosTheta = (yyy.y + 1.0) / sqrt(norm_yyy) / sqrt(2.0);
 
         double theta = acos(cosTheta);
 
         setAbovePreference(theta);
 
-//        fclose(stdin);
-//    }
-//    else
-//        std::cout<<"fail to open file"<<std::endl;
     std::cout<<"abovePreference "<<feaArray[11]<<std::endl;
 }
 
@@ -954,7 +934,6 @@ bool Fea::getCurvature(CvPoint2D64f *a, CvPoint2D64f *b, CvPoint2D64f *c, double
     if(getR(a,b,c,r))
     {
         cur = 1.0/r;
-//        std::cout<<"curvature..."<<cur<<std::endl;
         return true;
     }
     else
@@ -1077,76 +1056,6 @@ void Fea::initial()
 {
 }
 
-/*
-void Fea::setFilenameList_mvpMatrix(QString matrixFile)
-{
-    freopen(matrixFile.toStdString().c_str(),"r",stdin);
-    QString tmp;
-    char tmpss[200];
-    float tmpNum;
-    while(scanf("%s",tmpss)!=EOF)
-    {
-        QString tmpPath = path;
-        tmp = QDir::cleanPath(tmpPath.append(QString(tmpss)));
-        fileName.push_back(tmp);
-#ifdef NoProjection
-        glm::mat4 m,v;
-        for(int i=0;i<16;i++)
-        {
-            scanf("%f",&tmpNum);
-            m[i%4][i/4] = tmpNum;
-        }
-        this->model.push_back(m);
-        this->view.push_back(v);
-        glm::mat4 p = glm::perspective(glm::pi<float>() / 2, 1.f, 0.1f, 100.f);
-        this->projection.push_back(p);
-#else
-        glm:mat4 m,v,p;
-        for(int i=0;i<16;i++)
-        {
-            scanf("%lf",&tmpNum);
-            m[i/4][i%4] = tmpNum;
-        }
-        for(int i=0;i<16;i++)
-        {
-            scanf("%lf",&tmpNum);
-            p[i/4][i%4] = tmpNum;
-        }
-        this->model.push_back(m);
-        this->view.pish_back(v);
-        this->projection.push_back(p);
-
-#endif
-    }
-}
-*/
-/*
-void Fea::print(QString p_path)
-{
-    p_path.append(QString(".3df"));
-    freopen(p_path.toStdString().c_str(),"w",stdout);
-
-    for(int i=0;i<NUM;i++)
-    {
-        printf("%lf ",projectArea[i]);
-        printf("%lf ",visSurfaceArea[i]);
-        printf("%lf ",viewpointEntropy[i]);
-        printf("%lf ",silhouetteLength[i]);
-        printf("%lf ",silhouetteCurvature[i]);
-        printf("%lf ",silhouetteCurvatureExtrema[i]);
-        printf("%lf ",maxDepth[i]);
-        printf("%lf ",depthDistribute[i]);
-        printf("%lf ",meanCurvature[i]);
-        printf("%lf ",gaussianCurvature[i]);
-        printf("%e ",meshSaliency[i]);
-        printf("%lf\n",abovePreference[i]);
-    }
-
-    fclose(stdout);
-    freopen("CON","w",stdout);
-}
-*/
-
 void Fea::printOut()
 {
     freopen(output.toStdString().c_str(),"a+",stdout);
@@ -1160,9 +1069,6 @@ void Fea::printOut()
     }
     printf("\n");
 
-//    QString log = output;
-//    int pos = log.lastIndexOf('.');
-//    log.replace(pos,6,".log");
     freopen(matrixPath.toStdString().c_str(),"w",stdout);
     for(int i=0;i<4;i++)
     {
@@ -1196,10 +1102,37 @@ void Fea::set_tCase()
         t_case = 0;
 }
 
+
+void Fea::computeModel(glm::mat4 &m_view_tmp,glm::mat4 &m_model_tmp)
+{
+    // rotate with x axis in openGL
+//    float angle_x = 180.0/MAX_LEN;
+    float angle_x = glm::pi<float>()/MAX_LEN;
+    // rotate with z axis in model
+//    float angle_z = 2.0*180.0/MAX_LEN;
+    float angle_z = 2.0 * glm::pi<float>()/MAX_LEN;
+
+    int tmp = t_case / MAX_LEN;
+    float angle = - angle_x * tmp;
+    glm::mat4 rotateX = glm::rotate(glm::mat4(1.f),angle,glm::vec3(1.0,0.0,0.0));
+    m_view_tmp = m_view * rotateX;
+    tmp = t_case % MAX_LEN;
+    angle = - angle_z * tmp;
+    glm::mat4 rotateZ = glm::rotate(glm::mat4(1.f),angle,glm::vec3(0.0,0.0,1.0));
+    m_model_tmp = m_model * rotateZ;
+    return rotateX;
+
+}
+
 void Fea::computeModel(glm::mat4 &m_model_tmp)
 {
-    float angle_x = 180.0/MAX_LEN;
-    float angle_y = 2.0*180.0/MAX_LEN;
+    // rotate with x axis in openGL
+//    float angle_x = 180.0/MAX_LEN;
+    float angle_x = glm::pi<float>()/MAX_LEN;
+    // rotate with z axis in model
+//    float angle_y = 2.0*180.0/MAX_LEN;
+    float angle_y = 2.0 * glm::pi<float>()/MAX_LEN;
+
     int tmp = t_case / MAX_LEN;
     float angle = angle_x * tmp;
     qDebug()<<"computeModel.... x "<<angle<<endl;
@@ -1210,16 +1143,6 @@ void Fea::computeModel(glm::mat4 &m_model_tmp)
     glm::mat4 rotateY = glm::rotate(glm::mat4(1.f),angle,glm::vec3(0.0,1.0,0.0));
     m_model_tmp = m_model * rotateX * rotateY;
 
-    qDebug()<<"........compute Model matrix......"<<endl;
-    for(int i=0;i<4;i++)
-    {
-        for(int j=0;j<4;j++)
-            std::cout<<m_model_tmp[i][j]<<" ";
-        std::cout<<std::endl;
-    }
-//    m_model_tmp = m_model;
-//    m_model_tmp = glm::transpose(m_model_tmp);
-//    glm::rotate()
 }
 
 void Fea::showImage()

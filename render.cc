@@ -13,6 +13,7 @@
 #include "gausscurvature.hh"
 #include "meancurvature.hh"
 #include <opencv.hpp>
+#include <assert.h>
 
 Render::Render(MyMesh &in_mesh,
                QString fileName,
@@ -91,6 +92,7 @@ void Render::setMVP(glm::mat4 &model, glm::mat4 &view, glm::mat4 &proj)
     m_proj = proj;
 }
 
+
 void Render::setMeshSaliencyPara(ExternalImporter<MyMesh> *exImporter)
 {
     exImporter->setMeshVector(p_vecMesh,p_indiceArray);
@@ -134,48 +136,23 @@ void Render::initializeGL()
 
     connect(context(),&QOpenGLContext::aboutToBeDestroyed,this,&Render::cleanup);
     initializeOpenGLFunctions();
-    glClearColor(0,0,0,m_transparent?0:1);
 
-
-
-//    initial();
-
-    std::cout<<"initial..."<<std::endl;
+    glClearColor( 0.368, 0.368, 0.733, 1);
+    initial();
+    std::cout<<"********all initial complete"<<std::endl;
 }
 
 
 
 void Render::paintGL()
 {
-//    glBindFramebuffer(GL_FRAMEBUFFER,frameBufferId);
-
-//    GLenum DrawBuffers[2] = {GL_COLOR_ATTACHMENT0,GL_DEPTH_ATTACHMENT};
-//    glDrawBuffers(2, DrawBuffers);
-
-//    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-//    glEnable(GL_DEPTH_TEST);
-
-//    glm::mat4 modelViewMatrix = getModelViewMatrix();
-
-//    glUseProgram(m_programID);
-//    GLuint projMatrixID = glGetUniformLocation(m_programID, "projMatrix");
-//    GLuint mvMatrixID = glGetUniformLocation(m_programID, "mvMatrix");
-//    glUniformMatrix4fv(projMatrixID, 1, GL_FALSE, glm::value_ptr(m_proj));
-//    glUniformMatrix4fv(mvMatrixID, 1, GL_FALSE, glm::value_ptr(modelViewMatrix));
-
-//    m_helper.draw();
-
-//    glViewport(0,0,800,800);
 }
 
 void Render::initial()
 {
-
-    std::cout<<"initial"<<std::endl;
     if(frameBufferId == 0)
         glGenFramebuffers(1, &frameBufferId);
     glBindFramebuffer(GL_FRAMEBUFFER, frameBufferId);
-//    glViewport(0,0,800,800);
     if(depthRenderBuffer == 0)
         glGenRenderbuffers(1, &depthRenderBuffer);
     glBindRenderbuffer(GL_RENDERBUFFER, depthRenderBuffer);
@@ -188,17 +165,19 @@ void Render::initial()
     glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA, 800,800);
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, colorRenderBuffer);
 
-//        glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, colorRenderBuffer,0);
-
     glBindFramebuffer(GL_FRAMEBUFFER,0);
     qDebug()<<"FramebufferName fbo...init"<<endl;
 
-
+    m_programID = LoadShaders("simpleShader.vert","simpleShader.frag");
+    GLuint vertexNormal_modelspaceID = glGetAttribLocation(m_programID, "vertexNormal_modelspace");
+    GLuint vertexPosition_modelspaceID = glGetAttribLocation(m_programID,"vertexPosition_modelspace");
+    m_helper.fbo_init(vertexPosition_modelspaceID,vertexNormal_modelspaceID);
 }
 
 void Render::resizeGL(int width, int height)
 {
-    initial();
+    std::cout << "resize " << width << " " << height << std::endl;
+    //glViewport(0,0,800,800);
 }
 
 QSize Render::sizeHint() const
@@ -213,27 +192,41 @@ QSize Render::minimumSizeHint() const
 
 bool Render::rendering(int count)
 {
-    m_programID = LoadShaders("sphereShader.vert","sphereShader.frag");
-    GLuint vertexPosition_modelspaceID = glGetAttribLocation(m_programID,"vertexPosition_modelspace");
-    m_helper.fbo_init(vertexPosition_modelspaceID);
+    makeCurrent();
     glBindFramebuffer(GL_FRAMEBUFFER,frameBufferId);
-    glViewport(0,0,800,800);
-    GLenum DrawBuffers[2] = {GL_COLOR_ATTACHMENT0,GL_DEPTH_ATTACHMENT};
-    glDrawBuffers(2, DrawBuffers);
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
 
+    glEnable(GL_FLAT);
+    glShadeModel(GL_FLAT);
+    glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+
     glm::mat4 modelViewMatrix = getModelViewMatrix();
 
+    glm::mat4 normalMatrix = glm::transpose(glm::inverse(modelViewMatrix));
+    glm::vec4 lightPos0 = glm::inverse(m_view) * glm::vec4(4,4,4,1);
+    glm::vec3 lightPos = glm::vec3(lightPos0.x,lightPos0.y,lightPos0.z);
+
+    glm::mat4 MVP = m_proj * modelViewMatrix;
+
     glUseProgram(m_programID);
-    GLuint projMatrixID = glGetUniformLocation(m_programID, "projMatrix");
-    GLuint mvMatrixID = glGetUniformLocation(m_programID, "mvMatrix");
-    glUniformMatrix4fv(projMatrixID, 1, GL_FALSE, glm::value_ptr(m_proj));
-    glUniformMatrix4fv(mvMatrixID, 1, GL_FALSE, glm::value_ptr(modelViewMatrix));
+
+    GLuint mvpID = glGetUniformLocation(m_programID,"MVP");
+    GLuint mID = glGetUniformLocation(m_programID,"M");
+    GLuint vID = glGetUniformLocation(m_programID,"V");
+    GLuint nID = glGetUniformLocation(m_programID,"normalMatrix");
+    GLuint lightID = glGetUniformLocation(m_programID,"LightPosition_worldspace");
+
+    glUniformMatrix4fv(mvpID, 1, GL_FALSE, glm::value_ptr(MVP));
+    glUniformMatrix4fv(mID, 1, GL_FALSE, glm::value_ptr(m_model));
+    glUniformMatrix4fv(vID, 1, GL_FALSE, glm::value_ptr(m_view));
+    glUniformMatrix4fv(nID, 1, GL_FALSE, glm::value_ptr(normalMatrix));
+    glUniform3f(lightID, lightPos.x, lightPos.y, lightPos.z);
 
     m_helper.draw();
     qDebug()<<" "<<count<<endl;
+    doneCurrent();
     return true;
 }
 
@@ -245,7 +238,6 @@ void Render::showImage()
     glBindFramebuffer(GL_FRAMEBUFFER,frameBufferId);
     GLint viewport[4];
     glGetIntegerv(GL_VIEWPORT,viewport);
-//    qDebug()<<viewport[0]<<viewport[1]<<viewport[2]<<viewport[3]<<endl;
 
     GLfloat *img0 = new GLfloat[(viewport[2]-viewport[0])*(viewport[3]-viewport[1])];
     glReadBuffer(GL_BACK_LEFT);
@@ -292,6 +284,8 @@ void Render::storeImage(QString path,QString fileName)
     glBindFramebuffer(GL_FRAMEBUFFER,frameBufferId);
     GLint viewport[4];
     glGetIntegerv(GL_VIEWPORT,viewport);
+
+    std::cout << viewport[0] << " " << viewport[1] << " " << viewport[2] <<  " " << viewport[3] << std::endl;
 
     GLfloat *img0 = new GLfloat[(viewport[2]-viewport[0])*(viewport[3]-viewport[1])];
     glReadBuffer(GL_BACK_LEFT);
@@ -459,22 +453,10 @@ void Render::clear()
 glm::mat4 Render::getModelViewMatrix()
 {
     return m_view*m_model;
-/*
-    return (m_camera
-            * glm::scale(glm::mat4(1.f), glm::vec3(m_scale, m_scale, m_scale))
-            * glm::rotate(glm::mat4(1.f), m_angle, m_rotateN)
-            * m_baseRotate);
-*/
 }
 
 glm::mat4 Render::getModelMatrix()
 {
     return m_model;
-/*
-    return (glm::mat4()
-            * glm::scale(glm::mat4(1.f), glm::vec3(m_scale, m_scale, m_scale))
-            * glm::rotate(glm::mat4(1.f), m_angle, m_rotateN)
-            * m_baseRotate);
-*/
 }
 

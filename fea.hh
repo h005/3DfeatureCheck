@@ -37,10 +37,6 @@ private:
     glm::mat4 m_projection;
     glm::mat4 m_abv;
 
-//    std::vector<glm::mat4> model;
-//    std::vector<glm::mat4> view;
-//    std::vector<glm::mat4> projection;
-
     int NUM;
     int P_NUM;
 
@@ -145,6 +141,8 @@ private:
     void printOut();
 
     void set_tCase();
+
+    void computeModel(glm::mat4 &m_view_tmp,glm::mat4 &m_model_tmp);
 
     void computeModel(glm::mat4 &m_model_tmp);
 

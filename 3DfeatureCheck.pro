@@ -40,7 +40,7 @@ HEADERS  += mainwindow.h \
 
 FORMS    += mainwindow.ui
 
-DEFINES += _USE_MATH_DEFINES
+DEFINES += _USE_MATH_DEFINES GLM_FORCE_RADIANS
 
 win32 {
     DP_TOOLS_DIR = $$(DP_TOOLS_DIR)

@@ -88,12 +88,13 @@ public:
 
     }
 
-    void fbo_init(GLuint vertexPositionID)
+    void fbo_init(GLuint vertexPositionID,GLuint vertexNormalID)
     {
         int index = 0;
         std::map<typename MeshT::VertexHandle, int> dict;
 
         std::vector<GLfloat> vertices;
+        std::vector<GLfloat> vertexNormals;
 
         typename MeshT::VertexIter v_it, v_end(m_mesh.vertices_end());
         for (v_it = m_mesh.vertices_begin(); v_it != v_end; v_it++){
@@ -101,6 +102,11 @@ public:
             vertices.push_back(pos[0]);
             vertices.push_back(pos[1]);
             vertices.push_back(pos[2]);
+
+            MeshT::Point normal = m_mesh.normal(*v_it);
+            vertexNormals.push_back(normal[0]);
+            vertexNormals.push_back(normal[1]);
+            vertexNormals.push_back(normal[2]);
 
             dict[*v_it] = index;
             index++;
@@ -133,6 +139,15 @@ public:
                               0,
                               NULL);
         glEnableVertexAttribArray (vertexPositionID);
+
+        if(vertexNormalID != -1){
+            glGenBuffers(1, &m_vboVertexNormal);
+            glBindBuffer(GL_ARRAY_BUFFER, m_vboVertexNormal);
+            glBufferData(GL_ARRAY_BUFFER, vertexNormals.size() * sizeof(GLfloat), &vertexNormals[0], GL_STATIC_DRAW);
+            glVertexAttribPointer(vertexNormalID, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+            glEnableVertexAttribArray (vertexNormalID);
+        }
+
 
         glGenBuffers(1, &m_vboIndex);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,
@@ -282,7 +297,7 @@ private:
     std::vector<GLfloat> m_vertices;
     std::vector<GLuint> m_facesIndices;
     bool m_isInited;
-    GLuint m_vao, m_vboVertex, m_vboIndex;
+    GLuint m_vao = 0, m_vboVertex = 0, m_vboIndex = 0,m_vboVertexNormal = 0;
 //    GLuint m_vao2, m_vboVertex2;
     GLuint FramebufferName;
     int numsToDraw;
