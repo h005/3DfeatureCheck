@@ -105,7 +105,7 @@ void Fea::setFeature()
 
 
 //            setAbovePreference(output,render->p_model);
-            setAbovePreference(m_abv,render->p_model);
+            setAbovePreference(m_abv,m_model_tmp,m_view_tmp);
         }
 
 //        break;
@@ -373,9 +373,10 @@ void Fea::setSilhouetteCE()
 
 void Fea::setMaxDepth(float *array,int len)
 {
-    feaArray[6] = 10.0;
+    feaArray[6] = -10.0;
     for(int i=0;i<len;i++)
-        feaArray[6] = feaArray[6] < array[i] ? feaArray[6] : array[i];
+        if(array[i] < 1.0)
+            feaArray[6] = feaArray[6] > array[i] ? feaArray[6] : array[i];
     std::cout<<"fea maxDepth "<<feaArray[6]<<std::endl;
 }
 
@@ -706,7 +707,7 @@ void Fea::setAbovePreference(double theta)
                           / pi/4.0*pi/4.0);
 }
 
-void Fea::setAbovePreference(glm::mat4 &model2, glm::mat4 &model)
+void Fea::setAbovePreference(glm::mat4 &model2, glm::mat4 &model,glm::mat4 &view)
 {
 
 //    int pos = filename.lastIndexOf('.');
@@ -724,17 +725,22 @@ void Fea::setAbovePreference(glm::mat4 &model2, glm::mat4 &model)
 //                model2[i][j] = tmp;
 //            }
 //        model2 = glm::transpose(model2);
-        glm::vec4 z = glm::vec4(0.0,0.0,1.0,1.0);
+        glm::vec4 z = glm::vec4(0.0,0.0,1.0,0.0);
         glm::vec4 yyy = model*model2*z;
     //    the theta between yyy and (0,1,0,1)
 //        qDebug()<<"........."<<endl;
 //        qDebug()<<yyy.x<<" "<<yyy.y<<" "<<yyy.z<<" "<<yyy.w<<endl;
-        double norm_yyy = 0.0;
-        glm::vec4 tmp0 = yyy*yyy;
-        for(int i=0;i<4;i++)
-            norm_yyy += tmp0[i];
+        // ref http://stackoverflow.com/questions/21830340/understanding-glmlookat
+        // I need center to eye // center - eye
+        glm::vec4 lookAxis = glm::vec4(-view[0][2],-view[1][2],-view[2][2],0.f);
 
-        double cosTheta = (yyy.y + 1.0) / sqrt(norm_yyy) / sqrt(2.0);
+        float norm_yyy = glm::dot(yyy,yyy);
+
+        float norm_lookAxis = glm::dot(lookAxis,lookAxis);
+
+        float dot = glm::dot(yyy,lookAxis);
+
+        double cosTheta = dot / sqrt(norm_yyy) / sqrt(norm_lookAxis);
 
         double theta = acos(cosTheta);
 

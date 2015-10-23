@@ -100,7 +100,7 @@ private:
 
     void setAbovePreference(double theta);
 
-    void setAbovePreference(glm::mat4 &model2,glm::mat4 &modelView);
+    void setAbovePreference(glm::mat4 &modelZ,glm::mat4 &model,glm::mat4 &view);
 
     double getMeshSaliencyLocalMax(double *nearDis,int len,std::vector<double> meshSaliency);
 
