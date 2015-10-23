@@ -192,6 +192,7 @@ QSize Render::minimumSizeHint() const
 
 bool Render::rendering(int count)
 {
+    // makeCurrent() 在paintGL函数中会自动调用，所以要自己加上，不然会有bug
     makeCurrent();
     glBindFramebuffer(GL_FRAMEBUFFER,frameBufferId);
 
