@@ -1,4 +1,4 @@
-#ifndef FEA_H
+﻿#ifndef FEA_H
 #define FEA_H
 
 #include <QString>
@@ -15,7 +15,7 @@
 #define NumHistDepth 15
 #define NumHistViewEntropy 15
 #define PI 3.1415926
-#define MAX_LEN 128
+#define MAX_LEN 64
 
 
 class Fea
@@ -36,10 +36,6 @@ private:
     glm::mat4 m_view;
     glm::mat4 m_projection;
     glm::mat4 m_abv;
-
-//    std::vector<glm::mat4> model;
-//    std::vector<glm::mat4> view;
-//    std::vector<glm::mat4> projection;
 
     int NUM;
     int P_NUM;
@@ -104,7 +100,7 @@ private:
 
     void setAbovePreference(double theta);
 
-    void setAbovePreference(glm::mat4 &model2,glm::mat4 &modelView);
+    void setAbovePreference(glm::mat4 &modelZ,glm::mat4 &model,glm::mat4 &view);
 
     double getMeshSaliencyLocalMax(double *nearDis,int len,std::vector<double> meshSaliency);
 
@@ -145,6 +141,8 @@ private:
     void printOut();
 
     void set_tCase();
+
+    void computeModel(glm::mat4 &m_view_tmp,glm::mat4 &m_model_tmp);
 
     void computeModel(glm::mat4 &m_model_tmp);
 

@@ -1,4 +1,4 @@
-#ifndef EXTERNALIMPORTER_HH
+﻿#ifndef EXTERNALIMPORTER_HH
 #define EXTERNALIMPORTER_HH
 
 #include "common.hh"
@@ -28,29 +28,15 @@ public:
     {
         Assimp::Importer importer;
         const aiScene *scene = importer.ReadFile(path,aiProcessPreset_TargetRealtime_Quality);
-//        const aiScene *scene = importer.ReadFile(path,aiProcess_Triangulate);
+
         if(!scene)
             return false;
 
         int count = 0;
 
-//        recursive_create(scene,scene->mRootNode,glm::mat4(),mesh,count);
-
         getPointFace_h005(scene,scene->mRootNode,glm::mat4(),vertices,indices,count);
 
-//        std::cout<<"read in done"<<std::endl;
-
-
-//        UFface *ufface = new UFface(indices);
-
-//        id = ufface->unionFinal(indices,cateSet);
-//        std::cout<<"indices size "<<indices.size()<<std::endl;
-//        ufface->free();
-//        std::cout<<"union...done cateSet size "<<cateSet.size()<<std::endl;
         buildMesh_h005(vertices,indices,mesh);
-//        outputMesh(mesh,"E:/big-ben-and-king-kong/notredame_shrink");
-        // debug for notredame
-//        outputMesh(mesh,"E:/big-ben-and-king-kong/notredame");
 
         std::cout<<"Assimp Importer: "<<count<<" Meshes Loaded."<<std::endl;
         return true;
@@ -150,25 +136,6 @@ public:
                 tmpMesh.add_face(face_vhandles);
             }
 
-
-/*
-            for(int j=0;j<indiceMesh[i].size();j++)
-            {
-//                printf("setMeshVector....addVertex...indiceMesh %d\n",indiceMesh[i][j]*3);
-//                printf("setMeshVector....addVertex...indices %d\n",indices[indiceMesh[i][j]*3]);
-
-                vHandle.push_back(tmpMesh.add_vertex(vertices[indices[indiceMesh[i][j]*3]]));
-                vHandle.push_back(tmpMesh.add_vertex(vertices[indices[indiceMesh[i][j]*3+1]]));
-                vHandle.push_back(tmpMesh.add_vertex(vertices[indices[indiceMesh[i][j]*3+2]]));
-
-
-                face_vhandles.clear();
-                face_vhandles.push_back(vHandle[j*3]);
-                face_vhandles.push_back(vHandle[j*3+1]);
-                face_vhandles.push_back(vHandle[j*3+2]);
-                tmpMesh.add_face(face_vhandles);
-            }
-*/
             mesh.push_back(tmpMesh);
         }
 
@@ -302,9 +269,6 @@ private:
                 for(int i=0;i<vectorPoint.size();i++)
                     vertices.push_back(vectorPoint[i]);
 
-//                printf("vertices size: %d\n",vertices.size());
-
-
                 // 一个face代表一个面（暂时只考虑三角形，其余类型pass），其存储着各个顶点的索引
                 // 可以根据索引到mesh->mVertices[]中找到对应顶点的数据(x, y, z)
                 // 不能只考虑三角形，这样会导致面片的不连续，从而出错
@@ -343,8 +307,6 @@ private:
         for(int i=0;i<len;i++)
             indiceMesh.push_back(std::vector<int>());
 
-//        printf("setIndiceMesh...length %d\n",length);
-
         for(int i=0;i<len;i++)
         {
             for(int j=0;j<length;j++)
@@ -353,14 +315,6 @@ private:
                     indiceMesh[i].push_back(j);
             }
         }
-
-
-        /*
-        for(int i=0;i<len;i++)
-            for(int j=0;j<length;j++)
-                if(id[j]==cateSet[i])
-                    indiceMesh[i].push_back(j);
-        */
 
     }
 
