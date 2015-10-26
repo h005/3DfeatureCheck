@@ -12,7 +12,7 @@
 #include <iostream>
 #include "meancurvature.hh"
 
-#define NumHistDepth 15
+#define NumHistDepth 20000
 #define NumHistViewEntropy 15
 #define PI 3.1415926
 #define MAX_LEN 64
@@ -68,6 +68,8 @@ private:
     void setProjectArea();
 
     void setVisSurfaceArea(std::vector<GLfloat> &vertex, std::vector<GLuint> &face);
+
+    void setViewpointEntropy2(std::vector<GLfloat> &vertex, std::vector<GLuint> &face);
 
     void setViewpointEntropy(std::vector<GLfloat> &vertex, std::vector<GLuint> &face);
 

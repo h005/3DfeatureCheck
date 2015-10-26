@@ -1,4 +1,4 @@
-#ifndef GAUSSCURVATURE_H
+﻿#ifndef GAUSSCURVATURE_H
 #define GAUSSCURVATURE_H
 
 #include <limits>
