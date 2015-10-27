@@ -1100,7 +1100,7 @@ void Fea::printOut()
     printf("%s\n",QString::number(t_case).toStdString().c_str());
     for(int i=0;i<12;i++)
     {
-        if(i==10)
+        if(i==10 || i==8 || i== 9)
             printf("%e ",feaArray[i]);
         else
             printf("%lf ",feaArray[i]);
