@@ -18,6 +18,7 @@ public:
         if(!m_mesh.get_property_handle(m_vPropHandle, m_PropertyKeyword))
             m_mesh.add_property(m_vPropHandle, m_PropertyKeyword);
 
+
         if(!m_mesh.get_property_handle(vertexBoundingArea, "area"))
         {
             std::cout<<"gauss .... get handle error "<<std::endl;

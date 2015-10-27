@@ -53,6 +53,15 @@ void Fea::setFeature()
     glm::mat4 m_view_tmp;
 
     MeanCurvature<MyMesh> a(mesh);
+    GaussCurvature<MyMesh> b(mesh);
+
+//    OpenMesh::VPropHandleT<double> mm;
+//    if(!mesh.get_property_handle(mm, "area"))
+//    {
+//        std::cout<<"aaa: gauss .... get handle error "<<std::endl;
+//    }
+//    else
+//        std::cout<<"aaa: gauss .... get handle "<<std::endl;
 
     for(; t_case < NUM ; t_case++)
     {
@@ -97,7 +106,7 @@ void Fea::setFeature()
 //            setMeanCurvature(t_case,render->p_isVertexVisible,render->p_vecMesh,render->p_indiceArray);
             setMeanCurvature(a,render->p_isVertexVisible);
 
-            setGaussianCurvature(mesh,render->p_isVertexVisible);
+            setGaussianCurvature(b,render->p_isVertexVisible);
 
 //            setGaussianCurvature(t_case,render->p_isVertexVisible,render->p_vecMesh,render->p_indiceArray);
 
@@ -501,11 +510,11 @@ void Fea::setMeanCurvature(int t_case,
     std::cout<<"fea meanCurvature "<<feaArray[8]<<std::endl;
 }
 
-void Fea::setGaussianCurvature(MyMesh &mesh, std::vector<bool> &isVertexVisible)
+void Fea::setGaussianCurvature(GaussCurvature<MyMesh> &mesh, std::vector<bool> &isVertexVisible)
 {
     feaArray[9] = 0.0;
-    GaussCurvature<MyMesh> a(mesh);
-    feaArray[9] = a.getGaussianCurvature(isVertexVisible);
+//    GaussCurvature<MyMesh> a(mesh);
+    feaArray[9] = mesh.getGaussianCurvature(isVertexVisible);
     if(feaArray[0])
         feaArray[9] /= feaArray[0];
     std::cout<<"fea gaussianCurvature "<<feaArray[9]<<std::endl;
