@@ -101,7 +101,7 @@ void Render::setMeshSaliencyPara(ExternalImporter<MyMesh> *exImporter)
 Render::~Render()
 {
     if(p_img)
-        delete p_img;
+        delete []p_img;
     p_vertices.clear();
     p_isVertexVisible.clear();
     p_VisibleFaces.clear();
@@ -362,7 +362,7 @@ void Render::setParameters()
 
     if(p_img)
     {
-        delete p_img;
+        delete []p_img;
         p_img = NULL;
     }
 

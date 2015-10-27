@@ -11,8 +11,9 @@
 #include "externalimporter.hh"
 #include <iostream>
 #include "meancurvature.hh"
+#include "gausscurvature.hh"
 
-#define NumHistDepth 15
+#define NumHistDepth 20000
 #define NumHistViewEntropy 15
 #define PI 3.1415926
 #define MAX_LEN 64
@@ -69,6 +70,8 @@ private:
 
     void setVisSurfaceArea(std::vector<GLfloat> &vertex, std::vector<GLuint> &face);
 
+    void setViewpointEntropy2(std::vector<GLfloat> &vertex, std::vector<GLuint> &face);
+
     void setViewpointEntropy(std::vector<GLfloat> &vertex, std::vector<GLuint> &face);
 
     void setSilhouetteLength();
@@ -86,7 +89,7 @@ private:
     void setMeanCurvature(int t_case, std::vector<bool> &isVertexVisible,
                           std::vector<MyMesh> &vecMesh,std::vector<std::vector<int>> &indiceArray);
 
-    void setGaussianCurvature(MyMesh mesh, std::vector<bool> &isVertexVisible);
+    void setGaussianCurvature(GaussCurvature<MyMesh> &b, std::vector<bool> &isVertexVisible);
 
     void setGaussianCurvature(int t_case,std::vector<bool> &isVertexVisible,
                               std::vector<MyMesh> &vecMesh, std::vector<std::vector<int>> &indiceArray);
