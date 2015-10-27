@@ -381,7 +381,7 @@ void Fea::setSilhouetteCE()
         if(getCurvature(&a,&b,&c,curva))
         {
 //            std::cout << curva << std::endl;
-            dis = getDis2D(a,b) + getDis2D(b,c);
+            dis = getDis2D(&a,&b) + getDis2D(&b,&c);
             feaArray[4] += abs(curva) * dis;
             feaArray[5] += curva*curva * dis;
         }
@@ -446,7 +446,8 @@ void Fea::setMeanCurvature(MyMesh mesh, std::vector<bool> &isVertexVisible)
     feaArray[8] = 0.0;
     MeanCurvature<MyMesh> a(mesh);
     feaArray[8] = a.getMeanCurvature(isVertexVisible);
-    feaArray[8] /= feaArray[0];
+    if(feaArray[0])
+        feaArray[8] /= feaArray[0];
     std::cout<<"fea meanCurvature "<<feaArray[8]<<std::endl;
 }
 
@@ -454,7 +455,8 @@ void Fea::setMeanCurvature(MeanCurvature<MyMesh> &a, std::vector<bool> &isVertex
 {
     feaArray[8] = 0.0;
     feaArray[8] = a.getMeanCurvature(isVertexVisible);
-    feaArray[8] /= feaArray[0];
+    if(feaArray[0])
+        feaArray[8] /= feaArray[0];
     std::cout<<"fea meanCurvature "<<feaArray[8]<<std::endl;
 }
 
@@ -499,7 +501,7 @@ void Fea::setMeanCurvature(int t_case,
     std::cout<<"fea meanCurvature "<<feaArray[8]<<std::endl;
 }
 
-void Fea::setGaussianCurvature(MyMesh mesh, std::vector<bool> &isVertexVisible)
+void Fea::setGaussianCurvature(MyMesh &mesh, std::vector<bool> &isVertexVisible)
 {
     feaArray[9] = 0.0;
     GaussCurvature<MyMesh> a(mesh);

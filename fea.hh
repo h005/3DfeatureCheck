@@ -88,7 +88,7 @@ private:
     void setMeanCurvature(int t_case, std::vector<bool> &isVertexVisible,
                           std::vector<MyMesh> &vecMesh,std::vector<std::vector<int>> &indiceArray);
 
-    void setGaussianCurvature(MyMesh mesh, std::vector<bool> &isVertexVisible);
+    void setGaussianCurvature(MyMesh &mesh, std::vector<bool> &isVertexVisible);
 
     void setGaussianCurvature(int t_case,std::vector<bool> &isVertexVisible,
                               std::vector<MyMesh> &vecMesh, std::vector<std::vector<int>> &indiceArray);

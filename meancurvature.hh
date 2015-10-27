@@ -17,7 +17,7 @@ public:
         if(!m_mesh.get_property_handle(m_vPropHandle, m_PropertyKeyword))
             m_mesh.add_property(m_vPropHandle, m_PropertyKeyword);
         if(!m_mesh.get_property_handle(vertexBoundingArea, m_PropertyKeyword))
-            m_mesh.add_property(vertexBoundingArea, m_PropertyKeyword);
+            m_mesh.add_property(vertexBoundingArea, "area");
 
             OpenMesh::VPropHandleT<double> valuePerArea;
 
