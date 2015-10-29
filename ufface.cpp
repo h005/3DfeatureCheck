@@ -1,4 +1,4 @@
-#include "ufface.h"
+﻿#include "ufface.h"
 
 UFface::UFface()
 {
@@ -261,6 +261,40 @@ void UFface::shrink(std::vector<int> &indices)
 
 }
 
+
+void UFface::shrinkBySet(std::vector<int> &indices)
+{
+    long long a,b,c;
+    std::set<long long> faceSet;
+    for(int i=0;i<indices.size();i+=3)
+    {
+        a = min(indices[i],min(indices[i+1],indices[i+2]));
+        b = max(indices[i],max(indices[i+1],indices[i+2]));
+        c = indices[i] + indices[i+1] + indices[i+2] - a - b;
+        // encode to long long;
+        long long tmp = ((long long)a << 42 |  (long long)b << 21 ) |  (long long)c;
+        faceSet.insert(tmp);
+    }
+    // reset the indices
+    std::vector<int>().swap(indices);
+    std::set<long long>::iterator it;
+    for(it = faceSet.begin() ; it!=faceSet.end() ; it++)
+    {
+        // decode
+        long long tmp = *it;
+        int a,b,c;
+        c = tmp & 0x1fffff;
+        b = ( tmp >> 21 ) & 0x1fffff;
+        a = ( tmp >> 42 ) & 0x1fffff;
+        indices.push_back(a);
+        indices.push_back(b);
+        indices.push_back(c);
+    }
+
+}
+
+
+
 void UFface::setRelation()
 {
     for(int i=1;i<NUM_FACE;i++)
@@ -348,5 +382,20 @@ void UFface::checkIn(int i, int j)
         }
 }
 
+
+long long UFface::min(int a, int b)
+{
+
+    return (long long)(a < b ? a : b);
+
+}
+
+
+long long UFface::max(int a, int b)
+{
+
+    return (long long)(a < b ? b : a);
+
+}
 
 

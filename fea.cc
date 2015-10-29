@@ -93,7 +93,7 @@ void Fea::setFeature()
 
             setVisSurfaceArea(render->p_vertices,render->p_VisibleFaces);
 
-            setViewpointEntropy(render->p_verticesMvp,render->p_VisibleFaces);
+            setViewpointEntropy2(render->p_verticesMvp,render->p_VisibleFaces);
 
             setSilhouetteLength();
 
@@ -243,18 +243,25 @@ void Fea::setViewpointEntropy2(std::vector<GLfloat> &vertex, std::vector<GLuint>
     feaArray[2] = 0.0;
     double area = 0.0;
     double totalArea = image.cols*image.rows;
-    for(int i=0;i<face.size();i++)
+//    qDebug()<<"viewPointEntropy ... "<<totalArea<<endl;
+    for(int i=0;i<face.size();i+=3)
     {
         CvPoint2D64f a = cvPoint2D64f(vertex[face[i]*3],vertex[face[i]*3+1]);
         CvPoint2D64f b = cvPoint2D64f(vertex[face[i+1]*3],vertex[face[i+1]*3+1]);
         CvPoint2D64f c = cvPoint2D64f(vertex[face[i+2]*3],vertex[face[i+2]*3+1]);
         area = getArea2D(&a,&b,&c);
-        feaArray[2] += area/totalArea * log2(area/totalArea);
+//        qDebug()<<"viewPointEntropy ... "<<area<<endl;
+        if(area)
+            feaArray[2] += area/totalArea * log2(area/totalArea);
+        else
+            qDebug()<<"viewpoint "<<area<<endl;
     }
     // background
-    feaArray[2] += (totalArea - feaArray[0])/totalArea * log2((totalArea - feaArray[0])/totalArea);
+    if((feaArray[0] - totalArea) > 0)
+        feaArray[2] += (totalArea - feaArray[0])/totalArea * log2((totalArea - feaArray[0])/totalArea);
 
     feaArray[2] = - feaArray[2];
+    std::cout<<"fea viewpointEntropy "<<feaArray[2]<<std::endl;
 }
 
 void Fea::setViewpointEntropy(std::vector<GLfloat> &vertex, std::vector<GLuint> &face)
@@ -414,13 +421,14 @@ void Fea::setDepthDistribute(GLfloat *zBuffer, int num)
 {
     feaArray[7] = 0.0;
     double min = 1.0;
-    double max = 0.0;
+    double max = -1.0;
     double *hist = new double[NumHistDepth];
     memset(hist,0,sizeof(double)*NumHistDepth);
     for(int i=0;i<num;i++)
     {
         min = min > zBuffer[i] ? zBuffer[i] : min;
-        max = max < zBuffer[i] ? zBuffer[i] : max;
+        if(zBuffer[i] < 1.0)
+            max = max < zBuffer[i] ? zBuffer[i] : max;
     }
     double step = (max - min)/(double)NumHistDepth;
 
@@ -686,7 +694,7 @@ void Fea::setMeshSaliency(int t_case,// for debug can be used to output the mesh
 
     }
 
-    printf("set Mesh Saliency.... exImporter done\n");
+    printf("set Mesh Saliency .... exImporter done\n");
 
     for(int j=0;j<5;j++)
     {
@@ -1101,7 +1109,7 @@ void Fea::printOut()
     for(int i=0;i<12;i++)
     {
         if(i==10 || i==8 || i== 9)
-            printf("%e ",feaArray[i]);
+            printf("%lf ",log2(feaArray[i]));
         else
             printf("%lf ",feaArray[i]);
     }

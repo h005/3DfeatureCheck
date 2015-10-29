@@ -16,7 +16,7 @@
 #define NumHistDepth 20000
 #define NumHistViewEntropy 15
 #define PI 3.1415926
-#define MAX_LEN 64
+#define MAX_LEN 32
 
 
 class Fea
