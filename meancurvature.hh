@@ -46,21 +46,39 @@ public:
             // 优化缩放比的选择
             // 这里可能存在问题，由于包围面积过小，除法后结果值过大
 
-            double curvatureMax = -1;
-            for (v_it = m_mesh.vertices_begin(); v_it != v_end; v_it++)
+            v_it = m_mesh.vertices_begin();
+            double curvatureMax = m_mesh.property(valuePerArea, *v_it);
+            v_it++;
+            for (; v_it != v_end; v_it++)
                 if (curvatureMax < m_mesh.property(valuePerArea, *v_it))
                     curvatureMax = m_mesh.property(valuePerArea, *v_it);
 
+            v_it = m_mesh.vertices_begin();
+            double maxNormal = abs(m_mesh.property(valuePerArea, *v_it));
+            if(curvatureMax)
+                maxNormal /= curvatureMax;
+            double minNormal = abs(m_mesh.property(valuePerArea, *v_it));
+            if(curvatureMax)
+                minNormal /= curvatureMax;
             // 如果一个mesh只有一个三角面，那么这三个顶点就都是边界点，从而每个顶点上的平均曲率都为0
             // 所以除之前看看curvatureMax是否为0
-            for (v_it = m_mesh.vertices_begin(); v_it != v_end; v_it++) {
+            for (; v_it != v_end; v_it++) {
                 Q_ASSERT(!std::isnan(m_mesh.property(m_vPropHandle, *v_it)));
-                if (curvatureMax > 0)
-                    m_mesh.property(m_vPropHandle, *v_it) = m_mesh.property(valuePerArea, *v_it) / curvatureMax;
-                else
-                    m_mesh.property(m_vPropHandle, *v_it) = m_mesh.property(valuePerArea, *v_it);
+                if (curvatureMax)
+                {
+                    double tmp = abs(m_mesh.property(valuePerArea, *v_it)) / curvatureMax;
+                    m_mesh.property(m_vPropHandle, *v_it) = tmp;
+                    maxNormal = maxNormal > tmp ? maxNormal : tmp;
+                    minNormal = minNormal < tmp ? minNormal : tmp;
+                }
+//                else
+//                    m_mesh.property(m_vPropHandle, *v_it) = m_mesh.property(valuePerArea, *v_it);
                 Q_ASSERT(!std::isnan(m_mesh.property(m_vPropHandle, *v_it)));
             }
+
+            if(maxNormal - minNormal)
+            for(v_it = m_mesh.vertices_begin(); v_it != v_end; v_it++)
+                m_mesh.property(m_vPropHandle, *v_it) = (m_mesh.property(m_vPropHandle, *v_it) - minNormal) / (maxNormal - minNormal);
 
             m_mesh.remove_property(valuePerArea);
     }

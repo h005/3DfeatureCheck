@@ -149,6 +149,8 @@ private:
 
     void computeModel(glm::mat4 &m_model_tmp);
 
+    double getContourCurvature(const std::vector<cv::Point2d> &points, int target);
+
 };
 
 #endif // FEA_H

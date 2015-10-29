@@ -394,13 +394,24 @@ void Fea::setSilhouetteCE()
         CvPoint2D64f b = cvPoint2D64f((double)b0->x,(double)b0->y);
         CvPoint2D64f c = cvPoint2D64f((double)c0->x,(double)c0->y);
 
-        if(getCurvature(&a,&b,&c,curva))
-        {
-//            std::cout << curva << std::endl;
+        std::vector<cv::Point2d> points;
+        points.push_back(cv::Point2d(a.x, a.y));
+        points.push_back(cv::Point2d(b.x, b.y));
+        points.push_back(cv::Point2d(c.x, c.y));
+
+
+//        if(getCurvature(&a,&b,&c,curva))
+//        {
+////            std::cout << curva << std::endl;
             dis = getDis2D(&a,&b) + getDis2D(&b,&c);
-            feaArray[4] += abs(curva) * dis;
-            feaArray[5] += curva*curva * dis;
-        }
+//            feaArray[4] += abs(curva) * dis;
+//            feaArray[5] += curva*curva * dis;
+//        }
+
+        double curvab = getContourCurvature(points,1);
+        feaArray[4] += abs(curvab) * dis;
+        feaArray[5] += curvab*curvab * dis;
+//        qDebug()<<"curvature a"<<curva<<" "<<abs(curvab)<< " "<<abs(curvab) - abs(curva)<<endl;
     }
 
     std::cout<<"fea silhouetteCurvature "<<feaArray[4]<<std::endl;
@@ -431,7 +442,7 @@ void Fea::setDepthDistribute(float *zBuffer, int num)
             max = max < zBuffer[i] ? zBuffer[i] : max;
     }
     double step = (max - min)/(double)NumHistDepth;
-    qDebug()<<"depth ... "<<step<<endl;
+//    qDebug()<<"depth ... "<<step<<endl;
     if(step)
     {
         // explain for if else below
@@ -456,7 +467,7 @@ void Fea::setDepthDistribute(float *zBuffer, int num)
 
     std::cout<<"fea depthDistriubute "<<feaArray[7]<<std::endl;
     delete []hist;
-    qDebug()<<"depth distribute"<<endl;
+//    qDebug()<<"depth distribute"<<endl;
 }
 
 void Fea::setMeanCurvature(MyMesh mesh, std::vector<bool> &isVertexVisible)
@@ -1109,8 +1120,10 @@ void Fea::printOut()
     printf("%s\n",QString::number(t_case).toStdString().c_str());
     for(int i=0;i<12;i++)
     {
-        if(i==10 || i==8 || i== 9)
-            printf("%lf ",log2(feaArray[i]));
+        if(i==10)
+            printf("0 ");
+        else if(i==8 || i== 9)
+            printf("%e ",feaArray[i]);
         else
             printf("%lf ",feaArray[i]);
     }
@@ -1198,3 +1211,37 @@ void Fea::showImage()
 }
 
 
+typedef long double LD;
+double Fea::getContourCurvature(const std::vector<cv::Point2d> &points, int target)
+{
+    assert(points.size() == 3);
+
+    double T[3];
+    for (int i = 0; i < 3; i++) {
+        double t = cv::norm(points[target] - points[i]);
+        T[i] = target < i ? t : -t;
+    }
+    cv::Mat M(3, 3, CV_64F);
+    for (int i = 0; i < 3; i++) {
+        M.at<double>(i, 0) = 1;
+        M.at<double>(i, 1) = T[i];
+        M.at<double>(i, 2) = T[i] * T[i];
+    }
+    cv::Mat invM = M.inv();
+
+    cv::Mat X(3, 1, CV_64F), Y(3, 1, CV_64F);
+    for (int i = 0; i < 3; i++) {
+        X.at<double>(i, 0) = points[i].x;
+        Y.at<double>(i, 0) = points[i].y;
+    }
+
+    cv::Mat a, b;
+    a = invM * X;
+    b = invM * Y;
+
+    LD up = (LD)2 * (a.at<double>(1, 0) * b.at <double>(2, 0) - a.at<double>(2, 0) * b.at <double>(1, 0));
+    LD down = pow((LD)a.at<double>(1, 0) * a.at<double>(1, 0) + (LD)b.at <double>(1, 0) * b.at <double>(1, 0), 1.5);
+    LD frac = up / down;
+
+    return (double)frac;
+}
