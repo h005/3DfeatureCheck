@@ -80,7 +80,7 @@ private:
 
     void setMaxDepth(float *array, int len);
 
-    void setDepthDistribute(GLfloat *zBuffer, int num);
+    void setDepthDistribute(float *zBuffer, int num);
 
     void setMeanCurvature(MyMesh mesh, std::vector<bool> &isVertexVisible);
 

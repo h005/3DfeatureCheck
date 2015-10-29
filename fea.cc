@@ -417,7 +417,7 @@ void Fea::setMaxDepth(float *array,int len)
     std::cout<<"fea maxDepth "<<feaArray[6]<<std::endl;
 }
 
-void Fea::setDepthDistribute(GLfloat *zBuffer, int num)
+void Fea::setDepthDistribute(float *zBuffer, int num)
 {
     feaArray[7] = 0.0;
     double min = 1.0;
@@ -431,7 +431,7 @@ void Fea::setDepthDistribute(GLfloat *zBuffer, int num)
             max = max < zBuffer[i] ? zBuffer[i] : max;
     }
     double step = (max - min)/(double)NumHistDepth;
-
+    qDebug()<<"depth ... "<<step<<endl;
     if(step)
     {
         // explain for if else below
@@ -442,7 +442,7 @@ void Fea::setDepthDistribute(GLfloat *zBuffer, int num)
         {
             if(zBuffer[i]==max)
                 hist[NumHistDepth - 1]++;
-            else
+            else if(zBuffer[i] < 1.0) // 数组越界错误
                 hist[(int)((zBuffer[i]-min)/step)]++;
         }
         // normalizeHist
@@ -456,6 +456,7 @@ void Fea::setDepthDistribute(GLfloat *zBuffer, int num)
 
     std::cout<<"fea depthDistriubute "<<feaArray[7]<<std::endl;
     delete []hist;
+    qDebug()<<"depth distribute"<<endl;
 }
 
 void Fea::setMeanCurvature(MyMesh mesh, std::vector<bool> &isVertexVisible)
