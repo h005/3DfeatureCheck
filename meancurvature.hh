@@ -6,6 +6,7 @@
 #include "colormap.hh"
 #include "abstractfeature.hh"
 
+
 template <typename MeshT>
 class MeanCurvature: public AbstractFeature<MeshT>
 {
@@ -53,32 +54,36 @@ public:
                 if (curvatureMax < m_mesh.property(valuePerArea, *v_it))
                     curvatureMax = m_mesh.property(valuePerArea, *v_it);
 
-            v_it = m_mesh.vertices_begin();
-            double maxNormal = abs(m_mesh.property(valuePerArea, *v_it));
-            if(curvatureMax)
-                maxNormal /= curvatureMax;
-            double minNormal = abs(m_mesh.property(valuePerArea, *v_it));
-            if(curvatureMax)
-                minNormal /= curvatureMax;
+//            v_it = m_mesh.vertices_begin();
+//            double maxNormal = abs(m_mesh.property(valuePerArea, *v_it));
+//            if(curvatureMax)
+//                maxNormal /= curvatureMax;
+//            double minNormal = abs(m_mesh.property(valuePerArea, *v_it));
+//            if(curvatureMax)
+//                minNormal /= curvatureMax;
+
             // 如果一个mesh只有一个三角面，那么这三个顶点就都是边界点，从而每个顶点上的平均曲率都为0
             // 所以除之前看看curvatureMax是否为0
-            for (; v_it != v_end; v_it++) {
+            for (v_it = m_mesh.vertices_begin(); v_it != v_end; v_it++) {
+//                std::cout << "meanCurvature .. hi "<<std::endl;
                 Q_ASSERT(!std::isnan(m_mesh.property(m_vPropHandle, *v_it)));
                 if (curvatureMax)
                 {
                     double tmp = abs(m_mesh.property(valuePerArea, *v_it)) / curvatureMax;
-                    m_mesh.property(m_vPropHandle, *v_it) = tmp;
-                    maxNormal = maxNormal > tmp ? maxNormal : tmp;
-                    minNormal = minNormal < tmp ? minNormal : tmp;
+                    tmp = min(tmp,1.0);
+                    m_mesh.property(m_vPropHandle, *v_it) = max(tmp,0.0);
+//                    std::cout<<"meanCurvature ... "<< m_mesh.property(m_vPropHandle, *v_it) << std::endl;
+//                    maxNormal = maxNormal > tmp ? maxNormal : tmp;
+//                    minNormal = minNormal < tmp ? minNormal : tmp;
                 }
 //                else
 //                    m_mesh.property(m_vPropHandle, *v_it) = m_mesh.property(valuePerArea, *v_it);
                 Q_ASSERT(!std::isnan(m_mesh.property(m_vPropHandle, *v_it)));
             }
 
-            if(maxNormal - minNormal)
-            for(v_it = m_mesh.vertices_begin(); v_it != v_end; v_it++)
-                m_mesh.property(m_vPropHandle, *v_it) = (m_mesh.property(m_vPropHandle, *v_it) - minNormal) / (maxNormal - minNormal);
+//            if(maxNormal - minNormal)
+//            for(v_it = m_mesh.vertices_begin(); v_it != v_end; v_it++)
+//                m_mesh.property(m_vPropHandle, *v_it) = (m_mesh.property(m_vPropHandle, *v_it) - minNormal) / (maxNormal - minNormal);
 
             m_mesh.remove_property(valuePerArea);
     }
@@ -136,6 +141,16 @@ public:
     double compute(const glm::mat3 &K, const glm::mat3 &R, const glm::vec3 &t)
     {
         return 1;
+    }
+
+    double min(double a,double b)
+    {
+        return a < b ? a : b;
+    }
+
+    double max(double a,double b)
+    {
+        return a > b ? a : b;
     }
 
 private:

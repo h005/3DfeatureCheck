@@ -417,8 +417,8 @@ void Fea::setSilhouetteCE()
         }
         else
         {
-            feaArray[4] += abs(curvab) * dis;
-            feaArray[5] += curvab*curvab * dis;
+            feaArray[4] += abs(curvab);
+            feaArray[5] += curvab*curvab;
         }
 //        qDebug()<<"curvature a"<<curva<<" "<<abs(curvab)<< " "<<abs(curvab) - abs(curva)<<endl;
     }
