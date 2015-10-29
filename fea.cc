@@ -409,8 +409,17 @@ void Fea::setSilhouetteCE()
 //        }
 
         double curvab = getContourCurvature(points,1);
-        feaArray[4] += abs(curvab) * dis;
-        feaArray[5] += curvab*curvab * dis;
+        if (std::isnan(curvab)) {
+//            qDebug()<<a.x<<" "<<a.y<<endl;
+//            qDebug()<<b.x<<" "<<b.y<<endl;
+//            qDebug()<<c.x<<" "<<c.y<<endl;
+//            assert(0);
+        }
+        else
+        {
+            feaArray[4] += abs(curvab) * dis;
+            feaArray[5] += curvab*curvab * dis;
+        }
 //        qDebug()<<"curvature a"<<curva<<" "<<abs(curvab)<< " "<<abs(curvab) - abs(curva)<<endl;
     }
 
