@@ -423,8 +423,16 @@ void Fea::setSilhouetteLength()
     std::cout<<"fea silhouetteLength "<<feaArray[3]<<std::endl;
     cvReleaseImage(&tmpImage);
     cvReleaseImage(&img_tmp);
-//    cvReleaseMemStorage(&mem_storage);
-//    readCvSeqTest(contour);
+
+
+
+
+    // ref http://stackoverflow.com/questions/5951292/how-do-you-delete-a-cvseq-in-opencv
+    // Clear the memory storage which was used before
+    cvClearMemStorage(mem_storage);
+
+    // Release memory
+    cvReleaseMemStorage(&mem_storage);
 }
 
 void Fea::setSilhouetteCE()
