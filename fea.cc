@@ -426,6 +426,8 @@ void Fea::setSilhouetteCE()
     std::cout<<"fea silhouetteCurvature "<<feaArray[4]<<std::endl;
     std::cout<<"fea silhouetteCurvatureExtrema "<<feaArray[5]<<std::endl;
 
+    delete []nearDis;
+    delete []meanCurvature;
 }
 
 void Fea::setMaxDepth(float *array,int len)
@@ -626,6 +628,8 @@ void Fea::setMeshSaliency(MyMesh mesh, std::vector<GLfloat> &vertex, std::vector
             feaArray[10] += meshSaliencyMiddle[0][i];
 //    std::cout<<"fea meshSaliency ";
     printf("fea meshSaliency %e\n",feaArray[10]);
+
+    delete []nearDis;
 }
 
 void Fea::setMeshSaliency(MeanCurvature<MyMesh> &a, std::vector<GLfloat> &vertex, std::vector<bool> &isVertexVisible)
@@ -678,6 +682,8 @@ void Fea::setMeshSaliency(MeanCurvature<MyMesh> &a, std::vector<GLfloat> &vertex
             feaArray[10] += meshSaliencyMiddle[0][i];
 //    std::cout<<"fea meshSaliency ";
     printf("fea meshSaliency %e\n",feaArray[10]);
+
+    delete []nearDis;
 }
 
 void Fea::setMeshSaliency(int t_case,// for debug can be used to output the mesh
@@ -758,6 +764,8 @@ void Fea::setMeshSaliency(int t_case,// for debug can be used to output the mesh
             feaArray[10] += meshSaliencyMiddle[0][i];
     std::cout<<"fea meshSaliency "<<feaArray[10]<<std::endl;
 
+    delete []nearDis;
+    delete []meanCurvature;
 }
 
 void Fea::setAbovePreference(double theta)
