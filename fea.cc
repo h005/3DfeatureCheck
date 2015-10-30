@@ -2,10 +2,11 @@
 #include "meancurvature.hh"
 #include "gausscurvature.hh"
 #include <QtDebug>
+#include "predefine.h"
 
 #define NoProjection
 
-Fea::Fea(QString modelFile, QString path)
+Fea::Fea(QString fileName, QString path)
 {
     this->path = path;
 
@@ -16,12 +17,11 @@ Fea::Fea(QString modelFile, QString path)
     // read in
     exImporter = new ExternalImporter<MyMesh>();
 
-    if(!exImporter->read_mesh(mesh,modelFile.toStdString().c_str()))
+    if(!exImporter->read_mesh(mesh,fileName.toStdString().c_str()))
     {
         std::cerr << "Error: Cannot read mesh from "<<std::endl;
         return ;
-    }
-
+    }  
 
     // If the file did not provide vertex normals, then calculate them
     if (!mesh.has_vertex_normals())
@@ -38,29 +38,68 @@ Fea::Fea(QString modelFile, QString path)
         mesh.release_face_normals();
     }
 
+    // for check we only need .mm file
+    QString mmFile = fileName;
+    int index = mmFile.lastIndexOf('.');
+    mmFile.replace(index,6,".mm");
+    setMMPara(mmFile);
+//    ui->lmatrixPath->setText(QString("path: ").append(mmFile));
+#ifndef CHECK
+    // for compute we also need .matrix file
+    QString matrixFile = fileName;
+    index = matrixFile.lastIndexOf('.');
+    matrixFile.replace(index,10,".matrix");
+    setMvpPara(matrixFile);
+#endif
+
     glm::mat4 tmpPara;
     render = new Render(mesh,tmpPara,tmpPara,tmpPara);
 
     render->resize(QSize(800,800));
     render->show();
 
+    setFeature();
 }
 
 void Fea::setFeature()
 {
+#ifdef CHECK
     glm::mat4 m_model_tmp;
 
     glm::mat4 m_view_tmp;
 
     MeanCurvature<MyMesh> a(mesh);
+    GaussCurvature<MyMesh> b(mesh);
+
+#else
+    // for compute
+    render->setMeshSaliencyPara(exImporter);
+
+    std::vector<MeanCurvature<MyMesh>> a;
+    std::vector<GaussCurvature<MyMesh>> b;
+    for(int i=0;i<render->p_vecMesh.size();i++)
+    {
+        MeanCurvature<MyMesh> tmpMean(render->p_vecMesh[i]);
+        GaussCurvature<MyMesh> tmpGauss(render->p_vecMesh[i]);
+        a.push_back(tmpMean);
+        b.push_back(tmpGauss);
+    }
+
+#endif
 
     for(; t_case < NUM ; t_case++)
     {
         // render
+#ifdef CHECK
 
         computeModel(m_view_tmp,m_model_tmp);
 
         render->setMVP(m_model_tmp,m_view_tmp,m_projection);
+#else
+
+        render->setMVP(m_modelList[t_case],m_viewList[t_case],m_projectionList[t_case]);
+
+#endif
 
         bool res = render->rendering(t_case);
 
@@ -74,7 +113,7 @@ void Fea::setFeature()
 //            qDebug()<<" set feature "<<path<<endl;
 //            std::cout<<path.toStdString()<<std::endl;
 
-            render->storeImage(path,QString::number(t_case));
+//            render->storeImage(path,QString::number(t_case));
 
 //            qDebug()<<" store Image ok "<<endl;
 
@@ -84,7 +123,7 @@ void Fea::setFeature()
 
             setVisSurfaceArea(render->p_vertices,render->p_VisibleFaces);
 
-            setViewpointEntropy(render->p_verticesMvp,render->p_VisibleFaces);
+            setViewpointEntropy2(render->p_verticesMvp,render->p_VisibleFaces);
 
             setSilhouetteLength();
 
@@ -94,18 +133,28 @@ void Fea::setFeature()
 
             setDepthDistribute(render->p_img,render->p_height*render->p_width);
 
-//            setMeanCurvature(t_case,render->p_isVertexVisible,render->p_vecMesh,render->p_indiceArray);
+#ifdef CHECK
+
             setMeanCurvature(a,render->p_isVertexVisible);
 
-            setGaussianCurvature(mesh,render->p_isVertexVisible);
-
-//            setGaussianCurvature(t_case,render->p_isVertexVisible,render->p_vecMesh,render->p_indiceArray);
+            setGaussianCurvature(b,render->p_isVertexVisible);
 
 //            setMeshSaliency(a,render->p_vertices,render->p_isVertexVisible);
 
-
-//            setAbovePreference(output,render->p_model);
             setAbovePreference(m_abv,m_model_tmp,m_view_tmp);
+
+#else
+
+            setMeanCurvature(a,render->p_isVertexVisible,render->p_indiceArray);
+
+            setGaussianCurvature(b,render->p_isVertexVisible,render->p_indiceArray);
+
+            setMeshSaliency(a,render->p_vertices,render->p_indiceArray);
+
+            // setAbovePreference 有问题,compute缺少参数
+            // setAbovePreference(m_abv,m_model_tmp,m_view_tmp);
+
+#endif
         }
 
 //        break;
@@ -115,11 +164,11 @@ void Fea::setFeature()
 
 }
 
-void Fea::setMatrixPara(QString matrixPath)
+void Fea::setMMPara(QString mmFile)
 {
-    this->matrixPath = matrixPath;
+    this->mmPath = mmFile;
 
-    output = matrixPath;
+    output = mmFile;
 
     int pos = output.lastIndexOf('.');
     output.replace(pos,7,".3df");
@@ -134,8 +183,12 @@ void Fea::setMatrixPara(QString matrixPath)
 
 //    for(int i = 0; i<NUM ; i++)
 //        std::cout<<fileName.at(i).toStdString()<<std::endl;
-
-    freopen(matrixPath.toStdString().c_str(),"r",stdin);
+#ifdef CHECK
+    // for check there are two matrixs
+    // the first one is the view matrix
+    // the second one is the model matrix and also is the abv matrix
+    // the last two para is from to
+    freopen(mmPath.toStdString().c_str(),"r",stdin);
     float tmp;
     for(int i=0;i<16;i++)
     {
@@ -157,8 +210,17 @@ void Fea::setMatrixPara(QString matrixPath)
     m_model = m_abv;
 
     m_projection = glm::perspective(glm::pi<float>() / 2, 1.f, 0.1f, 100.f);
-
-
+#else
+    // for compute there is one matirx is abv matrix
+    // and the last two para is from to
+    float tmp;
+    for(int i=0;i<16;i++)
+    {
+        scanf("%f",&tmp);
+        m_abv[i/4][i%4] = tmp;
+    }
+    scanf("%d %d",&t_case,&NUM);
+#endif
     std::cout<<t_case<<" "<<NUM<<std::endl;
 
 }
@@ -227,6 +289,32 @@ void Fea::setVisSurfaceArea(std::vector<GLfloat> &vertex,
 
     std::cout<<"fea visSurfaceArea "<< feaArray[1]<<std::endl;
     // used for test
+}
+
+void Fea::setViewpointEntropy2(std::vector<GLfloat> &vertex, std::vector<GLuint> &face)
+{
+    feaArray[2] = 0.0;
+    double area = 0.0;
+    double totalArea = image.cols*image.rows;
+//    qDebug()<<"viewPointEntropy ... "<<totalArea<<endl;
+    for(int i=0;i<face.size();i+=3)
+    {
+        CvPoint2D64f a = cvPoint2D64f(vertex[face[i]*3],vertex[face[i]*3+1]);
+        CvPoint2D64f b = cvPoint2D64f(vertex[face[i+1]*3],vertex[face[i+1]*3+1]);
+        CvPoint2D64f c = cvPoint2D64f(vertex[face[i+2]*3],vertex[face[i+2]*3+1]);
+        area = getArea2D(&a,&b,&c);
+//        qDebug()<<"viewPointEntropy ... "<<area<<endl;
+        if(area)
+            feaArray[2] += area/totalArea * log2(area/totalArea);
+        else
+            qDebug()<<"viewpoint "<<area<<endl;
+    }
+    // background
+    if((feaArray[0] - totalArea) > 0)
+        feaArray[2] += (totalArea - feaArray[0])/totalArea * log2((totalArea - feaArray[0])/totalArea);
+
+    feaArray[2] = - feaArray[2];
+    std::cout<<"fea viewpointEntropy "<<feaArray[2]<<std::endl;
 }
 
 void Fea::setViewpointEntropy(std::vector<GLfloat> &vertex, std::vector<GLuint> &face)
@@ -345,6 +433,7 @@ void Fea::setSilhouetteCE()
     feaArray[5] = 0.0;
     double curva = 0;
     double dis = 0.0;
+
 //    example
 //    ghabcdefghabcde
 //     ^  ->  ^
@@ -359,18 +448,37 @@ void Fea::setSilhouetteCE()
         CvPoint2D64f b = cvPoint2D64f((double)b0->x,(double)b0->y);
         CvPoint2D64f c = cvPoint2D64f((double)c0->x,(double)c0->y);
 
-        if(getCurvature(&a,&b,&c,curva))
-        {
-//            std::cout << curva << std::endl;
-            dis1 = getDis2D(a,b) + getDis2D(b,c);
-            feaArray[4] += abs(curva)*dis;
-            feaArray[5] += curva*curva*dis;
+        std::vector<cv::Point2d> points;
+        points.push_back(cv::Point2d(a.x, a.y));
+        points.push_back(cv::Point2d(b.x, b.y));
+        points.push_back(cv::Point2d(c.x, c.y));
+
+
+//        if(getCurvature(&a,&b,&c,curva))
+//        {
+////            std::cout << curva << std::endl;
+            dis = getDis2D(&a,&b) + getDis2D(&b,&c);
+//            feaArray[4] += abs(curva) * dis;
+//            feaArray[5] += curva*curva * dis;
+//        }
+
+        double curvab = getContourCurvature(points,1);
+        if (std::isnan(curvab)) {
+//            qDebug()<<a.x<<" "<<a.y<<endl;
+//            qDebug()<<b.x<<" "<<b.y<<endl;
+//            qDebug()<<c.x<<" "<<c.y<<endl;
+//            assert(0);
         }
+        else
+        {
+            feaArray[4] += abs(curvab);
+            feaArray[5] += curvab*curvab;
+        }
+//        qDebug()<<"curvature a"<<curva<<" "<<abs(curvab)<< " "<<abs(curvab) - abs(curva)<<endl;
     }
 
     std::cout<<"fea silhouetteCurvature "<<feaArray[4]<<std::endl;
     std::cout<<"fea silhouetteCurvatureExtrema "<<feaArray[5]<<std::endl;
-
 }
 
 void Fea::setMaxDepth(float *array,int len)
@@ -382,20 +490,21 @@ void Fea::setMaxDepth(float *array,int len)
     std::cout<<"fea maxDepth "<<feaArray[6]<<std::endl;
 }
 
-void Fea::setDepthDistribute(GLfloat *zBuffer, int num)
+void Fea::setDepthDistribute(float *zBuffer, int num)
 {
     feaArray[7] = 0.0;
     double min = 1.0;
-    double max = 0.0;
+    double max = -1.0;
     double *hist = new double[NumHistDepth];
     memset(hist,0,sizeof(double)*NumHistDepth);
     for(int i=0;i<num;i++)
     {
         min = min > zBuffer[i] ? zBuffer[i] : min;
-        max = max < zBuffer[i] ? zBuffer[i] : max;
+        if(zBuffer[i] < 1.0)
+            max = max < zBuffer[i] ? zBuffer[i] : max;
     }
     double step = (max - min)/(double)NumHistDepth;
-
+//    qDebug()<<"depth ... "<<step<<endl;
     if(step)
     {
         // explain for if else below
@@ -406,7 +515,7 @@ void Fea::setDepthDistribute(GLfloat *zBuffer, int num)
         {
             if(zBuffer[i]==max)
                 hist[NumHistDepth - 1]++;
-            else
+            else if(zBuffer[i] < 1.0) // 数组越界错误
                 hist[(int)((zBuffer[i]-min)/step)]++;
         }
         // normalizeHist
@@ -420,34 +529,26 @@ void Fea::setDepthDistribute(GLfloat *zBuffer, int num)
 
     std::cout<<"fea depthDistriubute "<<feaArray[7]<<std::endl;
     delete []hist;
-}
-
-void Fea::setMeanCurvature(MyMesh mesh, std::vector<bool> &isVertexVisible)
-{
-    feaArray[8] = 0.0;
-    MeanCurvature<MyMesh> a(mesh);
-    feaArray[8] = a.getMeanCurvature(isVertexVisible);
-    feaArray[8] /= feaArray[0];
-    std::cout<<"fea meanCurvature "<<feaArray[8]<<std::endl;
+//    qDebug()<<"depth distribute"<<endl;
 }
 
 void Fea::setMeanCurvature(MeanCurvature<MyMesh> &a, std::vector<bool> &isVertexVisible)
 {
     feaArray[8] = 0.0;
     feaArray[8] = a.getMeanCurvature(isVertexVisible);
-    feaArray[8] /= feaArray[0];
+    if(feaArray[0])
+        feaArray[8] /= feaArray[0];
     std::cout<<"fea meanCurvature "<<feaArray[8]<<std::endl;
 }
 
-void Fea::setMeanCurvature(int t_case,
+void Fea::setMeanCurvature(std::vector<MeanCurvature<MyMesh>> &a,
                            std::vector<bool> &isVertexVisible,
-                           std::vector<MyMesh> &vecMesh,
                            std::vector<std::vector<int>> &indiceArray)
 {
-    printf("vecMesh....%d\n",vecMesh.size());
-    printf("indiceArray....%d\n",indiceArray.size());
+//    printf("vecMesh....%d\n",vecMesh.size());
+//    printf("indiceArray....%d\n",indiceArray.size());
     feaArray[8] = 0.0;
-    for(int i=0;i<vecMesh.size();i++)
+    for(int i=0;i<a.size();i++)
     {
         // 查看在哪个mesh上面crash掉了
 //        std::cout<<"setMeahCurvature.... "<<i<<std::endl;
@@ -471,8 +572,8 @@ void Fea::setMeanCurvature(int t_case,
         std::set<int>::iterator it = verIndice.begin();
         for(;it!=verIndice.end();it++)
             isVerVis.push_back(isVertexVisible[*it]);
-        MeanCurvature<MyMesh> a(vecMesh[i]);
-        feaArray[8] += a.getMeanCurvature(isVerVis);
+//        MeanCurvature<MyMesh> a(vecMesh[i]);
+        feaArray[8] += a[i].getMeanCurvature(isVerVis);
     }
 
     if(feaArray[0])
@@ -480,25 +581,23 @@ void Fea::setMeanCurvature(int t_case,
     std::cout<<"fea meanCurvature "<<feaArray[8]<<std::endl;
 }
 
-void Fea::setGaussianCurvature(MyMesh mesh, std::vector<bool> &isVertexVisible)
+void Fea::setGaussianCurvature(GaussCurvature<MyMesh> &mesh,
+                               std::vector<bool> &isVertexVisible)
 {
     feaArray[9] = 0.0;
-    GaussCurvature<MyMesh> a(mesh);
-    feaArray[9] = a.getGaussianCurvature(isVertexVisible);
+//    GaussCurvature<MyMesh> a(mesh);
+    feaArray[9] = mesh.getGaussianCurvature(isVertexVisible);
     if(feaArray[0])
         feaArray[9] /= feaArray[0];
     std::cout<<"fea gaussianCurvature "<<feaArray[9]<<std::endl;
 }
 
-void Fea::setGaussianCurvature(int t_case, // for debug, used for output the mesh
+void Fea::setGaussianCurvature(std::vector<GaussCurvature<MyMesh>> &a,
                                std::vector<bool> &isVertexVisible,
-                               std::vector<MyMesh> &vecMesh,
                                std::vector<std::vector<int>> &indiceArray)
 {
-    printf("gaussian vecMesh....%d\n",vecMesh.size());
-    printf("gaussina indiceArray....%d\n",indiceArray.size());
     feaArray[9] = 0.0;
-    for(int i=0;i<vecMesh.size();i++)
+    for(int i=0;i<a.size();i++)
     {
         std::vector<bool> isVerVis;
 
@@ -509,64 +608,11 @@ void Fea::setGaussianCurvature(int t_case, // for debug, used for output the mes
         for(;it!=verIndice.end();it++)
             isVerVis.push_back(isVertexVisible[*it]);
 
-        GaussCurvature<MyMesh> a(vecMesh[i]);
-        feaArray[9] += a.getGaussianCurvature(isVerVis);
+        feaArray[9] += a[i].getGaussianCurvature(isVerVis);
     }
     if(feaArray[0])
     feaArray[9] /= feaArray[0];
     std::cout<<"fea gaussianCurvature "<<feaArray[9]<<std::endl;
-}
-
-void Fea::setMeshSaliency(MyMesh mesh, std::vector<GLfloat> &vertex, std::vector<bool> &isVertexVisible)
-{
-    feaArray[10] = 0.0;
-    double length = getDiagonalLength(vertex);
-    std::vector<double> meanCurvature;
-    double *nearDis = new double[vertex.size()/3];
-    MeanCurvature<MyMesh> a(mesh);
-    double sigma[5] = {0.003*2.0,0.003*3.0,0.003*4.0,0.003*5.0,0.003*6.0};
-    std::vector<double> meshSaliencyMiddle[5];
-    double localMax[5];
-    double gaussWeightedVal1,gaussWeightedVal2;
-    a.setMeanCurvature(meanCurvature);
-    for(int j=0;j<5;j++)
-    {
-        localMax[j] = 0.0;
-        for(int i=0;i<vertex.size();i+=3)
-        {
-            setNearDisMeshSaliency(vertex,i,length,sigma[j],nearDis);
-            gaussWeightedVal1 = getGaussWeightedVal(meanCurvature[i/3],nearDis,vertex.size()/3,sigma[j]);
-            gaussWeightedVal2 = getGaussWeightedVal(meanCurvature[i/3],nearDis,vertex.size()/3,sigma[j]*2.0);
-            meshSaliencyMiddle[j].push_back(abs(gaussWeightedVal1 - gaussWeightedVal2));
-        }
-        double max = meshSaliencyMiddle[j][0];
-        double min = meshSaliencyMiddle[j][0];
-        for(int i=0;i<meshSaliencyMiddle[j].size();i++)
-        {
-//            global max
-            max = max > meshSaliencyMiddle[j][i] ? max : meshSaliencyMiddle[j][i];
-//            used for normalize
-            min = min > meshSaliencyMiddle[j][i] ? meshSaliencyMiddle[j][i] : min;
-//            local max
-            setNearDisMeshSaliency(vertex,i*3,length,sigma[j],nearDis);
-            localMax[j] += getMeshSaliencyLocalMax(nearDis,vertex.size()/3,meshSaliencyMiddle[j]);
-        }
-        localMax[j] /= meshSaliencyMiddle[j].size();
-//        normalize and set Si
-        for(int i=0;i<meshSaliencyMiddle[j].size();i++)
-            meshSaliencyMiddle[j][i] = (meshSaliencyMiddle[j][i] - min)/(max - min) *
-                    (max - localMax[j])*(max - localMax[j]);
-    }
-//    set sum Si
-    for(int i=0;i<meshSaliencyMiddle[0].size();i++)
-        for(int j=1;j<5;j++)
-            meshSaliencyMiddle[0][i] += meshSaliencyMiddle[j][i];
-
-    for(int i=0;i<isVertexVisible.size();i++)
-        if(isVertexVisible[i])
-            feaArray[10] += meshSaliencyMiddle[0][i];
-//    std::cout<<"fea meshSaliency ";
-    printf("fea meshSaliency %e\n",feaArray[10]);
 }
 
 void Fea::setMeshSaliency(MeanCurvature<MyMesh> &a, std::vector<GLfloat> &vertex, std::vector<bool> &isVertexVisible)
@@ -619,12 +665,14 @@ void Fea::setMeshSaliency(MeanCurvature<MyMesh> &a, std::vector<GLfloat> &vertex
             feaArray[10] += meshSaliencyMiddle[0][i];
 //    std::cout<<"fea meshSaliency ";
     printf("fea meshSaliency %e\n",feaArray[10]);
+
+    delete []nearDis;
 }
 
 void Fea::setMeshSaliency(int t_case,// for debug can be used to output the mesh
                           std::vector<GLfloat> &vertex,
                           std::vector<bool> &isVertexVisible,
-                          std::vector<MyMesh> &vecMesh,
+                          std::vector<MeanCurvature<MyMesh>> &a,
                           std::vector<std::vector<int>> &indiceArray)
 {
 
@@ -641,7 +689,7 @@ void Fea::setMeshSaliency(int t_case,// for debug can be used to output the mesh
     double localMax[5];
     double gaussWeightedVal1,gaussWeightedVal2;
 
-    for(int i=0;i<vecMesh.size();i++)
+    for(int i=0;i<a.size();i++)
     {
         std::set<int> verIndice;
         std::vector<int> verVec;
@@ -651,12 +699,11 @@ void Fea::setMeshSaliency(int t_case,// for debug can be used to output the mesh
         for(;it!=verIndice.end();it++)
             verVec.push_back(*it);
 
-        MeanCurvature<MyMesh> a(vecMesh[i]);
-        a.setMeanCurvature(meanCurvature,verVec);
+        a[i].setMeanCurvature(meanCurvature,verVec);
 
     }
 
-    printf("set Mesh Saliency.... exImporter done\n");
+    printf("set Mesh Saliency .... exImporter done\n");
 
     for(int j=0;j<5;j++)
     {
@@ -699,6 +746,8 @@ void Fea::setMeshSaliency(int t_case,// for debug can be used to output the mesh
             feaArray[10] += meshSaliencyMiddle[0][i];
     std::cout<<"fea meshSaliency "<<feaArray[10]<<std::endl;
 
+    delete []nearDis;
+    delete []meanCurvature;
 }
 
 void Fea::setAbovePreference(double theta)
@@ -938,7 +987,7 @@ void Fea::vertexBoundBox(double *v, std::vector<GLfloat> &vertex, int i, int lab
 bool Fea::getCurvature(CvPoint2D64f *a, CvPoint2D64f *b, CvPoint2D64f *c, double &cur)
 {
     double r = 0;
-
+    cur = 0.0;
     if(getR(a,b,c,r))
     {
         cur = 1.0/r;
@@ -1064,13 +1113,56 @@ void Fea::initial()
 {
 }
 
+void Fea::setMvpPara(QString matrixFile)
+{
+    this->matrixPath = matrixFile;
+    freopen(matrixPath.toStdString().c_str(),"r",stdin);
+    QString tmp;
+    char tmpss[200];
+    float tmpNum;
+    while(scanf("%s",tmpss)!=EOF)
+    {
+        QString tmpPath = path;
+        tmp = QDir::cleanPath(tmpPath.append(QString(tmpss)));
+        fileName.push_back(tmp);
+#ifdef NoProjection
+        glm::mat4 m,v;
+        for(int i=0;i<16;i++)
+        {
+            scanf("%f",&tmpNum);
+            m[i%4][i/4] = tmpNum;
+        }
+        this->m_modelList.push_back(m);
+        this->m_viewList.push_back(v);
+
+        glm::mat4 p = glm::perspective(glm::pi<float>() / 2, 1.f, 0.1f, 100.f);
+        this->m_projectionList.push_back(p);
+#else
+        glm::mat4 m,v,p;
+        for(int i=0;i<16;i++)
+        {
+            scanf("%lf",&tmpNum);
+            m[i/4][i%4] = tmpNum;
+        }
+        for(int i=0;i<16;i++)
+        {
+            scanf("%lf",&tmpNum);
+            p[i/4][i%4] = tmpNum;
+        }
+        this->model.push_back(m);
+        this->view.pish_back(v);
+        this->projection.push_back(p);
+#endif
+    }
+}
+
 void Fea::printOut()
 {
     freopen(output.toStdString().c_str(),"a+",stdout);
     printf("%s\n",QString::number(t_case).toStdString().c_str());
     for(int i=0;i<12;i++)
     {
-        if(i==10)
+        if(i==8 || i== 9 || i == 10)
             printf("%e ",feaArray[i]);
         else
             printf("%lf ",feaArray[i]);
@@ -1159,3 +1251,37 @@ void Fea::showImage()
 }
 
 
+typedef long double LD;
+double Fea::getContourCurvature(const std::vector<cv::Point2d> &points, int target)
+{
+    assert(points.size() == 3);
+
+    double T[3];
+    for (int i = 0; i < 3; i++) {
+        double t = cv::norm(points[target] - points[i]);
+        T[i] = target < i ? t : -t;
+    }
+    cv::Mat M(3, 3, CV_64F);
+    for (int i = 0; i < 3; i++) {
+        M.at<double>(i, 0) = 1;
+        M.at<double>(i, 1) = T[i];
+        M.at<double>(i, 2) = T[i] * T[i];
+    }
+    cv::Mat invM = M.inv();
+
+    cv::Mat X(3, 1, CV_64F), Y(3, 1, CV_64F);
+    for (int i = 0; i < 3; i++) {
+        X.at<double>(i, 0) = points[i].x;
+        Y.at<double>(i, 0) = points[i].y;
+    }
+
+    cv::Mat a, b;
+    a = invM * X;
+    b = invM * Y;
+
+    LD up = (LD)2 * (a.at<double>(1, 0) * b.at <double>(2, 0) - a.at<double>(2, 0) * b.at <double>(1, 0));
+    LD down = pow((LD)a.at<double>(1, 0) * a.at<double>(1, 0) + (LD)b.at <double>(1, 0) * b.at <double>(1, 0), 1.5);
+    LD frac = up / down;
+
+    return (double)frac;
+}

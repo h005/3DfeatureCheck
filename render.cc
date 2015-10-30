@@ -101,7 +101,7 @@ void Render::setMeshSaliencyPara(ExternalImporter<MyMesh> *exImporter)
 Render::~Render()
 {
     if(p_img)
-        delete p_img;
+        delete []p_img;
     p_vertices.clear();
     p_isVertexVisible.clear();
     p_VisibleFaces.clear();
@@ -351,18 +351,14 @@ void Render::storeImage(QString path,QString fileName)
 void Render::setParameters()
 {
     std::vector<GLuint> indices;
-//    p_vertices.clear();
-//    p_isVertexVisible.clear();
-//    p_VisibleFaces.clear();
-//    p_verticesMvp.clear();
-    std::vector<GLfloat>().swap(p_vertices);
-    std::vector<bool>().swap(p_isVertexVisible);
-    std::vector<GLuint>().swap(p_VisibleFaces);
-    std::vector<GLfloat>().swap(p_verticesMvp);
+    p_vertices.clear();
+    p_isVertexVisible.clear();
+    p_VisibleFaces.clear();
+    p_verticesMvp.clear();
 
     if(p_img)
     {
-        delete p_img;
+        delete []p_img;
         p_img = NULL;
     }
 
@@ -377,6 +373,12 @@ void Render::setParameters()
     glm::mat4 modelViewMatrix = getModelViewMatrix();
     glm::mat4 mvp = m_proj * modelViewMatrix;
 
+
+    p_height = viewport[3]-viewport[1];
+    p_width = viewport[2]-viewport[0];
+    p_img = new GLfloat[p_width*p_height];
+    glReadBuffer(GL_BACK);
+    glReadPixels(0,0,p_width,p_height,GL_DEPTH_COMPONENT,GL_FLOAT,p_img);
 
     int visibleVertexCount = 0;
     for(int i=0;i<p_vertices.size();i+=3)
@@ -401,14 +403,17 @@ void Render::setParameters()
         // 在3*3邻域内找相似的深度值
         for (int i = -1; i <= 1; i++)
             for (int j = -1; j <= 1; j++) {
-                GLfloat winZ;
-                glReadBuffer(GL_BACK);
-                glReadPixels(ax+i, ay+j,1,1,GL_DEPTH_COMPONENT,GL_FLOAT,&winZ);
 
-                // 它们的z-buffer值相差不大，表示这是一个可见点
-                if (abs(winZ - finalZ) < 0.00015) {
-                    isVisible = true;
-                    break;
+                int x = (int)ax + i, y = (int)ay + j;
+                if (x >= 0 && x < p_width && y >= 0 && y < p_height) {
+
+                    GLfloat winZ = p_img[y * p_height + x];
+
+                    // 它们的z-buffer值相差不大，表示这是一个可见点
+                    if (abs(winZ - finalZ) < 0.00015) {
+                        isVisible = true;
+                        break;
+                    }
                 }
             }
         p_isVertexVisible.push_back(isVisible);
@@ -426,13 +431,6 @@ void Render::setParameters()
             p_VisibleFaces.push_back(indices[i+1]);
             p_VisibleFaces.push_back(indices[i+2]);
         }
-//    GLuint vertexPosition_modelspaceID = glGetAttribLocation(m_programID, "vertexPosition_modelspace");
-//    m_helper.replace_init(vertices, VisibleFaces, vertexPosition_modelspaceID);
-    p_width = viewport[3]-viewport[1];
-    p_height = viewport[2]-viewport[0];
-    p_img = new float[p_width*p_height];
-    glReadBuffer(GL_BACK);
-    glReadPixels(0,0,p_height,p_width,GL_DEPTH_COMPONENT,GL_FLOAT,p_img);
 
     p_model = m_model;
 

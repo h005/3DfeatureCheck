@@ -23,16 +23,9 @@
       <item>
        <layout class="QVBoxLayout" name="verticalLayout">
         <item>
-         <widget class="QPushButton" name="loadModel">
+         <widget class="QPushButton" name="load">
           <property name="text">
-           <string>loadModel</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="bMatrixPath">
-          <property name="text">
-           <string>matirxPath</string>
+           <string>load</string>
           </property>
          </widget>
         </item>

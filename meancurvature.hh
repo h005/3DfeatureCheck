@@ -1,10 +1,11 @@
-#ifndef MEANCURVATURE_HH
+﻿#ifndef MEANCURVATURE_HH
 #define MEANCURVATURE_HH
 
 #include "common.hh"
 #include "Curvature.hh"
 #include "colormap.hh"
 #include "abstractfeature.hh"
+
 
 template <typename MeshT>
 class MeanCurvature: public AbstractFeature<MeshT>
@@ -13,13 +14,15 @@ public:
     MeanCurvature(MeshT &in_mesh)
         : m_mesh(in_mesh), m_PropertyKeyword("Mean Curvature")
     {
-        if(!m_mesh.get_property_handle(m_vPropHandle, m_PropertyKeyword)) {
+
+        if(!m_mesh.get_property_handle(m_vPropHandle, m_PropertyKeyword))
             m_mesh.add_property(m_vPropHandle, m_PropertyKeyword);
+        if(!m_mesh.get_property_handle(vertexBoundingArea, "area"))
+            m_mesh.add_property(vertexBoundingArea, "area");
 
             OpenMesh::VPropHandleT<double> valuePerArea;
-            OpenMesh::VPropHandleT<double> vertexBoundingArea;
+
             m_mesh.add_property(valuePerArea);
-            m_mesh.add_property(vertexBoundingArea);
 
             typename MeshT::VertexIter v_it, v_end(m_mesh.vertices_end());
             int time = 0;
@@ -44,25 +47,45 @@ public:
             // 优化缩放比的选择
             // 这里可能存在问题，由于包围面积过小，除法后结果值过大
 
-            double curvatureMax = -1;
-            for (v_it = m_mesh.vertices_begin(); v_it != v_end; v_it++)
+            v_it = m_mesh.vertices_begin();
+            double curvatureMax = m_mesh.property(valuePerArea, *v_it);
+            v_it++;
+            for (; v_it != v_end; v_it++)
                 if (curvatureMax < m_mesh.property(valuePerArea, *v_it))
                     curvatureMax = m_mesh.property(valuePerArea, *v_it);
+
+//            v_it = m_mesh.vertices_begin();
+//            double maxNormal = abs(m_mesh.property(valuePerArea, *v_it));
+//            if(curvatureMax)
+//                maxNormal /= curvatureMax;
+//            double minNormal = abs(m_mesh.property(valuePerArea, *v_it));
+//            if(curvatureMax)
+//                minNormal /= curvatureMax;
 
             // 如果一个mesh只有一个三角面，那么这三个顶点就都是边界点，从而每个顶点上的平均曲率都为0
             // 所以除之前看看curvatureMax是否为0
             for (v_it = m_mesh.vertices_begin(); v_it != v_end; v_it++) {
+//                std::cout << "meanCurvature .. hi "<<std::endl;
                 Q_ASSERT(!std::isnan(m_mesh.property(m_vPropHandle, *v_it)));
-                if (curvatureMax > 0)
-                    m_mesh.property(m_vPropHandle, *v_it) = m_mesh.property(valuePerArea, *v_it) / curvatureMax;
-                else
-                    m_mesh.property(m_vPropHandle, *v_it) = m_mesh.property(valuePerArea, *v_it);
+                if (curvatureMax)
+                {
+                    double tmp = abs(m_mesh.property(valuePerArea, *v_it)) / curvatureMax;
+                    tmp = min(tmp,1.0);
+                    m_mesh.property(m_vPropHandle, *v_it) = max(tmp,0.0);
+//                    std::cout<<"meanCurvature ... "<< m_mesh.property(m_vPropHandle, *v_it) << std::endl;
+//                    maxNormal = maxNormal > tmp ? maxNormal : tmp;
+//                    minNormal = minNormal < tmp ? minNormal : tmp;
+                }
+//                else
+//                    m_mesh.property(m_vPropHandle, *v_it) = m_mesh.property(valuePerArea, *v_it);
                 Q_ASSERT(!std::isnan(m_mesh.property(m_vPropHandle, *v_it)));
             }
 
+//            if(maxNormal - minNormal)
+//            for(v_it = m_mesh.vertices_begin(); v_it != v_end; v_it++)
+//                m_mesh.property(m_vPropHandle, *v_it) = (m_mesh.property(m_vPropHandle, *v_it) - minNormal) / (maxNormal - minNormal);
+
             m_mesh.remove_property(valuePerArea);
-            m_mesh.remove_property(vertexBoundingArea);
-        }
     }
 
     ~MeanCurvature()
@@ -95,7 +118,7 @@ public:
         for (v_it = m_mesh.vertices_begin(); v_it != v_end; v_it++,index++)
             if(isVertexVisible[index]) {
                 Q_ASSERT(!std::isnan(m_mesh.property(m_vPropHandle, *v_it)));
-                res += m_mesh.property(m_vPropHandle, *v_it);
+                res += m_mesh.property(m_vPropHandle, *v_it) * m_mesh.property(vertexBoundingArea, *v_it);
             }
         return res;
     }
@@ -120,9 +143,20 @@ public:
         return 1;
     }
 
+    double min(double a,double b)
+    {
+        return a < b ? a : b;
+    }
+
+    double max(double a,double b)
+    {
+        return a > b ? a : b;
+    }
+
 private:
     MeshT &m_mesh;
     OpenMesh::VPropHandleT<double> m_vPropHandle;
+    OpenMesh::VPropHandleT<double> vertexBoundingArea;
     const char *m_PropertyKeyword;
 };
 

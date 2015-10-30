@@ -11,11 +11,12 @@
 #include "externalimporter.hh"
 #include <iostream>
 #include "meancurvature.hh"
+#include "gausscurvature.hh"
 
-#define NumHistDepth 15
+#define NumHistDepth 20000
 #define NumHistViewEntropy 15
 #define PI 3.1415926
-#define MAX_LEN 64
+#define MAX_LEN 32
 
 
 class Fea
@@ -27,7 +28,10 @@ private:
 
     QString path;
     QString output;
+    // path for .matrix
     QString matrixPath;
+    // path for .mm
+    QString mmPath;
 
     QStringList fileName;
     QStringList pFileName;
@@ -36,6 +40,10 @@ private:
     glm::mat4 m_view;
     glm::mat4 m_projection;
     glm::mat4 m_abv;
+
+    std::vector<glm::mat4> m_modelList;
+    std::vector<glm::mat4> m_viewList;
+    std::vector<glm::mat4> m_projectionList;
 
     int NUM;
     int P_NUM;
@@ -58,7 +66,7 @@ public:
 
     void setFeature();
 
-    void setMatrixPara(QString matrixPath);
+    void setMMPara(QString matrixPath);
     ~Fea();
 
 private:
@@ -69,6 +77,8 @@ private:
 
     void setVisSurfaceArea(std::vector<GLfloat> &vertex, std::vector<GLuint> &face);
 
+    void setViewpointEntropy2(std::vector<GLfloat> &vertex, std::vector<GLuint> &face);
+
     void setViewpointEntropy(std::vector<GLfloat> &vertex, std::vector<GLuint> &face);
 
     void setSilhouetteLength();
@@ -77,26 +87,29 @@ private:
 
     void setMaxDepth(float *array, int len);
 
-    void setDepthDistribute(GLfloat *zBuffer, int num);
-
-    void setMeanCurvature(MyMesh mesh, std::vector<bool> &isVertexVisible);
+    void setDepthDistribute(float *zBuffer, int num);
 
     void setMeanCurvature(MeanCurvature<MyMesh> &a, std::vector<bool> &isVertexVisible);
 
-    void setMeanCurvature(int t_case, std::vector<bool> &isVertexVisible,
-                          std::vector<MyMesh> &vecMesh,std::vector<std::vector<int>> &indiceArray);
+    void setMeanCurvature(std::vector<MeanCurvature<MyMesh>> &a,
+                          std::vector<bool> &isVertexVisible,
+                          std::vector<std::vector<int>> &indiceArray);
 
-    void setGaussianCurvature(MyMesh mesh, std::vector<bool> &isVertexVisible);
+    void setGaussianCurvature(GaussCurvature<MyMesh> &b, std::vector<bool> &isVertexVisible);
 
-    void setGaussianCurvature(int t_case,std::vector<bool> &isVertexVisible,
-                              std::vector<MyMesh> &vecMesh, std::vector<std::vector<int>> &indiceArray);
+    void setGaussianCurvature(std::vector<GaussCurvature<MyMesh>> &a,
+                              std::vector<bool> &isVertexVisible,
+                              std::vector<std::vector<int>> &indiceArray);
 
-    void setMeshSaliency(int t_case, std::vector<GLfloat> &vertex, std::vector<bool> &isVertexVisible,
-                         std::vector<MyMesh> &vecMesh, std::vector<std::vector<int>> &indiceArray);
+    void setMeshSaliency(int t_case,
+                         std::vector<GLfloat> &vertex,
+                         std::vector<bool> &isVertexVisible,
+                         std::vector<MeanCurvature<MyMesh>> &a,
+                         std::vector<std::vector<int>> &indiceArray);
 
-    void setMeshSaliency(MyMesh mesh,std::vector<GLfloat> &vertex,std::vector<bool> &isVertexVisible);
-
-    void setMeshSaliency(MeanCurvature<MyMesh> &a,std::vector<GLfloat> &vertex,std::vector<bool> &isVertexVisible);
+    void setMeshSaliency(MeanCurvature<MyMesh> &a,
+                         std::vector<GLfloat> &vertex,
+                         std::vector<bool> &isVertexVisible);
 
     void setAbovePreference(double theta);
 
@@ -134,7 +147,7 @@ private:
 
     void initial();
 
-    void setFilenameList_mvpMatrix(QString matrixFile);
+    void setMvpPara(QString matrixFile);
 
     void print(QString p_path);
 
@@ -145,6 +158,8 @@ private:
     void computeModel(glm::mat4 &m_view_tmp,glm::mat4 &m_model_tmp);
 
     void computeModel(glm::mat4 &m_model_tmp);
+
+    double getContourCurvature(const std::vector<cv::Point2d> &points, int target);
 
 };
 
