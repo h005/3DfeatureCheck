@@ -344,6 +344,7 @@ void Fea::setSilhouetteCE()
     feaArray[4] = 0.0;
     feaArray[5] = 0.0;
     double curva = 0;
+    double dis = 0.0;
 //    example
 //    ghabcdefghabcde
 //     ^  ->  ^
@@ -361,8 +362,9 @@ void Fea::setSilhouetteCE()
         if(getCurvature(&a,&b,&c,curva))
         {
 //            std::cout << curva << std::endl;
-            feaArray[4] += abs(curva);
-            feaArray[5] += curva*curva;
+            dis1 = getDis2D(a,b) + getDis2D(b,c);
+            feaArray[4] += abs(curva)*dis;
+            feaArray[5] += curva*curva*dis;
         }
     }
 
