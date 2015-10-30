@@ -351,14 +351,10 @@ void Render::storeImage(QString path,QString fileName)
 void Render::setParameters()
 {
     std::vector<GLuint> indices;
-//    p_vertices.clear();
-//    p_isVertexVisible.clear();
-//    p_VisibleFaces.clear();
-//    p_verticesMvp.clear();
-    std::vector<GLfloat>().swap(p_vertices);
-    std::vector<bool>().swap(p_isVertexVisible);
-    std::vector<GLuint>().swap(p_VisibleFaces);
-    std::vector<GLfloat>().swap(p_verticesMvp);
+    p_vertices.clear();
+    p_isVertexVisible.clear();
+    p_VisibleFaces.clear();
+    p_verticesMvp.clear();
 
     if(p_img)
     {
