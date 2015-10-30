@@ -425,9 +425,6 @@ void Fea::setSilhouetteCE()
 
     std::cout<<"fea silhouetteCurvature "<<feaArray[4]<<std::endl;
     std::cout<<"fea silhouetteCurvatureExtrema "<<feaArray[5]<<std::endl;
-
-    delete []nearDis;
-    delete []meanCurvature;
 }
 
 void Fea::setMaxDepth(float *array,int len)
