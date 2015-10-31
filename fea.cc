@@ -1244,6 +1244,8 @@ void Fea::showImage()
 typedef long double LD;
 double Fea::getContourCurvature(const std::vector<cv::Point2d> &points, int target)
 {
+    // 先使用参数方程拟合，再对曲线求导得到曲率
+    // ref http://www.mathworks.com/matlabcentral/fileexchange/32696-2d-line-curvature-and-normals
     assert(points.size() == 3);
 
     double T[3];
