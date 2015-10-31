@@ -79,6 +79,12 @@ void Fea::setFeature()
 
 #ifdef OUTPUT_RENDER_IMAGE
             render->storeImage(path,QString::number(t_case));
+
+            QString imgPath = path;
+            imgPath.append("visibility/");
+            imgPath.append(std::to_string(t_case).c_str());
+            imgPath.append(".png");
+            render->renderingVisibleFaces(imgPath);
 #endif
 
             setMat(render->p_img,render->p_width,render->p_height);

@@ -1,5 +1,4 @@
 ﻿#include "render.hh"
-#include "meshglhelper.hh"
 #include <QMouseEvent>
 #include <QOpenGLShaderProgram>
 #include <QCoreApplication>
@@ -159,7 +158,7 @@ void Render::initial()
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, 800, 800);
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthRenderBuffer);
 
-    if(colorRenderBuffer == 0);
+    if(colorRenderBuffer == 0)
         glGenRenderbuffers(1, &colorRenderBuffer);
     glBindRenderbuffer(GL_RENDERBUFFER, colorRenderBuffer);
     glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA, 800,800);
@@ -231,6 +230,84 @@ bool Render::rendering(int count)
     return true;
 }
 
+void Render::renderingVisibleFaces(const QString &filepath)
+{
+    assert(p_VisibleFaces.size() % 3 == 0);
+    qDebug() << "faces: " << p_VisibleFaces.size() / 3;
+    std::vector<GLfloat> vertexNormals;
+    MyMesh::VertexIter v_it, v_end(m_mesh.vertices_end());
+    for (v_it = m_mesh.vertices_begin(); v_it != v_end; v_it++){
+        MyMesh::Point normal = m_mesh.normal(*v_it);
+        vertexNormals.push_back(normal[0]);
+        vertexNormals.push_back(normal[1]);
+        vertexNormals.push_back(normal[2]);
+    }
+    FaceGLHelper<MyMesh> faceHelper(p_vertices, vertexNormals, p_VisibleFaces);
+
+    makeCurrent();
+
+    GLuint vertexNormal_modelspaceID = glGetAttribLocation(m_programID, "vertexNormal_modelspace");
+    GLuint vertexPosition_modelspaceID = glGetAttribLocation(m_programID,"vertexPosition_modelspace");
+    faceHelper.init(vertexPosition_modelspaceID, vertexNormal_modelspaceID);
+
+    glBindFramebuffer(GL_FRAMEBUFFER,frameBufferId);
+
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glEnable(GL_DEPTH_TEST);
+
+    glEnable(GL_FLAT);
+    glShadeModel(GL_FLAT);
+    glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+
+    glm::mat4 modelViewMatrix = getModelViewMatrix();
+
+    glm::mat4 normalMatrix = glm::transpose(glm::inverse(modelViewMatrix));
+    glm::vec4 lightPos0 = glm::inverse(m_view) * glm::vec4(4,4,4,1);
+    glm::vec3 lightPos = glm::vec3(lightPos0.x,lightPos0.y,lightPos0.z);
+
+    glm::mat4 MVP = m_proj * modelViewMatrix;
+
+    glUseProgram(m_programID);
+
+    GLuint mvpID = glGetUniformLocation(m_programID,"MVP");
+    GLuint mID = glGetUniformLocation(m_programID,"M");
+    GLuint vID = glGetUniformLocation(m_programID,"V");
+    GLuint nID = glGetUniformLocation(m_programID,"normalMatrix");
+    GLuint lightID = glGetUniformLocation(m_programID,"LightPosition_worldspace");
+
+    glUniformMatrix4fv(mvpID, 1, GL_FALSE, glm::value_ptr(MVP));
+    glUniformMatrix4fv(mID, 1, GL_FALSE, glm::value_ptr(m_model));
+    glUniformMatrix4fv(vID, 1, GL_FALSE, glm::value_ptr(m_view));
+    glUniformMatrix4fv(nID, 1, GL_FALSE, glm::value_ptr(normalMatrix));
+    glUniform3f(lightID, lightPos.x, lightPos.y, lightPos.z);
+
+    faceHelper.draw();
+
+    GLint viewport[4];
+    glGetIntegerv(GL_VIEWPORT,viewport);
+    GLubyte *img =
+            new GLubyte[(viewport[2] - viewport[0])
+            *(viewport[3] - viewport[1])*4];
+    glReadBuffer(GL_BACK_LEFT);
+    glReadPixels(0,
+            0,
+            viewport[2],
+            viewport[3],
+            GL_RGBA,
+            GL_UNSIGNED_BYTE,
+            img);
+    cv::Mat rgbaImgFliped = cv::Mat(viewport[3],viewport[2],CV_8UC4,img);
+    cv::Mat rgbImg;
+    cv::flip(rgbaImgFliped,rgbImg,0);
+    cv::cvtColor(rgbImg,rgbImg,CV_RGBA2BGR);
+    rgbImg.convertTo(rgbImg,CV_8UC3);
+
+    cv::imwrite(filepath.toLocal8Bit().constData(), rgbImg);
+    delete []img;
+
+    doneCurrent();
+}
+
 
 void Render::showImage()
 {
@@ -267,9 +344,6 @@ void Render::showImage()
     qDebug()<<"show fbo info...ok"<<endl;
     cv::namedWindow("test");
     imshow("test",image);
-
-
-
     glBindFramebuffer(GL_FRAMEBUFFER,0);
 
 

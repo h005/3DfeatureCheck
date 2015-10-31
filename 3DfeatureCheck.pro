@@ -36,11 +36,12 @@ HEADERS  += mainwindow.h \
     render.hh \
     shader.hh \
     trackball.hh \
-    ufface.h
+    ufface.h \
+    faceglhelper.hh
 
 FORMS    += mainwindow.ui
 
-DEFINES += _USE_MATH_DEFINES GLM_FORCE_RADIANS
+DEFINES += _USE_MATH_DEFINES GLM_FORCE_RADIANS OUTPUT_RENDER_IMAGE
 
 win32 {
     DP_TOOLS_DIR = $$(DP_TOOLS_DIR)
