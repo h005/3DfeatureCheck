@@ -49,6 +49,8 @@ private:
     int P_NUM;
 
     cv::Mat image;
+    // used for contour
+    CvMemStorage *mem_storage;
     CvSeq *contour;
 
     MyMesh mesh;
@@ -152,8 +154,6 @@ private:
     void print(QString p_path);
 
     void printOut();
-
-    void set_tCase();
 
     void computeModel(glm::mat4 &m_view_tmp,glm::mat4 &m_model_tmp);
 

@@ -4,7 +4,6 @@
 #include <QtDebug>
 #include "predefine.h"
 
-#define NoProjection
 
 Fea::Fea(QString fileName, QString path)
 {
@@ -63,6 +62,7 @@ Fea::Fea(QString fileName, QString path)
 
 void Fea::setFeature()
 {
+
 #ifdef CHECK
     glm::mat4 m_model_tmp;
 
@@ -397,7 +397,7 @@ void Fea::setSilhouetteLength()
             cvCreateImage(cvGetSize(tmpImage),8,1);
     img_tmp = cvCloneImage(tmpImage);
 
-    CvMemStorage *mem_storage = cvCreateMemStorage(0);
+    mem_storage = cvCreateMemStorage(0);
 
     contour = NULL;
     cvFindContours(
@@ -424,15 +424,6 @@ void Fea::setSilhouetteLength()
     cvReleaseImage(&tmpImage);
     cvReleaseImage(&img_tmp);
 
-
-
-
-    // ref http://stackoverflow.com/questions/5951292/how-do-you-delete-a-cvseq-in-opencv
-    // Clear the memory storage which was used before
-    cvClearMemStorage(mem_storage);
-
-    // Release memory
-    cvReleaseMemStorage(&mem_storage);
 }
 
 void Fea::setSilhouetteCE()
@@ -484,6 +475,15 @@ void Fea::setSilhouetteCE()
         }
 //        qDebug()<<"curvature a"<<curva<<" "<<abs(curvab)<< " "<<abs(curvab) - abs(curva)<<endl;
     }
+
+
+    // ref http://stackoverflow.com/questions/5951292/how-do-you-delete-a-cvseq-in-opencv
+    // Clear the memory storage which was used before
+    cvClearMemStorage(mem_storage);
+
+    // Release memory
+    cvReleaseMemStorage(&mem_storage);
+
 
     std::cout<<"fea silhouetteCurvature "<<feaArray[4]<<std::endl;
     std::cout<<"fea silhouetteCurvatureExtrema "<<feaArray[5]<<std::endl;
@@ -1167,7 +1167,14 @@ void Fea::setMvpPara(QString matrixFile)
 void Fea::printOut()
 {
     freopen(output.toStdString().c_str(),"a+",stdout);
+#ifdef CHECK
+    // output the order number
     printf("%s\n",QString::number(t_case).toStdString().c_str());
+#else
+    // output the fileName
+    printf("%s\n",fileName[i].toStdString().c_str());
+#endif
+
     for(int i=0;i<12;i++)
     {
         if(i==8 || i== 9 || i == 10)
@@ -1176,8 +1183,9 @@ void Fea::printOut()
             printf("%lf ",feaArray[i]);
     }
     printf("\n");
-
-    freopen(matrixPath.toStdString().c_str(),"w",stdout);
+    fclose(stdout);
+#ifdef CHECK
+    freopen(mmPath.toStdString().c_str(),"w",stdout);
     for(int i=0;i<4;i++)
     {
         for(int j=0;j<4;j++)
@@ -1193,23 +1201,22 @@ void Fea::printOut()
     }
 
     printf("%d %d\n",t_case+1,NUM);
+#else
+    for(int i=0;i<4;i++)
+    {
+        for(int j=0;j<4;j++)
+            printf("%f ",m_abv[i][j]);
+        printf("\n");
+    }
+
+    printf("%d %d\n",t_case+1,NUM);
+
+
+#endif
 
     freopen("CON","a+",stdout);
     image.release();
 }
-
-void Fea::set_tCase()
-{
-    QString logFile = output;
-    int pos = logFile.lastIndexOf('.');
-    logFile.replace(pos,7,".log");
-    qDebug() << "log file name " << logFile << endl;
-    if(freopen(logFile.toStdString().c_str(),"r",stdin))
-        scanf("%d",&t_case);
-    else
-        t_case = 0;
-}
-
 
 void Fea::computeModel(glm::mat4 &m_view_tmp,glm::mat4 &m_model_tmp)
 {
