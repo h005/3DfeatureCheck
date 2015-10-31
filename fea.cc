@@ -77,15 +77,9 @@ void Fea::setFeature()
         {
             render->setParameters();
 
-            //used for check the image
-//            render->showImage();
-
-//            qDebug()<<" set feature "<<path<<endl;
-//            std::cout<<path.toStdString()<<std::endl;
-
-//            render->storeImage(path,QString::number(t_case));
-
-//            qDebug()<<" store Image ok "<<endl;
+#ifdef OUTPUT_RENDER_IMAGE
+            render->storeImage(path,QString::number(t_case));
+#endif
 
             setMat(render->p_img,render->p_width,render->p_height);
 
@@ -384,6 +378,28 @@ void Fea::setSilhouetteCE()
 //    ghabcdefghabcde
 //     ^  ->  ^
 //    gha -> hab -> abc
+
+#ifdef OUTPUT_RENDER_IMAGE
+    if (contour) {
+        IplImage *img_tmp = cvCreateImage(cvSize(image.cols,image.rows),8,1);
+        cvDrawContours(
+                    img_tmp,
+                    contour,
+                    cvScalar(100),
+                    cvScalar(100),
+                    1);
+
+
+        QString imgPath = path;
+        imgPath.append("silhouette/");
+        imgPath.append(std::to_string(t_case).c_str());
+        imgPath.append(".png");
+
+        cvSaveImage(imgPath.toLocal8Bit().constData(), img_tmp);
+        cvReleaseImage(&img_tmp);
+    }
+#endif
+
     if(contour)
     for(int i=0;i<contour->total;i++)
     {
