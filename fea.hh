@@ -50,7 +50,7 @@ private:
 
     cv::Mat image;
     // used for contour
-    CvMemStorage *mem_storage;
+//    CvMemStorage *mem_storage;
     std::vector<std::vector<cv::Point>> contour;
 
     MyMesh mesh;

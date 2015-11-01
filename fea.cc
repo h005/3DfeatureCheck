@@ -110,12 +110,7 @@ void Fea::setFeature()
             //used for check the image
 //            render->showImage();
 
-//            qDebug()<<" set feature "<<path<<endl;
-//            std::cout<<path.toStdString()<<std::endl;
-
-//            render->storeImage(path,QString::number(t_case));
-
-//            qDebug()<<" store Image ok "<<endl;
+            render->storeImage(path,QString::number(t_case));
 
             setMat(render->p_img,render->p_width,render->p_height);
 
@@ -127,7 +122,7 @@ void Fea::setFeature()
 
             setSilhouetteLength();
 
-//            setSilhouetteCE();
+            setSilhouetteCE();
 
             setMaxDepth(render->p_img,render->p_height*render->p_width);
 
@@ -156,11 +151,11 @@ void Fea::setFeature()
 
 #endif
 
-//            clear();
+            clear();
 
         }
 
-        break;
+//        break;
         printOut();
 
     }
@@ -449,27 +444,31 @@ void Fea::setSilhouetteLength()
 
     feaArray[3] = 0.0;
     // ref http://docs.opencv.org/2.4/doc/tutorials/imgproc/shapedescriptors/find_contours/find_contours.html
-    cv::Mat gray = image.clone();
+    cv::Mat gray;
 
     // ref http://docs.opencv.org/2.4/modules/imgproc/doc/miscellaneous_transformations.html?highlight=threshold#threshold
     // 这个一定要二值化，图像本身就基本都是白色，直接提取轮廓是拿不到结果的
-    cv::threshold( gray, gray, 254, 255.0,3 );
+    cv::threshold( image, gray, 254, 255.0,cv::THRESH_BINARY_INV );
 
-//    std::vector<std::vector<cv::Point>> contours;
+    //    std::vector<std::vector<cv::Point>> contours;
     std::vector<cv::Vec4i> hierarchy;
 
     cv::findContours(gray,contour,hierarchy,CV_RETR_EXTERNAL ,CV_CHAIN_APPROX_NONE );
 
+//    qDebug() << "setSilhouette contour size "<<contour.size()<<endl;
+
     if(contour.size())
-        feaArray[3] = cv::arcLength(contour,true);
+        feaArray[3] = cv::arcLength(contour[0],true);
     else
         feaArray[3] = 0.0;
+
+
     std::cout<<"fea silhouetteLength "<<feaArray[3]<<std::endl;
 
     std::vector<cv::Vec4i>().swap(hierarchy);
 
 // see contour result
-
+/*
     cv::Mat drawing = cv::Mat::zeros(gray.size(),CV_8UC3);
 //    for(int i=0;i<contours.size();i++)
     for(int i=0 ; i<1 ; i++)
@@ -480,9 +479,9 @@ void Fea::setSilhouetteLength()
 
     cv::namedWindow("contours");
     cv::imshow("contours",drawing);
-
+*/
 }
-/*
+
 void Fea::setSilhouetteCE()
 {
     feaArray[4] = 0.0;
@@ -491,18 +490,18 @@ void Fea::setSilhouetteCE()
     double dis = 0.0;
 
 //    example
-//    ghabcdefghabcde
+//    abcdefghabcde
 //     ^  ->  ^
-//    gha -> hab -> abc
-    if(contour)
-    for(int i=0;i<contour->total;i++)
+//    abc -> bcd -> def
+    if(contour.size())
+    for(int i=0;i<contour[0].size();i++)
     {
-        CvPoint *a0 = CV_GET_SEQ_ELEM(CvPoint,contour,i-2);
-        CvPoint *b0 = CV_GET_SEQ_ELEM(CvPoint,contour,i-1);
-        CvPoint *c0 = CV_GET_SEQ_ELEM(CvPoint,contour,i);
-        CvPoint2D64f a = cvPoint2D64f((double)a0->x,(double)a0->y);
-        CvPoint2D64f b = cvPoint2D64f((double)b0->x,(double)b0->y);
-        CvPoint2D64f c = cvPoint2D64f((double)c0->x,(double)c0->y);
+        cv::Point a0 = contour[0][i];
+        cv::Point b0 = contour[0][(i+1)%contour[0].size()];
+        cv::Point c0 = contour[0][(i+2)%contour[0].size()];
+        CvPoint2D64f a = cvPoint2D64f((double)a0.x,(double)a0.y);
+        CvPoint2D64f b = cvPoint2D64f((double)b0.x,(double)b0.y);
+        CvPoint2D64f c = cvPoint2D64f((double)c0.x,(double)c0.y);
 
         std::vector<cv::Point2d> points;
         points.push_back(cv::Point2d(a.x, a.y));
@@ -537,7 +536,7 @@ void Fea::setSilhouetteCE()
     std::cout<<"fea silhouetteCurvature "<<feaArray[4]<<std::endl;
     std::cout<<"fea silhouetteCurvatureExtrema "<<feaArray[5]<<std::endl;
 }
-*/
+
 void Fea::setMaxDepth(float *array,int len)
 {
     feaArray[6] = -10.0;
@@ -594,7 +593,7 @@ void Fea::setMeanCurvature(MeanCurvature<MyMesh> &a, std::vector<bool> &isVertex
     feaArray[8] = 0.0;
     feaArray[8] = a.getMeanCurvature(isVertexVisible);
     if(feaArray[0])
-        feaArray[8] /= feaArray[0];
+        feaArray[8] /= feaArray[1];
     std::cout<<"fea meanCurvature "<<feaArray[8]<<std::endl;
 }
 
@@ -634,7 +633,7 @@ void Fea::setMeanCurvature(std::vector<MeanCurvature<MyMesh>> &a,
     }
 
     if(feaArray[0])
-        feaArray[8] /= feaArray[0];
+        feaArray[8] /= feaArray[1];
     std::cout<<"fea meanCurvature "<<feaArray[8]<<std::endl;
 }
 
@@ -645,7 +644,7 @@ void Fea::setGaussianCurvature(GaussCurvature<MyMesh> &mesh,
 //    GaussCurvature<MyMesh> a(mesh);
     feaArray[9] = mesh.getGaussianCurvature(isVertexVisible);
     if(feaArray[0])
-        feaArray[9] /= feaArray[0];
+        feaArray[9] /= feaArray[1];
     std::cout<<"fea gaussianCurvature "<<feaArray[9]<<std::endl;
 }
 
@@ -668,7 +667,7 @@ void Fea::setGaussianCurvature(std::vector<GaussCurvature<MyMesh>> &a,
         feaArray[9] += a[i].getGaussianCurvature(isVerVis);
     }
     if(feaArray[0])
-    feaArray[9] /= feaArray[0];
+    feaArray[9] /= feaArray[1];
     std::cout<<"fea gaussianCurvature "<<feaArray[9]<<std::endl;
 }
 
@@ -1352,23 +1351,10 @@ double Fea::getContourCurvature(const std::vector<cv::Point2d> &points, int targ
 
 void Fea::clear()
 {
-    qDebug() << "clear mem_storage "<<mem_storage<<endl;
-//    qDebug() << "clear contour "<<contour<<endl;
-    qDebug() << "clear image "<<&image<<endl;
-
     image.release();
 
-    qDebug() << "clear hi 1 "<<endl;
-    // ref http://stackoverflow.com/questions/5951292/how-do-you-delete-a-cvseq-in-opencv
-    // Clear the memory storage which was used before
-
-//    cvClearSeq(contour);
-
-    cvClearMemStorage(mem_storage);
-
-    qDebug() << "clear hi 2 "<<endl;
-    // Release memory
-    cvReleaseMemStorage(&mem_storage);
-    qDebug() << "clear hi 3 "<<endl;
+    for(int i=0;i<contour.size();i++)
+        contour[i].clear();
+    contour.clear();
 
 }

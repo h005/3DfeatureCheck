@@ -425,8 +425,8 @@ void Render::setParameters()
     p_VisibleFaces.clear();
     for (int i = 0; i < indices.size(); i += 3)
         if (p_isVertexVisible[indices[i]]
-                || p_isVertexVisible[indices[i+1]]
-                || p_isVertexVisible[indices[i+2]]) {
+                && p_isVertexVisible[indices[i+1]]
+                && p_isVertexVisible[indices[i+2]]) {
             p_VisibleFaces.push_back(indices[i]);
             p_VisibleFaces.push_back(indices[i+1]);
             p_VisibleFaces.push_back(indices[i+2]);
