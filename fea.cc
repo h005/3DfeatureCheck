@@ -127,7 +127,7 @@ void Fea::setFeature()
 
             setSilhouetteLength();
 
-            setSilhouetteCE();
+//            setSilhouetteCE();
 
             setMaxDepth(render->p_img,render->p_height*render->p_width);
 
@@ -155,9 +155,12 @@ void Fea::setFeature()
             // setAbovePreference(m_abv,m_model_tmp,m_view_tmp);
 
 #endif
+
+//            clear();
+
         }
 
-//        break;
+        break;
         printOut();
 
     }
@@ -233,7 +236,7 @@ Fea::~Fea()
 
 void Fea::setMat(float *img, int width, int height)
 {
-    image.release();
+//    image.release();
     cv::Mat image0 = cv::Mat(width,height,CV_32FC1,img);
     image0.convertTo(image,CV_8UC1,255.0);
     // release memory
@@ -243,6 +246,7 @@ void Fea::setMat(float *img, int width, int height)
 void Fea::setProjectArea()
 {
     feaArray[0] = 0.0;
+    cv::Mat img = cv::Mat(image.rows,image.cols,CV_8UC1);
     if(image.channels()==3)
     {
         for(int i=0;i<image.rows;i++)
@@ -254,12 +258,30 @@ void Fea::setProjectArea()
     }
     else
     {
+
         for(int i=0;i<image.rows;i++)
             for(int j=0;j<image.cols;j++)
+            {
                 if(image.at<uchar>(i,j)!=255)
+                {
                     feaArray[0]++;
+                    img.at<uchar>(i,j) = 255;
+                }
+                else
+                {
+                    img.at<uchar>(i,j) = 0;
+                }
+            }
+
     }
+
+    QString projPath = path + QString("proj/").append(QString::number(t_case)).append(QString(".jpg"));
+
+    cvSaveImage(projPath.toStdString().c_str(),&(IplImage(img)));
+
+    img.release();
     std::cout<<"fea projectArea "<<feaArray[0]<<std::endl;
+
 }
 
 void Fea::setVisSurfaceArea(std::vector<GLfloat> &vertex,
@@ -382,50 +404,85 @@ void Fea::setViewpointEntropy(std::vector<GLfloat> &vertex, std::vector<GLuint> 
 
 void Fea::setSilhouetteLength()
 {
+//    feaArray[3] = 0.0;
+////    ref http://blog.csdn.net/augusdi/article/details/9000893
+//    IplImage *tmpImage =
+//            cvCreateImage(cvSize(image.cols,image.rows),
+//                          8,1);
+//    if(image.channels()==3)
+//        cv::cvtColor(image,image,CV_BGR2GRAY);
+
+//    tmpImage->imageData = (char*)image.data;
+//    cvThreshold(tmpImage,tmpImage,250,255,CV_THRESH_BINARY_INV);
+////    cvShowImage("tmpimage",tmpImage);
+//    IplImage *img_tmp =
+//            cvCreateImage(cvGetSize(tmpImage),8,1);
+//    img_tmp = cvCloneImage(tmpImage);
+
+//    mem_storage = cvCreateMemStorage(0);
+
+//    contour = NULL;
+//    cvFindContours(
+//                img_tmp,
+//                mem_storage,
+//                &contour,
+//                sizeof(CvContour),
+//                CV_RETR_EXTERNAL
+//                );
+//    cvZero(img_tmp);
+//    cvDrawContours(
+//                img_tmp,
+//                contour,
+//                cvScalar(100),
+//                cvScalar(100),
+//                1);
+////    cvShowImage("image",img_tmp);
+////    ref http://blog.csdn.net/fdl19881/article/details/6730112
+//    if(contour)
+//        feaArray[3] = cvArcLength(contour);
+//    else
+//        feaArray[3] = 0.0;
+//    std::cout<<"fea silhouetteLength "<<feaArray[3]<<std::endl;
+//    cvReleaseImage(&tmpImage);
+//    cvReleaseImage(&img_tmp);
+
+
     feaArray[3] = 0.0;
-//    ref http://blog.csdn.net/augusdi/article/details/9000893
-    IplImage *tmpImage =
-            cvCreateImage(cvSize(image.cols,image.rows),
-                          8,1);
-    if(image.channels()==3)
-        cv::cvtColor(image,image,CV_BGR2GRAY);
+    // ref http://docs.opencv.org/2.4/doc/tutorials/imgproc/shapedescriptors/find_contours/find_contours.html
+    cv::Mat gray = image.clone();
 
-    tmpImage->imageData = (char*)image.data;
-    cvThreshold(tmpImage,tmpImage,250,255,CV_THRESH_BINARY_INV);
-//    cvShowImage("tmpimage",tmpImage);
-    IplImage *img_tmp =
-            cvCreateImage(cvGetSize(tmpImage),8,1);
-    img_tmp = cvCloneImage(tmpImage);
+    // ref http://docs.opencv.org/2.4/modules/imgproc/doc/miscellaneous_transformations.html?highlight=threshold#threshold
+    // 这个一定要二值化，图像本身就基本都是白色，直接提取轮廓是拿不到结果的
+    cv::threshold( gray, gray, 254, 255.0,3 );
 
-    mem_storage = cvCreateMemStorage(0);
+//    std::vector<std::vector<cv::Point>> contours;
+    std::vector<cv::Vec4i> hierarchy;
 
-    contour = NULL;
-    cvFindContours(
-                img_tmp,
-                mem_storage,
-                &contour,
-                sizeof(CvContour),
-                CV_RETR_EXTERNAL
-                );
-    cvZero(img_tmp);
-    cvDrawContours(
-                img_tmp,
-                contour,
-                cvScalar(100),
-                cvScalar(100),
-                1);
-//    cvShowImage("image",img_tmp);
-//    ref http://blog.csdn.net/fdl19881/article/details/6730112
-    if(contour)
-        feaArray[3] = cvArcLength(contour);
+    cv::findContours(gray,contour,hierarchy,CV_RETR_EXTERNAL ,CV_CHAIN_APPROX_NONE );
+
+    if(contour.size())
+        feaArray[3] = cv::arcLength(contour,true);
     else
         feaArray[3] = 0.0;
     std::cout<<"fea silhouetteLength "<<feaArray[3]<<std::endl;
-    cvReleaseImage(&tmpImage);
-    cvReleaseImage(&img_tmp);
+
+    std::vector<cv::Vec4i>().swap(hierarchy);
+
+// see contour result
+
+    cv::Mat drawing = cv::Mat::zeros(gray.size(),CV_8UC3);
+//    for(int i=0;i<contours.size();i++)
+    for(int i=0 ; i<1 ; i++)
+    {
+        cv::Scalar color = cv::Scalar(255,255,255);
+        cv::drawContours(drawing,contour,i,color,2,8,hierarchy,0,cv::Point());
+    }
+
+    cv::namedWindow("contours");
+    cv::imshow("contours",drawing);
 
 }
-
+/*
 void Fea::setSilhouetteCE()
 {
     feaArray[4] = 0.0;
@@ -473,22 +530,14 @@ void Fea::setSilhouetteCE()
             feaArray[4] += abs(curvab);
             feaArray[5] += curvab*curvab;
         }
+
 //        qDebug()<<"curvature a"<<curva<<" "<<abs(curvab)<< " "<<abs(curvab) - abs(curva)<<endl;
     }
-
-
-    // ref http://stackoverflow.com/questions/5951292/how-do-you-delete-a-cvseq-in-opencv
-    // Clear the memory storage which was used before
-    cvClearMemStorage(mem_storage);
-
-    // Release memory
-    cvReleaseMemStorage(&mem_storage);
-
 
     std::cout<<"fea silhouetteCurvature "<<feaArray[4]<<std::endl;
     std::cout<<"fea silhouetteCurvatureExtrema "<<feaArray[5]<<std::endl;
 }
-
+*/
 void Fea::setMaxDepth(float *array,int len)
 {
     feaArray[6] = -10.0;
@@ -1299,4 +1348,27 @@ double Fea::getContourCurvature(const std::vector<cv::Point2d> &points, int targ
     LD frac = up / down;
 
     return (double)frac;
+}
+
+void Fea::clear()
+{
+    qDebug() << "clear mem_storage "<<mem_storage<<endl;
+//    qDebug() << "clear contour "<<contour<<endl;
+    qDebug() << "clear image "<<&image<<endl;
+
+    image.release();
+
+    qDebug() << "clear hi 1 "<<endl;
+    // ref http://stackoverflow.com/questions/5951292/how-do-you-delete-a-cvseq-in-opencv
+    // Clear the memory storage which was used before
+
+//    cvClearSeq(contour);
+
+    cvClearMemStorage(mem_storage);
+
+    qDebug() << "clear hi 2 "<<endl;
+    // Release memory
+    cvReleaseMemStorage(&mem_storage);
+    qDebug() << "clear hi 3 "<<endl;
+
 }

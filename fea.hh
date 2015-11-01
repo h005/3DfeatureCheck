@@ -51,7 +51,7 @@ private:
     cv::Mat image;
     // used for contour
     CvMemStorage *mem_storage;
-    CvSeq *contour;
+    std::vector<std::vector<cv::Point>> contour;
 
     MyMesh mesh;
 
@@ -160,6 +160,8 @@ private:
     void computeModel(glm::mat4 &m_model_tmp);
 
     double getContourCurvature(const std::vector<cv::Point2d> &points, int target);
+
+    void clear();
 
 };
 
