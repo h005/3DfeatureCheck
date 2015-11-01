@@ -12,6 +12,7 @@
 #include <assimp/LogStream.hpp>
 #include "ufface.h"
 #include <QString>
+#include "predefine.h"
 
 template <typename MeshT>
 class ExternalImporter
@@ -36,6 +37,14 @@ public:
 
         getPointFace_h005(scene,scene->mRootNode,glm::mat4(),vertices,indices,count);
 
+#ifndef CHECK
+
+        UFface *ufface = new UFface(indices);
+
+        id = ufface->unionFinal(indices,cateSet);
+        ufface->free();
+        std::cout << "union ... done "<<std::endl;
+#endif
         buildMesh_h005(vertices,indices,mesh);
 
         std::cout<<"Assimp Importer: "<<count<<" Meshes Loaded."<<std::endl;
