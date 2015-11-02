@@ -40,7 +40,7 @@ void MainWindow::on_load_clicked()
 {
     QString fileName = QFileDialog::getOpenFileName(this,
                       tr("Open"),".",
-                      tr("matrix Files(*.off)"));
+                      tr("matrix Files(*.off *.dae *.obj)"));
     if(fileName == NULL)
         return;
 

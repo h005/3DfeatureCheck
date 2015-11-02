@@ -396,8 +396,8 @@ void Render::storeImage(QString path,QString fileName)
 //    outputDepthFile.remove(0,len);
     outputDepth.append("depth/");
     outputDepth.append(outputDepthFile);
-    std::cout<< outputDepth.toStdString() << std::endl;
-    std::cout<<depthImg.type()<<std::endl;
+//    std::cout<< outputDepth.toStdString() << std::endl;
+//    std::cout<<depthImg.type()<<std::endl;
     // imwrite has a bug maybe need recompile
     // ref http://stackoverflow.com/questions/6923296/opencv-imwrite-2-2-causes-exception-with-message-opencv-error-unspecified-erro
 //      cv::imwrite(outputDepth.toStdString(),depthImg);
@@ -409,7 +409,7 @@ void Render::storeImage(QString path,QString fileName)
 //    outputRgbFile.remove(0,len);
     outputRgb.append("rgb/");
     outputRgb.append(outputRgbFile);
-    std::cout<< outputRgb.toStdString() << std::endl;
+//    std::cout<< outputRgb.toStdString() << std::endl;
 //      cv::imwrite(outputRgb.toStdString(),rgbImg);
     cvSaveImage(outputRgb.toStdString().c_str(),&(IplImage(rgbImg)));
 

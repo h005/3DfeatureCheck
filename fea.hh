@@ -109,13 +109,20 @@ private:
                          std::vector<MeanCurvature<MyMesh>> &a,
                          std::vector<std::vector<int>> &indiceArray);
 
-    void setMeshSaliency(MeanCurvature<MyMesh> &a,
+    void setMeshSaliency(std::vector<MeanCurvature<MyMesh>> &a,
                          std::vector<GLfloat> &vertex,
                          std::vector<bool> &isVertexVisible);
+
+    void setMeshSaliencyCompute(std::vector<MeanCurvature<MyMesh>> &a,
+                         std::vector<GLfloat> &vertex,
+                         std::vector<bool> &isVertexVisible,
+                         std::vector<std::vector<int>> &indiceArray);
 
     void setAbovePreference(double theta);
 
     void setAbovePreference(glm::mat4 &modelZ,glm::mat4 &model,glm::mat4 &view);
+
+    void setAbovePreference(glm::mat4 &modelZ,glm::mat4 &modelView);
 
     double getMeshSaliencyLocalMax(double *nearDis,int len,std::vector<double> meshSaliency);
 

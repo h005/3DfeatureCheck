@@ -5,7 +5,7 @@
 #include "Curvature.hh"
 #include "colormap.hh"
 #include "abstractfeature.hh"
-
+#include <QDebug>
 
 template <typename MeshT>
 class MeanCurvature: public AbstractFeature<MeshT>
@@ -118,8 +118,14 @@ public:
         for (v_it = m_mesh.vertices_begin(); v_it != v_end; v_it++,index++)
             if(isVertexVisible[index]) {
                 Q_ASSERT(!std::isnan(m_mesh.property(m_vPropHandle, *v_it)));
+                Q_ASSERT(!std::isnan(m_mesh.property(vertexBoundingArea, *v_it)));
                 res += m_mesh.property(m_vPropHandle, *v_it) * m_mesh.property(vertexBoundingArea, *v_it);
+
+//                qDebug()<<"mean curvature ... m_vPropHandle "<<m_mesh.property(m_vPropHandle, *v_it)<<endl;
+//                qDebug()<<"mean curvature ... vertexBoundingArea "<<m_mesh.property(vertexBoundingArea, *v_it)<<endl;
             }
+
+//        qDebug()<<"mean curvature ... res "<<res<<endl;
         return res;
     }
 
@@ -130,7 +136,7 @@ public:
             meanCurvature.push_back(m_mesh.property(m_vPropHandle, *v_it));
     }
 
-    void setMeanCurvature(double* meanCurvature,std::vector<int> verVec)
+    void setMeanCurvature(double* meanCurvature,std::vector<int> &verVec)
     {
         int i = 0;
         typename MeshT::VertexIter v_it, v_end(m_mesh.vertices_end());

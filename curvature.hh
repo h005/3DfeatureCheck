@@ -1,4 +1,4 @@
-/*===========================================================================*\
+﻿/*===========================================================================*\
 *                                                                            *
 *                              OpenFlipper                                   *
 *      Copyright (C) 2001-2014 by Computer Graphics Group, RWTH Aachen       *
@@ -57,6 +57,7 @@
 #include <vector>
 
 #include <cmath>
+#include <QDebug>
 
 namespace curvature {
 
@@ -175,10 +176,10 @@ void discrete_mean_curv_op( const MeshT&                        _m,
         tmp += (p0-p2).sqrnorm()*1.0/tan(gamma);
 
 #ifdef WIN32
-      if ( OpenMesh::is_zero(tmp) )
+      if ( OpenMesh::is_zero(tmp) || std::isinf(tmp))
         continue;
 #else
-      if ( OpenMesh::is_zero(tmp) || std::isinf(tmp) )
+      if ( OpenMesh::is_zero(tmp) )
         continue;
 #endif
 
