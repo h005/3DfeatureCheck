@@ -2,6 +2,7 @@
 #define RENDER_H
 
 #include <GL/glew.h>
+#include "faceglhelper.hh"
 #include "meshglhelper.hh"
 
 #include <QOpenGLWidget>
@@ -43,6 +44,8 @@ public:
     QSize minimumSizeHint() const;
 
     bool rendering(int count);
+
+    void renderingVisibleFaces(const QString &filepath);
 
     void showImage();
     // fileName is absolute name

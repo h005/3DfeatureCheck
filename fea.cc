@@ -107,10 +107,15 @@ void Fea::setFeature()
         {
             render->setParameters();
 
-            //used for check the image
-//            render->showImage();
-
+#ifdef OUTPUT_RENDER_IMAGE
             render->storeImage(path,QString::number(t_case));
+
+            QString imgPath = path;
+            imgPath.append("visibility/");
+            imgPath.append(std::to_string(t_case).c_str());
+            imgPath.append(".png");
+            render->renderingVisibleFaces(imgPath);
+#endif
 
             setMat(render->p_img,render->p_width,render->p_height);
 
@@ -1317,6 +1322,8 @@ void Fea::showImage()
 typedef long double LD;
 double Fea::getContourCurvature(const std::vector<cv::Point2d> &points, int target)
 {
+    // 先使用参数方程拟合，再对曲线求导得到曲率
+    // ref http://www.mathworks.com/matlabcentral/fileexchange/32696-2d-line-curvature-and-normals
     assert(points.size() == 3);
 
     double T[3];
