@@ -18,13 +18,13 @@ public:
         if(!m_mesh.get_property_handle(m_vPropHandle, m_PropertyKeyword))
             m_mesh.add_property(m_vPropHandle, m_PropertyKeyword);
 
-
-        if(!m_mesh.get_property_handle(vertexBoundingArea, "area"))
-        {
-            std::cout<<"gauss .... get handle error "<<std::endl;
-        }
-        else
-            std::cout<<"gauss .... get handle "<<std::endl;
+        m_mesh.get_property_handle(vertexBoundingArea, "area");
+//        if(!m_mesh.get_property_handle(vertexBoundingArea, "area"))
+//        {
+//            std::cout<<"gauss .... get handle error "<<std::endl;
+//        }
+//        else
+//            std::cout<<"gauss .... get handle "<<std::endl;
 
         typename MeshT::VertexIter v_it, v_end(m_mesh.vertices_end());
         for (v_it = m_mesh.vertices_begin(); v_it != v_end; v_it++) {
@@ -40,7 +40,7 @@ public:
             if (curvatureMax < m_mesh.property(m_vPropHandle, *v_it))
                 curvatureMax = m_mesh.property(m_vPropHandle, *v_it);
 
-        std::cout<<"gauss .... curvatureMax "<<curvatureMax<<std::endl;
+//        std::cout<<"gauss .... curvatureMax "<<curvatureMax<<std::endl;
 
 //        v_it = m_mesh.vertices_begin();
 //        double maxNormal = abs(m_mesh.property(m_vPropHandle, *v_it));
@@ -108,7 +108,11 @@ public:
         typename MeshT::VertexIter v_it, v_end(m_mesh.vertices_end());
         for (v_it = m_mesh.vertices_begin(); v_it != v_end; v_it++,index++)
             if(isVertexVisible[index])
+            {
                 res += m_mesh.property(m_vPropHandle, *v_it) * m_mesh.property(vertexBoundingArea, *v_it);
+//                qDebug()<<"mean curvature ... m_vPropHandle "<<m_mesh.property(m_vPropHandle, *v_it)<<endl;
+//                qDebug()<<"mean curvature ... vertexBoundingArea "<<m_mesh.property(vertexBoundingArea, *v_it)<<endl;
+            }
         return res;
     }
 

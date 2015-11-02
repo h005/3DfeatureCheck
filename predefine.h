@@ -1,4 +1,4 @@
-#ifndef PREDEFINE
+﻿#ifndef PREDEFINE
 #define PREDEFINE
 
 
@@ -9,7 +9,7 @@
 */
 
 
-#define CHECK
+#define CHECK_
 #define NoProjection
 
 

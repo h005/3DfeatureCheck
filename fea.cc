@@ -42,6 +42,7 @@ Fea::Fea(QString fileName, QString path)
     int index = mmFile.lastIndexOf('.');
     mmFile.replace(index,6,".mm");
     setMMPara(mmFile);
+    qDebug() << "fea initial ... set mm done "<<endl;
 //    ui->lmatrixPath->setText(QString("path: ").append(mmFile));
 #ifndef CHECK
     // for compute we also need .matrix file
@@ -49,6 +50,7 @@ Fea::Fea(QString fileName, QString path)
     index = matrixFile.lastIndexOf('.');
     matrixFile.replace(index,10,".matrix");
     setMvpPara(matrixFile);
+    qDebug() << "fea initial ... set matrix done"<<endl;
 #endif
 
     glm::mat4 tmpPara;
@@ -75,6 +77,8 @@ void Fea::setFeature()
     // for compute
     render->setMeshSaliencyPara(exImporter);
 
+
+
     std::vector<MeanCurvature<MyMesh>> a;
     std::vector<GaussCurvature<MyMesh>> b;
     for(int i=0;i<render->p_vecMesh.size();i++)
@@ -84,6 +88,9 @@ void Fea::setFeature()
         a.push_back(tmpMean);
         b.push_back(tmpGauss);
     }
+
+    qDebug() << "fea set mean gauss curvature .... "<< render->p_vecMesh.size() <<endl;
+    qDebug() << NUM <<endl;
 
 #endif
 
@@ -144,7 +151,7 @@ void Fea::setFeature()
 
             setGaussianCurvature(b,render->p_isVertexVisible,render->p_indiceArray);
 
-            setMeshSaliency(a,render->p_vertices,render->p_indiceArray);
+//            setMeshSaliencyCompute(a,render->p_vertices,render->p_isVertexVisible,render->p_indiceArray);
 
             // setAbovePreference 有问题,compute缺少参数
             // setAbovePreference(m_abv,m_model_tmp,m_view_tmp);
@@ -173,6 +180,8 @@ void Fea::setMMPara(QString mmFile)
 
     std::cout<< "output " << output.toStdString() << std::endl;
 
+    freopen(mmPath.toStdString().c_str(),"r",stdin);
+
 //    set_tCase();
 
 //    setFilenameList_mvpMatrix(matrixPath);
@@ -186,7 +195,7 @@ void Fea::setMMPara(QString mmFile)
     // the first one is the view matrix
     // the second one is the model matrix and also is the abv matrix
     // the last two para is from to
-    freopen(mmPath.toStdString().c_str(),"r",stdin);
+
     float tmp;
     for(int i=0;i<16;i++)
     {
@@ -217,10 +226,11 @@ void Fea::setMMPara(QString mmFile)
         scanf("%f",&tmp);
         m_abv[i/4][i%4] = tmp;
     }
-    scanf("%d %d",&t_case,&NUM);
+    scanf("%d",&t_case);
 #endif
-    std::cout<<t_case<<" "<<NUM<<std::endl;
+//    std::cout<<t_case<<" "<<NUM<<std::endl;
 
+    fclose(stdin);
 }
 
 
@@ -592,7 +602,7 @@ void Fea::setMeanCurvature(MeanCurvature<MyMesh> &a, std::vector<bool> &isVertex
 {
     feaArray[8] = 0.0;
     feaArray[8] = a.getMeanCurvature(isVertexVisible);
-    if(feaArray[0])
+    if(feaArray[1])
         feaArray[8] /= feaArray[1];
     std::cout<<"fea meanCurvature "<<feaArray[8]<<std::endl;
 }
@@ -601,8 +611,8 @@ void Fea::setMeanCurvature(std::vector<MeanCurvature<MyMesh>> &a,
                            std::vector<bool> &isVertexVisible,
                            std::vector<std::vector<int>> &indiceArray)
 {
-//    printf("vecMesh....%d\n",vecMesh.size());
-//    printf("indiceArray....%d\n",indiceArray.size());
+    qDebug()<<"set Mean Curvature "<<a.size()<<endl;
+
     feaArray[8] = 0.0;
     for(int i=0;i<a.size();i++)
     {
@@ -628,13 +638,19 @@ void Fea::setMeanCurvature(std::vector<MeanCurvature<MyMesh>> &a,
         std::set<int>::iterator it = verIndice.begin();
         for(;it!=verIndice.end();it++)
             isVerVis.push_back(isVertexVisible[*it]);
-//        MeanCurvature<MyMesh> a(vecMesh[i]);
+
         feaArray[8] += a[i].getMeanCurvature(isVerVis);
     }
 
-    if(feaArray[0])
+//    fclose(stdout);
+
+//    qDebug()<<"fea meanCurvature feaArray[1] "<<feaArray[1]<<endl;
+//    qDebug()<<"fea meanCurvature feaArray[8] "<<feaArray[8]<<endl;
+    if(feaArray[1])
         feaArray[8] /= feaArray[1];
     std::cout<<"fea meanCurvature "<<feaArray[8]<<std::endl;
+//    qDebug()<<"fea meanCurvature "<<feaArray[8]<<endl;
+
 }
 
 void Fea::setGaussianCurvature(GaussCurvature<MyMesh> &mesh,
@@ -643,7 +659,7 @@ void Fea::setGaussianCurvature(GaussCurvature<MyMesh> &mesh,
     feaArray[9] = 0.0;
 //    GaussCurvature<MyMesh> a(mesh);
     feaArray[9] = mesh.getGaussianCurvature(isVertexVisible);
-    if(feaArray[0])
+    if(feaArray[1])
         feaArray[9] /= feaArray[1];
     std::cout<<"fea gaussianCurvature "<<feaArray[9]<<std::endl;
 }
@@ -653,6 +669,7 @@ void Fea::setGaussianCurvature(std::vector<GaussCurvature<MyMesh>> &a,
                                std::vector<std::vector<int>> &indiceArray)
 {
     feaArray[9] = 0.0;
+//    freopen("D:/viewpoint/kmx/kxm.txt","w",stdout);
     for(int i=0;i<a.size();i++)
     {
         std::vector<bool> isVerVis;
@@ -663,15 +680,17 @@ void Fea::setGaussianCurvature(std::vector<GaussCurvature<MyMesh>> &a,
         std::set<int>::iterator it = verIndice.begin();
         for(;it!=verIndice.end();it++)
             isVerVis.push_back(isVertexVisible[*it]);
-
+//        std::cout<<"gauss ... hi "<<std::endl;
         feaArray[9] += a[i].getGaussianCurvature(isVerVis);
+//        std::cout<<feaArray[9]<<std::endl;
     }
-    if(feaArray[0])
+    if(feaArray[1])
     feaArray[9] /= feaArray[1];
+//    fclose(stdout);
     std::cout<<"fea gaussianCurvature "<<feaArray[9]<<std::endl;
 }
 
-void Fea::setMeshSaliency(MeanCurvature<MyMesh> &a, std::vector<GLfloat> &vertex, std::vector<bool> &isVertexVisible)
+void Fea::setMeshSaliency(std::vector<MeanCurvature<MyMesh>> &a, std::vector<GLfloat> &vertex, std::vector<bool> &isVertexVisible)
 {
     feaArray[10] = 0.0;
     double length = getDiagonalLength(vertex);
@@ -682,7 +701,81 @@ void Fea::setMeshSaliency(MeanCurvature<MyMesh> &a, std::vector<GLfloat> &vertex
     std::vector<double> meshSaliencyMiddle[5];
     double localMax[5];
     double gaussWeightedVal1,gaussWeightedVal2;
-    a.setMeanCurvature(meanCurvature);
+//    a.setMeanCurvature(meanCurvature);
+
+
+
+    for(int j=0;j<5;j++)
+    {
+        localMax[j] = 0.0;
+        for(int i=0;i<vertex.size();i+=3)
+        {
+            setNearDisMeshSaliency(vertex,i,length,sigma[j],nearDis);
+            gaussWeightedVal1 = getGaussWeightedVal(meanCurvature[i/3],nearDis,vertex.size()/3,sigma[j]);
+            gaussWeightedVal2 = getGaussWeightedVal(meanCurvature[i/3],nearDis,vertex.size()/3,sigma[j]*2.0);
+            meshSaliencyMiddle[j].push_back(abs(gaussWeightedVal1 - gaussWeightedVal2));
+        }
+        double max = meshSaliencyMiddle[j][0];
+        double min = meshSaliencyMiddle[j][0];
+        for(int i=0;i<meshSaliencyMiddle[j].size();i++)
+        {
+//            global max
+            max = max > meshSaliencyMiddle[j][i] ? max : meshSaliencyMiddle[j][i];
+//            used for normalize
+            min = min > meshSaliencyMiddle[j][i] ? meshSaliencyMiddle[j][i] : min;
+//            local max
+            setNearDisMeshSaliency(vertex,i*3,length,sigma[j],nearDis);
+            localMax[j] += getMeshSaliencyLocalMax(nearDis,vertex.size()/3,meshSaliencyMiddle[j]);
+        }
+        localMax[j] /= meshSaliencyMiddle[j].size();
+//        normalize and set Si
+        for(int i=0;i<meshSaliencyMiddle[j].size();i++)
+            meshSaliencyMiddle[j][i] = (meshSaliencyMiddle[j][i] - min)/(max - min) *
+                    (max - localMax[j])*(max - localMax[j]);
+    }
+//    set sum Si
+    for(int i=0;i<meshSaliencyMiddle[0].size();i++)
+        for(int j=1;j<5;j++)
+            meshSaliencyMiddle[0][i] += meshSaliencyMiddle[j][i];
+
+    for(int i=0;i<isVertexVisible.size();i++)
+        if(isVertexVisible[i])
+            feaArray[10] += meshSaliencyMiddle[0][i];
+//    std::cout<<"fea meshSaliency ";
+    printf("fea meshSaliency %e\n",feaArray[10]);
+
+    delete []nearDis;
+}
+
+void Fea::setMeshSaliencyCompute(std::vector<MeanCurvature<MyMesh> > &a, std::vector<GLfloat> &vertex, std::vector<bool> &isVertexVisible, std::vector<std::vector<int> > &indiceArray)
+{
+    feaArray[10] = 0.0;
+    double length = getDiagonalLength(vertex);
+    double *meanCurvature = new double[vertex.size()/3];
+    memset(meanCurvature,0,sizeof(double)*vertex.size()/3);
+    double *nearDis = new double[vertex.size()/3];
+//    MeanCurvature<MyMesh> a(mesh);
+    double sigma[5] = {0.003*2.0,0.003*3.0,0.003*4.0,0.003*5.0,0.003*6.0};
+    std::vector<double> meshSaliencyMiddle[5];
+    double localMax[5];
+    double gaussWeightedVal1,gaussWeightedVal2;
+//    a.setMeanCurvature(meanCurvature);
+
+    for(int i=0;i<a.size();i++)
+    {
+        std::set<int> verIndice;
+        std::vector<int> verVec;
+        for(int j=0;j<indiceArray[i].size();j++)
+            verIndice.insert(indiceArray[i][j]);
+        std::set<int>::iterator it = verIndice.begin();
+        for(;it!=verIndice.end();it++)
+            verVec.push_back(*it);
+
+//        MeanCurvature<MyMesh> a(vecMesh[i]);
+        a[i].setMeanCurvature(meanCurvature,verVec);
+
+    }
+
     for(int j=0;j<5;j++)
     {
         localMax[j] = 0.0;
@@ -853,7 +946,16 @@ void Fea::setAbovePreference(glm::mat4 &model2, glm::mat4 &model,glm::mat4 &view
 
         setAbovePreference(theta);
 
-    std::cout<<"abovePreference "<<feaArray[11]<<std::endl;
+        std::cout<<"abovePreference "<<feaArray[11]<<std::endl;
+}
+
+void Fea::setAbovePreference(glm::mat4 &modelZ, glm::mat4 &modelView)
+{
+    // still has a problem .... wait for finish
+    glm::vec4 z = glm::vec4(0.0,0.0,1.0,0.0);
+    glm::vec4 yyy = modelView*modelZ*z;
+
+
 }
 
 double Fea::getMeshSaliencyLocalMax(double *nearDis, int len, std::vector<double> meshSaliency)
@@ -1172,6 +1274,7 @@ void Fea::initial()
 void Fea::setMvpPara(QString matrixFile)
 {
     this->matrixPath = matrixFile;
+    qDebug()<<matrixFile<<endl;
     freopen(matrixPath.toStdString().c_str(),"r",stdin);
     QString tmp;
     char tmpss[200];
@@ -1210,6 +1313,7 @@ void Fea::setMvpPara(QString matrixFile)
         this->projection.push_back(p);
 #endif
     }
+    NUM = fileName.size();
 }
 
 void Fea::printOut()
@@ -1220,7 +1324,7 @@ void Fea::printOut()
     printf("%s\n",QString::number(t_case).toStdString().c_str());
 #else
     // output the fileName
-    printf("%s\n",fileName[i].toStdString().c_str());
+    printf("%s\n",fileName.at(t_case).toStdString().c_str());
 #endif
 
     for(int i=0;i<12;i++)
@@ -1257,7 +1361,7 @@ void Fea::printOut()
         printf("\n");
     }
 
-    printf("%d %d\n",t_case+1,NUM);
+    printf("%d\n",t_case+1,NUM);
 
 
 #endif
