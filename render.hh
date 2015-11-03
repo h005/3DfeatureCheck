@@ -75,6 +75,7 @@ public:
     glm::mat4 p_model;
     std::vector<MyMesh> p_vecMesh;
     std::vector<std::vector<int>> p_indiceArray;
+    int p_outsidePointsNum;
 
 protected:
     glm::mat4 getModelViewMatrix();

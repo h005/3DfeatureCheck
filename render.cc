@@ -429,6 +429,7 @@ void Render::setParameters()
     p_isVertexVisible.clear();
     p_VisibleFaces.clear();
     p_verticesMvp.clear();
+    p_outsidePointsNum = 0;
 
     if(p_img)
     {
@@ -489,6 +490,9 @@ void Render::setParameters()
                         break;
                     }
                 }
+                else
+                    // 渲染出的点在可视区域外
+                    p_outsidePointsNum++;
             }
         p_isVertexVisible.push_back(isVisible);
         visibleVertexCount += isVisible ? 1 : 0;

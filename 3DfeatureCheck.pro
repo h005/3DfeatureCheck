@@ -85,7 +85,7 @@ win32 {
 }
 
 # glm
-INCLUDEPATH += D:/tools/glm
+INCLUDEPATH += $$DP_TOOLS_DIR/glm
 
 defineTest(copyToDestdir) {
     files = $$1

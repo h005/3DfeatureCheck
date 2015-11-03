@@ -9,10 +9,10 @@ Fea::Fea(QString fileName, QString path)
 {
     this->path = path;
 
-    // the number of feature is 12
-    feaArray = new double[12];
+    // the number of feature is FEA_NUM
+    feaArray = new double[FEA_NUM];
 
-    memset(feaArray,0,sizeof(double)*12);
+    memset(feaArray,0,sizeof(double)*FEA_NUM);
     // read in
     exImporter = new ExternalImporter<MyMesh>();
 
@@ -149,6 +149,8 @@ void Fea::setFeature()
 //            setMeshSaliency(a,render->p_vertices,render->p_isVertexVisible);
 
             setAbovePreference(m_abv,m_model_tmp,m_view_tmp);
+
+            setOutlierCount();
 
 #else
 
@@ -963,6 +965,12 @@ void Fea::setAbovePreference(glm::mat4 &modelZ, glm::mat4 &modelView)
 
 }
 
+void Fea::setOutlierCount()
+{
+    // 看看渲染之后，有多少点是不在可视窗口内的
+    feaArray[12] = (double)render->p_outsidePointsNum / render->p_vertices.size();
+}
+
 double Fea::getMeshSaliencyLocalMax(double *nearDis, int len, std::vector<double> meshSaliency)
 {
     //可能会有bug,nearDis[0]如果为0的话，赋值是没有意义的
@@ -1332,7 +1340,7 @@ void Fea::printOut()
     printf("%s\n",fileName.at(t_case).toStdString().c_str());
 #endif
 
-    for(int i=0;i<12;i++)
+    for(int i=0;i<FEA_NUM;i++)
     {
         if(i==8 || i== 9 || i == 10)
             printf("%e ",feaArray[i]);
