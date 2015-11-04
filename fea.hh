@@ -21,6 +21,7 @@
 
 class Fea
 {
+    static const int FEA_NUM = 13;
 private:
 
     int t_case;
@@ -123,6 +124,8 @@ private:
     void setAbovePreference(glm::mat4 &modelZ,glm::mat4 &model,glm::mat4 &view);
 
     void setAbovePreference(glm::mat4 &modelZ,glm::mat4 &modelView);
+
+    void setOutlierCount();
 
     double getMeshSaliencyLocalMax(double *nearDis,int len,std::vector<double> meshSaliency);
 

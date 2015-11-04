@@ -9,10 +9,10 @@ Fea::Fea(QString fileName, QString path)
 {
     this->path = path;
 
-    // the number of feature is 12
-    feaArray = new double[12];
+    // the number of feature is FEA_NUM
+    feaArray = new double[FEA_NUM];
 
-    memset(feaArray,0,sizeof(double)*12);
+    memset(feaArray,0,sizeof(double)*FEA_NUM);
     // read in
     exImporter = new ExternalImporter<MyMesh>();
 
@@ -20,7 +20,7 @@ Fea::Fea(QString fileName, QString path)
     {
         std::cerr << "Error: Cannot read mesh from "<<std::endl;
         return ;
-    }  
+    }
 
     // If the file did not provide vertex normals, then calculate them
     if (!mesh.has_vertex_normals())
@@ -157,6 +157,8 @@ void Fea::setFeature()
             // setAbovePreference(m_abv,m_model_tmp,m_view_tmp);
 
 #endif
+
+            setOutlierCount();
 
             clear();
 
@@ -334,7 +336,7 @@ void Fea::setViewpointEntropy2(std::vector<GLfloat> &vertex, std::vector<GLuint>
         if(area)
             feaArray[2] += area/totalArea * log2(area/totalArea);
         else
-            qDebug()<<"viewpoint "<<area<<endl;
+            qDebug()<<"viewpoint Entropy "<<area<<endl;
     }
     // background
     if((feaArray[0] - totalArea) > 0)
@@ -463,12 +465,15 @@ void Fea::setSilhouetteLength()
     //    std::vector<std::vector<cv::Point>> contours;
     std::vector<cv::Vec4i> hierarchy;
 
-    cv::findContours(gray,contour,hierarchy,CV_RETR_EXTERNAL ,CV_CHAIN_APPROX_NONE );
+    cv::findContours(gray,contour,hierarchy,CV_RETR_LIST  ,CV_CHAIN_APPROX_NONE );
 
 //    qDebug() << "setSilhouette contour size "<<contour.size()<<endl;
 
     if(contour.size())
-        feaArray[3] = cv::arcLength(contour[0],true);
+        for(int i=0;i<contour.size();i++)
+        {
+            feaArray[3] += cv::arcLength(contour[i],true);
+        }
     else
         feaArray[3] = 0.0;
 
@@ -503,45 +508,51 @@ void Fea::setSilhouetteCE()
 //    abcdefghabcde
 //     ^  ->  ^
 //    abc -> bcd -> def
-    if(contour.size())
-    for(int i=0;i<contour[0].size();i++)
+//    if(contour.size())
+
+    for(int k = 0;k<contour.size();k++)
     {
-        cv::Point a0 = contour[0][i];
-        cv::Point b0 = contour[0][(i+1)%contour[0].size()];
-        cv::Point c0 = contour[0][(i+2)%contour[0].size()];
-        CvPoint2D64f a = cvPoint2D64f((double)a0.x,(double)a0.y);
-        CvPoint2D64f b = cvPoint2D64f((double)b0.x,(double)b0.y);
-        CvPoint2D64f c = cvPoint2D64f((double)c0.x,(double)c0.y);
-
-        std::vector<cv::Point2d> points;
-        points.push_back(cv::Point2d(a.x, a.y));
-        points.push_back(cv::Point2d(b.x, b.y));
-        points.push_back(cv::Point2d(c.x, c.y));
-
-
-//        if(getCurvature(&a,&b,&c,curva))
-//        {
-////            std::cout << curva << std::endl;
-            dis = getDis2D(&a,&b) + getDis2D(&b,&c);
-//            feaArray[4] += abs(curva) * dis;
-//            feaArray[5] += curva*curva * dis;
-//        }
-
-        double curvab = getContourCurvature(points,1);
-        if (std::isnan(curvab)) {
-//            qDebug()<<a.x<<" "<<a.y<<endl;
-//            qDebug()<<b.x<<" "<<b.y<<endl;
-//            qDebug()<<c.x<<" "<<c.y<<endl;
-//            assert(0);
-        }
-        else
+        for(int i=0;i<contour[k].size();i++)
         {
-            feaArray[4] += abs(curvab);
-            feaArray[5] += curvab*curvab;
-        }
+            cv::Point a0 = contour[k][i];
+            cv::Point b0 = contour[k][(i+1)%contour[k].size()];
+            cv::Point c0 = contour[k][(i+2)%contour[k].size()];
+            CvPoint2D64f a = cvPoint2D64f((double)a0.x,(double)a0.y);
+            CvPoint2D64f b = cvPoint2D64f((double)b0.x,(double)b0.y);
+            CvPoint2D64f c = cvPoint2D64f((double)c0.x,(double)c0.y);
 
-//        qDebug()<<"curvature a"<<curva<<" "<<abs(curvab)<< " "<<abs(curvab) - abs(curva)<<endl;
+            std::vector<cv::Point2d> points;
+            points.push_back(cv::Point2d(a.x, a.y));
+            points.push_back(cv::Point2d(b.x, b.y));
+            points.push_back(cv::Point2d(c.x, c.y));
+
+
+    //        if(getCurvature(&a,&b,&c,curva))
+    //        {
+    ////            std::cout << curva << std::endl;
+                dis = getDis2D(&a,&b) + getDis2D(&b,&c);
+    //            feaArray[4] += abs(curva) * dis;
+    //            feaArray[5] += curva*curva * dis;
+    //        }
+
+            double curvab = getContourCurvature(points,1);
+            if (std::isnan(curvab)) {
+    //            qDebug()<<a.x<<" "<<a.y<<endl;
+    //            qDebug()<<b.x<<" "<<b.y<<endl;
+    //            qDebug()<<c.x<<" "<<c.y<<endl;
+    //            assert(0);
+            }
+            else
+            {
+                feaArray[4] += abs(curvab);
+                feaArray[5] += curvab*curvab;
+            }
+
+    //        qDebug()<<"curvature a"<<curva<<" "<<abs(curvab)<< " "<<abs(curvab) - abs(curva)<<endl;
+        }
     }
+
+
 
     std::cout<<"fea silhouetteCurvature "<<feaArray[4]<<std::endl;
     std::cout<<"fea silhouetteCurvatureExtrema "<<feaArray[5]<<std::endl;
@@ -611,7 +622,7 @@ void Fea::setMeanCurvature(std::vector<MeanCurvature<MyMesh>> &a,
                            std::vector<bool> &isVertexVisible,
                            std::vector<std::vector<int>> &indiceArray)
 {
-    qDebug()<<"set Mean Curvature "<<a.size()<<endl;
+//    qDebug()<<"set Mean Curvature "<<a.size()<<endl;
 
     feaArray[8] = 0.0;
     for(int i=0;i<a.size();i++)
@@ -958,6 +969,12 @@ void Fea::setAbovePreference(glm::mat4 &modelZ, glm::mat4 &modelView)
 
 }
 
+void Fea::setOutlierCount()
+{
+    // 看看渲染之后，有多少点是不在可视窗口内的
+    feaArray[12] = (double)render->p_outsidePointsNum / render->p_vertices.size();
+}
+
 double Fea::getMeshSaliencyLocalMax(double *nearDis, int len, std::vector<double> meshSaliency)
 {
     //可能会有bug,nearDis[0]如果为0的话，赋值是没有意义的
@@ -1283,9 +1300,10 @@ void Fea::setMvpPara(QString matrixFile)
     {
         QString tmpPath = path;
         tmp = QDir::cleanPath(tmpPath.append(QString(tmpss)));
+//        qDebug()<<"setMvpPara "<<tmp<<endl;
         fileName.push_back(tmp);
-#ifdef NoProjection
-        glm::mat4 m,v;
+
+        glm::mat4 m,v,p;
         for(int i=0;i<16;i++)
         {
             scanf("%f",&tmpNum);
@@ -1294,24 +1312,27 @@ void Fea::setMvpPara(QString matrixFile)
         this->m_modelList.push_back(m);
         this->m_viewList.push_back(v);
 
-        glm::mat4 p = glm::perspective(glm::pi<float>() / 2, 1.f, 0.1f, 100.f);
+//        qDebug()<<"setMvpPara mv matrix "<<endl;
+#ifdef NoProjection
+
+        p = glm::perspective(glm::pi<float>() / 2, 1.f, 0.1f, 100.f);
         this->m_projectionList.push_back(p);
+
 #else
-        glm::mat4 m,v,p;
+//        for(int i=0;i<16;i++)
+//        {
+//            scanf("%lf",&tmpNum);
+//            m[i%4][i/4] = tmpNum;
+//        }
         for(int i=0;i<16;i++)
         {
-            scanf("%lf",&tmpNum);
-            m[i/4][i%4] = tmpNum;
+            scanf("%f",&tmpNum);
+            p[i%4][i/4] = tmpNum;
         }
-        for(int i=0;i<16;i++)
-        {
-            scanf("%lf",&tmpNum);
-            p[i/4][i%4] = tmpNum;
-        }
-        this->model.push_back(m);
-        this->view.pish_back(v);
-        this->projection.push_back(p);
-#endif
+//        this->model.push_back(m);
+//        this->view.pish_back(v);
+        this->m_projectionList.push_back(p);
+#endif  
     }
     NUM = fileName.size();
 }
@@ -1327,7 +1348,7 @@ void Fea::printOut()
     printf("%s\n",fileName.at(t_case).toStdString().c_str());
 #endif
 
-    for(int i=0;i<12;i++)
+    for(int i=0;i<FEA_NUM;i++)
     {
         if(i==8 || i== 9 || i == 10)
             printf("%e ",feaArray[i]);
@@ -1336,8 +1357,8 @@ void Fea::printOut()
     }
     printf("\n");
     fclose(stdout);
-#ifdef CHECK
     freopen(mmPath.toStdString().c_str(),"w",stdout);
+#ifdef CHECK
     for(int i=0;i<4;i++)
     {
         for(int j=0;j<4;j++)
@@ -1361,7 +1382,7 @@ void Fea::printOut()
         printf("\n");
     }
 
-    printf("%d\n",t_case+1,NUM);
+    printf("%d\n",t_case+1);
 
 
 #endif
