@@ -96,6 +96,7 @@ void Fea::setFeature()
 
     for(; t_case < NUM ; t_case++)
     {
+        qDebug()<<"set fea.... "<<fileName.at(t_case)<<endl;
         // render
 #ifdef CHECK
 
@@ -117,8 +118,11 @@ void Fea::setFeature()
             //used for check the image
 //            render->showImage();
 
+#ifdef CHECK
             render->storeImage(path,QString::number(t_case));
-
+#else
+            render->storeImage(path,fileName.at(t_case));
+#endif
             setMat(render->p_img,render->p_width,render->p_height);
 
             setProjectArea();
@@ -560,7 +564,7 @@ void Fea::setSilhouetteCE()
 
 void Fea::setMaxDepth(float *array,int len)
 {
-    feaArray[6] = -10.0;
+    feaArray[6] = -1.0;
     for(int i=0;i<len;i++)
         if(array[i] < 1.0)
             feaArray[6] = feaArray[6] > array[i] ? feaArray[6] : array[i];
@@ -580,9 +584,10 @@ void Fea::setDepthDistribute(float *zBuffer, int num)
         if(zBuffer[i] < 1.0)
             max = max < zBuffer[i] ? zBuffer[i] : max;
     }
+
     double step = (max - min)/(double)NumHistDepth;
 //    qDebug()<<"depth ... "<<step<<endl;
-    if(step)
+    if(step > 0.0)
     {
         // explain for if else below
         // such as min = 0 and max = 15 then step = 1
