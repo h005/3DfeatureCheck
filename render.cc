@@ -401,13 +401,14 @@ void Render::setParameters()
         p_verticesMvp.push_back(finalZ);
         bool isVisible = false;
 
+        bool pointOutsideScreen = true;
         // 在3*3邻域内找相似的深度值
         for (int i = -1; i <= 1; i++)
             for (int j = -1; j <= 1; j++) {
 
                 int x = (int)ax + i, y = (int)ay + j;
                 if (x >= 0 && x < p_width && y >= 0 && y < p_height) {
-
+                    pointOutsideScreen = false;
                     GLfloat winZ = p_img[y * p_height + x];
 
                     // 它们的z-buffer值相差不大，表示这是一个可见点
@@ -416,12 +417,12 @@ void Render::setParameters()
                         break;
                     }
                 }
-                else
-                {
-                    // 渲染出的点在可视区域外
-                    p_outsidePointsNum++;
-                }
+
             }
+        if (pointOutsideScreen) {
+            // 渲染出的点在可视区域外
+            p_outsidePointsNum++;
+        }
         p_isVertexVisible.push_back(isVisible);
         visibleVertexCount += isVisible ? 1 : 0;
     }
