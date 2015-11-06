@@ -9,6 +9,8 @@ Fea::Fea(QString fileName, QString path)
 {
     this->path = path;
 
+    qDebug()<<"path ... "<<path<<endl;
+
     // the number of feature is FEA_NUM
     feaArray = new double[FEA_NUM];
 
@@ -124,7 +126,7 @@ void Fea::setFeature()
 #ifdef CHECK
             render->storeImage(path,QString::number(t_case));
 #else
-            render->storeImage(path,fileName.at(t_case),width,height);
+//            render->storeImage(path,fileName.at(t_case),width,height);
 #endif
             setMat(render->p_img,render->p_width,render->p_height,width,height);
 
@@ -160,8 +162,7 @@ void Fea::setFeature()
 
 //            setMeshSaliencyCompute(a,render->p_vertices,render->p_isVertexVisible,render->p_indiceArray);
 
-            // setAbovePreference 有问题,compute缺少参数
-            // setAbovePreference(m_abv,m_model_tmp,m_view_tmp);
+            setAbovePreference(m_abv,render->m_model,render->m_view);
 
 #endif
 
@@ -170,6 +171,7 @@ void Fea::setFeature()
             clear();
 
         }
+
 
 //        break;
         printOut();
@@ -184,10 +186,22 @@ void Fea::setMMPara(QString mmFile)
 
     output = mmFile;
 
-    int pos = output.lastIndexOf('.');
-    output.replace(pos,7,".3df");
+//    qDebug()<<"output file ....." << output<<endl;
 
-    std::cout<< "output " << output.toStdString() << std::endl;
+    int pos = 0;
+
+    QString label;
+    pos = path.lastIndexOf('/');
+    label = path.left(pos);
+    pos = label.lastIndexOf('/');
+    label = label.remove(0,pos+1);
+    label = label.append(QString(".3df"));
+
+    pos = output.lastIndexOf('.');
+    output.replace(pos,7,label);
+
+
+//    std::cout<<std::endl<< "output " << output.toStdString() << std::endl<<std::endl;
 
     freopen(mmPath.toStdString().c_str(),"r",stdin);
 
@@ -261,7 +275,7 @@ void Fea::setMat(float *img, int width, int height,int dstWidth,int dstHeight)
 
 
 //    qDebug()<<"setMat "<<img0.cols<<" "<<img0.rows<<endl;
-    cv::resize(image,image,cv::Size(dstWidth,dstHeight));
+////    cv::resize(image,image,cv::Size(dstWidth,dstHeight));
 
 //    qDebug()<<img0.cols<<" "<<img0.rows<<endl;
 //    cv::namedWindow("check");
@@ -1324,8 +1338,14 @@ void Fea::setMvpPara(QString matrixFile)
     while(scanf("%s",tmpss)!=EOF)
     {
         QString tmpPath = path;
-        tmp = QDir::cleanPath(tmpPath.append(QString(tmpss)));
-//        qDebug()<<"setMvpPara "<<tmp<<endl;
+//        qDebug()<<"fea setpara path "<<path<<endl;
+        tmp = QDir::cleanPath(tmpPath);
+        int pos = tmp.lastIndexOf('/');
+        tmp = tmp.left(pos+1);
+//        qDebug()<<"fea setpara tmp "<<tmp<<endl;
+        tmp = QDir::cleanPath(tmp.append(QString(tmpss)));
+//        qDebug()<<"fea setpara path "<<tmp<<endl;
+
         fileName.push_back(tmp);
 
         glm::mat4 m,v,p;
