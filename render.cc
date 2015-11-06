@@ -278,8 +278,14 @@ void Render::showImage()
 }
 // fileName is absolute name
 // fileName  = path + name
-void Render::storeImage(QString path,QString fileName)
+void Render::storeImage(QString path,QString fileName0,int width,int height)
 {
+//    qDebug()<<"store Image "<<path<<endl;
+//    qDebug()<<"stroe Image  "<<fileName<<endl;
+    int pos = fileName0.lastIndexOf('/');
+    QString fileName = fileName0.remove(0,pos+1);
+//    qDebug()<<"store Image  "<<fileName0<<endl;
+
     makeCurrent();
 
     glBindFramebuffer(GL_FRAMEBUFFER,frameBufferId);
@@ -295,6 +301,7 @@ void Render::storeImage(QString path,QString fileName)
     cv::Mat depthImgFliped = cv::Mat(viewport[3],viewport[2],CV_32FC1,img0);
     cv::Mat depthImg;
     cv::flip(depthImgFliped,depthImg,0);
+    cv::resize(depthImg,depthImg,cv::Size(width,height));
     depthImg.convertTo(depthImg,CV_8UC1,255,0);
 
     GLubyte *img =
@@ -311,6 +318,7 @@ void Render::storeImage(QString path,QString fileName)
     cv::Mat rgbaImgFliped = cv::Mat(viewport[3],viewport[2],CV_8UC4,img);
     cv::Mat rgbImg;
     cv::flip(rgbaImgFliped,rgbImg,0);
+    cv::resize(rgbImg,rgbImg,cv::Size(width,height));
     cv::cvtColor(rgbImg,rgbImg,CV_RGBA2BGR);
     rgbImg.convertTo(rgbImg,CV_8UC3);
 

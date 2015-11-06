@@ -46,7 +46,7 @@ public:
 
     void showImage();
     // fileName is absolute name
-    void storeImage(QString path,QString fileName);
+    void storeImage(QString path,QString fileName,int width,int height);
 
     ~Render();
 

@@ -117,13 +117,16 @@ void Fea::setFeature()
 
             //used for check the image
 //            render->showImage();
-
+            cv::Mat img0 = cv::imread(fileName.at(t_case).toStdString().c_str(),0);
+            int width = img0.cols;
+            int height = img0.rows;
+            img0.release();
 #ifdef CHECK
             render->storeImage(path,QString::number(t_case));
 #else
-            render->storeImage(path,fileName.at(t_case));
+            render->storeImage(path,fileName.at(t_case),width,height);
 #endif
-            setMat(render->p_img,render->p_width,render->p_height);
+            setMat(render->p_img,render->p_width,render->p_height,width,height);
 
             setProjectArea();
 
@@ -245,13 +248,29 @@ Fea::~Fea()
 
 }
 
-void Fea::setMat(float *img, int width, int height)
+void Fea::setMat(float *img, int width, int height,int dstWidth,int dstHeight)
 {
 //    image.release();
     cv::Mat image0 = cv::Mat(width,height,CV_32FC1,img);
     image0.convertTo(image,CV_8UC1,255.0);
     // release memory
     image0.release();
+
+    // resize
+//    qDebug()<<"setMat "<<fileName.at(t_case)<<endl;
+
+
+//    qDebug()<<"setMat "<<img0.cols<<" "<<img0.rows<<endl;
+    cv::resize(image,image,cv::Size(dstWidth,dstHeight));
+
+//    qDebug()<<img0.cols<<" "<<img0.rows<<endl;
+//    cv::namedWindow("check");
+//    cv::imshow("check",image);
+//    cv::waitKey(0);
+//    image.resize(img0.size)q;
+
+
+
 }
 
 void Fea::setProjectArea()
@@ -290,6 +309,7 @@ void Fea::setProjectArea()
 
     cvSaveImage(projPath.toStdString().c_str(),&(IplImage(img)));
 
+    feaArray[0] /= image.cols*image.rows;
     img.release();
     std::cout<<"fea projectArea "<<feaArray[0]<<std::endl;
 

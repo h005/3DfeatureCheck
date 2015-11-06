@@ -74,7 +74,7 @@ public:
 
 private:
 
-    void setMat(float *img, int width, int height);
+    void setMat(float *img, int width, int height,int dstWidth,int dstHeight);
 
     void setProjectArea();
 
