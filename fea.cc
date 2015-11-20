@@ -98,7 +98,6 @@ void Fea::setFeature()
 
     for(; t_case < NUM ; t_case++)
     {
-        qDebug()<<"set fea.... "<<fileName.at(t_case)<<endl;
         // render
 #ifdef CHECK
 
@@ -113,6 +112,8 @@ void Fea::setFeature()
 
         bool res = render->rendering(t_case);
 
+
+
         if(res)
         {
 
@@ -120,11 +121,14 @@ void Fea::setFeature()
             //used for check the image
 //            render->showImage();
             cv::Mat img0 = cv::imread(fileName.at(t_case).toStdString().c_str(),0);
+
             int width = img0.cols;
             int height = img0.rows;
             img0.release();
 
             qDebug()<<"....."<<width<<" "<<height<<endl;
+
+            readMask();
 
 #ifdef CHECK
             render->storeImage(path,QString::number(t_case));
@@ -171,12 +175,17 @@ void Fea::setFeature()
 
             setOutlierCount();
 
+
+            /*
+              add 2D fea function here
+            */
+
             clear();
 
         }
 
 
-//        break;
+        break;
         printOut();
 
     }
@@ -263,6 +272,22 @@ void Fea::setMMPara(QString mmFile)
 Fea::~Fea()
 {
 
+}
+
+void Fea::readMask()
+{
+    QString file = fileName.at(t_case);
+    int pos = file.lastIndexOf('/');
+    file = file.remove(pos,20);
+    // add mask folder
+    file = file + "/mask";
+    QString tmp = fileName.at(t_case);
+    tmp = tmp.remove(0,pos);
+
+    file = file + tmp;
+    // mask is a gray image only have 255 and 0
+    // where 255 means foreground
+    mask = cv::imread(file.toStdString(),0);
 }
 
 void Fea::setMat(float *img, int width, int height,int dstWidth,int dstHeight)
@@ -1402,6 +1427,9 @@ void Fea::setMvpPara(QString matrixFile)
 #endif  
     }
     NUM = fileName.size();
+
+    qDebug()<<"fileName .... set mvp para "<<fileName.at(0)<<endl;
+
 
 //    freopen("d:/matlab/extraFea/fileName.txt","w",stdout);
 //    for(int i=0;i<fileName.size();i++)

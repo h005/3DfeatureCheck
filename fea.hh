@@ -50,6 +50,8 @@ private:
     int P_NUM;
 
     cv::Mat image;
+    cv::Mat mask;
+
     // used for contour
 //    CvMemStorage *mem_storage;
     std::vector<std::vector<cv::Point>> contour;
@@ -62,6 +64,8 @@ private:
 
     double *feaArray;
 
+    std::vector<double> fea2D;
+
 public:
     void showImage();
 
@@ -73,6 +77,8 @@ public:
     ~Fea();
 
 private:
+
+    void readMask();
 
     void setMat(float *img, int width, int height,int dstWidth,int dstHeight);
 
@@ -126,6 +132,10 @@ private:
     void setAbovePreference(glm::mat4 &modelZ,glm::mat4 &modelView);
 
     void setOutlierCount();
+
+    /*  2D feature */
+
+
 
     double getMeshSaliencyLocalMax(double *nearDis,int len,std::vector<double> meshSaliency);
 
