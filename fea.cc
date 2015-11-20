@@ -115,18 +115,21 @@ void Fea::setFeature()
 
         if(res)
         {
-            render->setParameters();
 
+            render->setParameters();
             //used for check the image
 //            render->showImage();
             cv::Mat img0 = cv::imread(fileName.at(t_case).toStdString().c_str(),0);
             int width = img0.cols;
             int height = img0.rows;
             img0.release();
+
+            qDebug()<<"....."<<width<<" "<<height<<endl;
+
 #ifdef CHECK
             render->storeImage(path,QString::number(t_case));
 #else
-//            render->storeImage(path,fileName.at(t_case),width,height);
+            render->storeImage(path,fileName.at(t_case),width,height);
 #endif
             setMat(render->p_img,render->p_width,render->p_height,width,height);
 
@@ -160,7 +163,7 @@ void Fea::setFeature()
 
             setGaussianCurvature(b,render->p_isVertexVisible,render->p_indiceArray);
 
-//            setMeshSaliencyCompute(a,render->p_vertices,render->p_isVertexVisible,render->p_indiceArray);
+            setMeshSaliencyCompute(a,render->p_vertices,render->p_isVertexVisible,render->p_indiceArray);
 
             setAbovePreference(m_abv,render->m_model,render->m_view);
 
@@ -267,6 +270,7 @@ void Fea::setMat(float *img, int width, int height,int dstWidth,int dstHeight)
 //    image.release();
     cv::Mat image0 = cv::Mat(width,height,CV_32FC1,img);
     image0.convertTo(image,CV_8UC1,255.0);
+    cv::resize(image,image,cv::Size(dstWidth,dstHeight));
     // release memory
     image0.release();
 
@@ -291,13 +295,14 @@ void Fea::setProjectArea()
 {
     feaArray[0] = 0.0;
     cv::Mat img = cv::Mat(image.rows,image.cols,CV_8UC1);
+//    qDebug()<<"img .... "<<image.rows<<" "<<image.cols<<endl;
     if(image.channels()==3)
     {
         for(int i=0;i<image.rows;i++)
             for(int j=0;j<image.cols;j++)
-                if(image.at<uchar>(i,j,1)!=255
-                   || image.at<uchar>(i,j,2)!=255
-                   || image.at<uchar>(i,j,3)!=255)
+                if(image.at<cv::Vec3b>(i,j)[0]!=255
+                   || image.at<cv::Vec3b>(i,j)[1]!=255
+                   || image.at<cv::Vec3b>(i,j)[2]!=255)
                 feaArray[0]++;
     }
     else
@@ -319,7 +324,17 @@ void Fea::setProjectArea()
 
     }
 
-    QString projPath = path + QString("proj/").append(QString::number(t_case)).append(QString(".jpg"));
+    QString fileName0 = fileName.at(t_case);
+
+    int pos = fileName0.lastIndexOf('/');
+
+    QString fileName = fileName0.remove(0,pos+1);
+
+
+
+    QString projPath = path + QString("proj/").append(fileName);
+
+    cv::flip(img,img,0);
 
     cvSaveImage(projPath.toStdString().c_str(),&(IplImage(img)));
 
@@ -797,7 +812,10 @@ void Fea::setMeshSaliency(std::vector<MeanCurvature<MyMesh>> &a, std::vector<GLf
     delete []nearDis;
 }
 
-void Fea::setMeshSaliencyCompute(std::vector<MeanCurvature<MyMesh> > &a, std::vector<GLfloat> &vertex, std::vector<bool> &isVertexVisible, std::vector<std::vector<int> > &indiceArray)
+void Fea::setMeshSaliencyCompute(std::vector<MeanCurvature<MyMesh> > &a,
+                                 std::vector<GLfloat> &vertex,
+                                 std::vector<bool> &isVertexVisible,
+                                 std::vector<std::vector<int> > &indiceArray)
 {
     feaArray[10] = 0.0;
     double length = getDiagonalLength(vertex);
@@ -853,18 +871,22 @@ void Fea::setMeshSaliencyCompute(std::vector<MeanCurvature<MyMesh> > &a, std::ve
         for(int i=0;i<meshSaliencyMiddle[j].size();i++)
             meshSaliencyMiddle[j][i] = (meshSaliencyMiddle[j][i] - min)/(max - min) *
                     (max - localMax[j])*(max - localMax[j]);
+        qDebug()<<"mesh saliency ... "<<j<<endl;
     }
-//    set sum Si
+//    set sum Si-
     for(int i=0;i<meshSaliencyMiddle[0].size();i++)
         for(int j=1;j<5;j++)
             meshSaliencyMiddle[0][i] += meshSaliencyMiddle[j][i];
 
-    for(int i=0;i<isVertexVisible.size();i++)
+    int num = isVertexVisible.size();
+    for(int i=0;i<num;i++)
+    {
         if(isVertexVisible[i])
             feaArray[10] += meshSaliencyMiddle[0][i];
+    }
 //    std::cout<<"fea meshSaliency ";
-    printf("fea meshSaliency %e\n",feaArray[10]);
-
+    //printf("fea meshSaliency %e\n",feaArray[10]);
+    qDebug()<<"mesh saliency ... done"<<endl;
     delete []nearDis;
 }
 
@@ -1380,6 +1402,11 @@ void Fea::setMvpPara(QString matrixFile)
 #endif  
     }
     NUM = fileName.size();
+
+//    freopen("d:/matlab/extraFea/fileName.txt","w",stdout);
+//    for(int i=0;i<fileName.size();i++)
+//        std::cout<<fileName.at(i).toStdString()<<std::endl;
+//    fclose(stdout);
 }
 
 void Fea::printOut()
@@ -1432,7 +1459,7 @@ void Fea::printOut()
 
 #endif
 
-    freopen("CON","a+",stdout);
+    fclose(stdout);
     image.release();
 }
 

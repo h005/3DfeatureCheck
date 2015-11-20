@@ -73,13 +73,14 @@ public:
     std::vector<MyMesh> p_vecMesh;
     std::vector<std::vector<int>> p_indiceArray;
     int p_outsidePointsNum;
+    glm::mat4 m_model;
+    glm::mat4 m_view;
+    glm::mat4 m_proj;
 
 protected:
     glm::mat4 getModelViewMatrix();
     glm::mat4 getModelMatrix();
-    glm::mat4 m_model;
-    glm::mat4 m_view;
-    glm::mat4 m_proj;
+
 
 /*
     glm::mat4 m_camera;
