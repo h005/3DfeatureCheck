@@ -49,8 +49,13 @@ private:
     int NUM;
     int P_NUM;
 
+    // render image
     cv::Mat image;
+    // mask is a gray image only have 255 and 0 two values
+    // 255 means foreground
     cv::Mat mask;
+    // 2Dimage
+    cv::Mat image2D;
 
     // used for contour
 //    CvMemStorage *mem_storage;

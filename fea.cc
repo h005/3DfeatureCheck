@@ -120,11 +120,10 @@ void Fea::setFeature()
             render->setParameters();
             //used for check the image
 //            render->showImage();
-            cv::Mat img0 = cv::imread(fileName.at(t_case).toStdString().c_str(),0);
+            image2D = cv::imread(fileName.at(t_case).toStdString().c_str(),0);
 
-            int width = img0.cols;
-            int height = img0.rows;
-            img0.release();
+            int width = image2D.cols;
+            int height = image2D.rows;
 
             qDebug()<<"....."<<width<<" "<<height<<endl;
 
@@ -167,7 +166,7 @@ void Fea::setFeature()
 
             setGaussianCurvature(b,render->p_isVertexVisible,render->p_indiceArray);
 
-            setMeshSaliencyCompute(a,render->p_vertices,render->p_isVertexVisible,render->p_indiceArray);
+//            setMeshSaliencyCompute(a,render->p_vertices,render->p_isVertexVisible,render->p_indiceArray);
 
             setAbovePreference(m_abv,render->m_model,render->m_view);
 
@@ -288,6 +287,17 @@ void Fea::readMask()
     // mask is a gray image only have 255 and 0
     // where 255 means foreground
     mask = cv::imread(file.toStdString(),0);
+
+    qDebug()<<"mask file name ..."<<file<<endl;
+
+    if(mask.rows == 0 || mask.cols == 0)
+    {
+        qDebug()<<"error : mask file does not exist ... "<<endl;
+        image2D.copyTo(mask);
+    }
+//    cv::namedWindow("mask");
+//    cv::imshow("mask",mask);
+
 }
 
 void Fea::setMat(float *img, int width, int height,int dstWidth,int dstHeight)
