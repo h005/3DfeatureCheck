@@ -1071,6 +1071,247 @@ void Fea::setOutlierCount()
     feaArray[12] = (double)render->p_outsidePointsNum / render->p_vertices.size();
 }
 
+void Fea::getColorDistribution()
+{
+    double *hist = new double[NUM_Distribution];
+
+    hist = memset(hist,0,sizeof(double)*NUM_Distribution);
+    int index = 0;
+    for(int i=0;i<image.rows;i++)
+        for(int j=0;j<image.cols;j++)
+        {
+            index = image.at<cv::Vec3b>(i,j)[0]>>4;
+            index = (image.at<cv::Vec3b>(i,j)[1]>>4) + (index << 4);
+            index = (image.at<cv::Vec3b>(i,j)[2]>>4) + (index << 4);
+            hist[index]++;
+        }
+
+    for(int i=0;i<NUM_Distribution;i++)
+        fea2D.push_back(hist[i]);
+
+    delete []hist;
+}
+
+void Fea::getHueCount()
+{
+    cv::Mat tmp;
+
+    int histSize[1] = {20};
+    int channels[1] = {0};
+    float hranges[] = {0.f,360.f};
+    const float *ranges[] = {hranges};
+    float alpha = 0.05;
+
+
+    cv::Mat mask0 = cv::Mat(image.rows,image.cols,CV_8UC1,cv::Scalar(0));
+    // it is useful to convert CV_8UC3 to CV_32FC3
+    image.convertTo(tmp,CV_32FC3,1/255.0);
+
+    cv::cvtColor(tmp,tmp,CV_BGR2HSV);
+
+    double valueRange[2] = {0.15,0.95};
+
+    for(int i=0;i<tmp.rows;i++)
+    {
+        for(int j=0;j<tmp.cols;j++)
+        {
+            if(tmp.at<cv::Vec3f>(i,j)[2] > valueRange[0] && tmp.at<cv::Vec3f>(i,j)[2] < valueRange[1] && tmp.at<cv::Vec3f>(i,j)[1]>0.2)
+            {
+                mask0.at<uchar>(i,j) = 255;
+            }
+        }
+    }
+    cv::MatND hist;
+
+    cv::calcHist(&tmp,1,channels,mask0,hist,
+                 1,histSize,ranges);
+
+    float max = 0.0;
+    for(int i=0;i<histSize[0];i++)
+        max = max < hist.at<float>[i] ? hist.at<float>[i] : max;
+
+    float level = alpha * max;
+    int count = 0;
+    for(int i=0;i<histSize[0];i++)
+        if(hist.at<float>[i] > level)
+            count ++;
+    double hueVal = histSize[0] - count;
+    fea2D.push_back(hueVal);
+}
+
+void Fea::getBlur()
+{
+    cv::Mat tmp;
+    image.copyTo(tmp);
+    /*
+     * Mat padded;                            //expand input image to optimal size
+        int m = getOptimalDFTSize( I.rows );
+        int n = getOptimalDFTSize( I.cols ); // on the border add zero pixels
+        copyMakeBorder(I, padded, 0, m - I.rows, 0, n - I.cols, BORDER_CONSTANT, Scalar::all(0));
+        Mat planes[] = {Mat_<float>(padded), Mat::zeros(padded.size(), CV_32F)};
+        Mat complexI;
+        merge(planes, 2, complexI);         // Add to the expanded another plane with zeros
+        dft(complexI, complexI);            // this way the result may fit in the source matrix
+        split(complexI, planes);                   // planes[0] = Re(DFT(I), planes[1] = Im(DFT(I))
+        magnitude(planes[0], planes[1], planes[0]);// planes[0] = magnitude
+        Mat magI = planes[0];
+     */
+    float theta = 5.f;
+    cv::Mat padded;
+    int m = cv::getOptimalDFTSize(tmp.rows);
+    int n = cv::getOptimalDFTSize(tmp.cols);
+    cv::copyMakeBorder(tmp,padded,0, m - tmp.rows,0,n - tmp.cols, cv::BORDER_CONSTANT, cv::Scalar::all(0));
+    cv::Mat planes[] = {cv::Mat_<float>(padded), cv::Mat::zeros(padded.size(),CV_32F)};
+    cv::Mat complexI;
+    cv::merge(planes,2,complexI);
+    cv::dft(complexI,complexI);
+    cv::split(complexI,planes);
+    magnitude(planes[0],planes[1],planes[0]);
+    cv::Mat magl = planes[0];
+    double blur = 0;
+    for(int i=0;i<magl.rows;i++)
+        for(int j=0;j<magl.cols;j++)
+            if(magl.at<float>(i,j) > theta)
+                blur ++;
+
+    fea2D.push_back(blur);
+}
+
+void Fea::getContrast()
+{
+    double widthRatio = 0.98;
+
+    double *hist = new double[256];
+    memset(hist,0,sizeof(double)*256);
+
+    for(int i=0;i<image.rows;i++)
+        for(int j=0;j<image.cols;j++)
+            for(int k = 0;k<3;k++)
+                hist[image.at<cv::Vec3b>(i,j)[k]]++;
+
+    int num = image.cols*image.rows*3;
+    num = num*(1.0 - widthRatio);
+    int count = 0;
+    int from  = 0;
+    int to = 255;
+    while(count < num)
+    {
+        if(hist[from] < hist[to])
+            count  = count + hist[from++];
+        else
+            count = count + hist[to--];
+    }
+
+    double contrast = to - from;
+
+    fea2D.push_back(contrast);
+
+}
+
+void Fea::getBrightness()
+{
+    cv::Mat tmp;
+    image.copyTo(tmp);
+    cv::cvtColor(tmp,tmp,CV_BGR2GRAY);
+
+    double sum = 0;
+    for(int i=0;i<tmp.rows;i++)
+        for(int j=0;j<tmp.cols;j++)
+            sum += tmp.at<uchar>(i,j);
+
+    double brightness = sum / tmp.rows / tmp.cols;
+
+    fea2D.push_back(brightness);
+
+}
+
+void Fea::getRuleOfThird()
+{
+    double centroidRow  = 0;
+    double centroidCol = 0;
+    // ref http://mathworld.wolfram.com/GeometricCentroid.html
+    double mess = 0;
+    for(int i=0;i<mask.rows;i++)
+        for(int j=0;j<mask.cols;j++)
+            if(mask.at<uchar>(i,j) == 255)
+            {
+                mess ++;
+                centroidRow += i;
+                centroidCol += j;
+            }
+
+    centroidRow /= mess;
+    centroidCol /= mess;
+
+    //    scale to [0,1]
+    centroidRow /= mask.rows;
+    centroidCol /= mask.cols;
+
+    double ruleOfThirdRow[2] = {1.0/3.0,2.0/3.0};
+    double ruleOfThirdCol[2] = {1.0/3.0,2.0/3.0};
+
+    double res = 100000.0;
+    for(int i=0;i<2;i++)
+        for(int j=0;j<2;j++)
+        {
+            double tmp = sqrt((centroidRow - ruleOfThirdRow[i])*(centroidRow - ruleOfThirdRow[i])
+                              +(centroidCol - ruleOfThirdCol[j])*(centroidCol - ruleOfThirdCol[j]));
+            res = res < tmp ? res : tmp;
+        }
+
+    fea2D.push_back(res);
+}
+
+void Fea::getLightingFeature()
+{
+    // feature lighting
+    double fl = 0;
+    // brightness of subject
+    double bs = 0;
+    // brightness of background
+    double bb = 0;
+
+    cv::Mat tmp;
+    image.copyTo(tmp);
+    cv::cvtColor(tmp,tmp,CV_BGR2GRAY);
+
+    for(int i=0;i<tmp.rows;i++)
+        for(int j=0;j<tmp.cols;j++)
+            if(mask.at<uchar>(i,j) == 255)
+                bs += tmp.at<uchar>(i,j);
+            else
+                bb += tmp.at<uchar>(i,j);
+
+    fl = abs(log(bs/bb));
+
+    fea2D.push_back(fl);
+
+    tmp.release();
+}
+
+void Fea::getHog()
+{
+    // ref http://blog.csdn.net/yangtrees/article/details/7463431
+    // ref http://blog.csdn.net/raodotcong/article/details/6239431
+    // ref http://gz-ricky.blogbus.com/logs/85326280.html
+    // ref http://blog.sciencenet.cn/blog-702148-762019.html
+    cv::Mat gray;
+    cv::cvtColor(image,gray,CV_BGR2GRAY);
+
+    cv::resize(gray,gray,cv::Size(32,32));
+    // widnowsSize,blockSize,blockStride,cellSize
+    cv::HOGDescriptor d(cv::Size(32,32),cv::Size(8,8),cv::Size(4,4),cv::Size(4,4),9);
+
+    std::vector<float> descriptorsValues;
+    std::vector<cv::Point> locations;
+
+    d.compute(gray,descriptorsValues,cv::Size(0,0),cv::Size(0,0),locations);
+
+    for(int i=0;i<descriptorsValues.size();i++)
+        fea2D.push_back(descriptorsValues[i]);
+}
+
+
 double Fea::getMeshSaliencyLocalMax(double *nearDis, int len, std::vector<double> meshSaliency)
 {
     //可能会有bug,nearDis[0]如果为0的话，赋值是没有意义的

@@ -17,6 +17,7 @@
 #define NumHistViewEntropy 15
 #define PI 3.1415926
 #define MAX_LEN 32
+#define NUM_Distribution 4096
 
 
 class Fea
@@ -79,6 +80,7 @@ public:
     void setFeature();
 
     void setMMPara(QString matrixPath);
+
     ~Fea();
 
 private:
@@ -139,8 +141,22 @@ private:
     void setOutlierCount();
 
     /*  2D feature */
-
-
+    // fill fea2D 0~4095
+    void getColorDistribution();
+    // 4096
+    void getHueCount();
+    // 4097
+    void getBlur();
+    //    4098
+    void getContrast();
+    // 4099
+    void getBrightness();
+    // rule of thirds
+    void getRuleOfThird();
+    // lighting feature
+    void getLightingFeature();
+    // hog
+    void getHog();
 
     double getMeshSaliencyLocalMax(double *nearDis,int len,std::vector<double> meshSaliency);
 
