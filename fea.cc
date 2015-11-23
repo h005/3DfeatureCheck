@@ -12,9 +12,8 @@ Fea::Fea(QString fileName, QString path)
     qDebug()<<"path ... "<<path<<endl;
 
     // the number of feature is FEA_NUM
-    feaArray = new double[FEA_NUM];
+    // std::vector<double> fea3D;
 
-    memset(feaArray,0,sizeof(double)*FEA_NUM);
     // read in
     exImporter = new ExternalImporter<MyMesh>();
 
@@ -92,7 +91,7 @@ void Fea::setFeature()
     }
 
     qDebug() << "fea set mean gauss curvature .... "<< render->p_vecMesh.size() <<endl;
-    qDebug() << NUM <<endl;
+    qDebug() << "NUM ... " << NUM <<endl;
 
 #endif
 
@@ -120,21 +119,21 @@ void Fea::setFeature()
             render->setParameters();
             //used for check the image
 //            render->showImage();
-            image2D = cv::imread(fileName.at(t_case).toStdString().c_str(),0);
+            image2D = cv::imread(fileName.at(t_case).toStdString().c_str());
 
             int width = image2D.cols;
             int height = image2D.rows;
 
-            qDebug()<<"....."<<width<<" "<<height<<endl;
-
-            readMask();
 
 #ifdef CHECK
             render->storeImage(path,QString::number(t_case));
 #else
             render->storeImage(path,fileName.at(t_case),width,height);
 #endif
+
             setMat(render->p_img,render->p_width,render->p_height,width,height);
+
+            setMask();
 
             setProjectArea();
 
@@ -178,13 +177,26 @@ void Fea::setFeature()
             /*
               add 2D fea function here
             */
+            getColorDistribution();
+
+            getHueCount();
+
+            getBlur();
+
+            getContrast();
+
+            getBrightness();
+
+            getRuleOfThird();
+
+            getLightingFeature();
 
             clear();
 
         }
 
 
-        break;
+//        break;
         printOut();
 
     }
@@ -293,11 +305,17 @@ void Fea::readMask()
     if(mask.rows == 0 || mask.cols == 0)
     {
         qDebug()<<"error : mask file does not exist ... "<<endl;
-        image2D.copyTo(mask);
+//        image2D.copyTo(mask);
+        cv::cvtColor(image2D,mask,CV_BGR2GRAY);
     }
 //    cv::namedWindow("mask");
 //    cv::imshow("mask",mask);
 
+}
+
+void Fea::setMask()
+{
+    image.copyTo(mask);
 }
 
 void Fea::setMat(float *img, int width, int height,int dstWidth,int dstHeight)
@@ -328,7 +346,7 @@ void Fea::setMat(float *img, int width, int height,int dstWidth,int dstHeight)
 
 void Fea::setProjectArea()
 {
-    feaArray[0] = 0.0;
+    double res = 0.0;
     cv::Mat img = cv::Mat(image.rows,image.cols,CV_8UC1);
 //    qDebug()<<"img .... "<<image.rows<<" "<<image.cols<<endl;
     if(image.channels()==3)
@@ -338,7 +356,7 @@ void Fea::setProjectArea()
                 if(image.at<cv::Vec3b>(i,j)[0]!=255
                    || image.at<cv::Vec3b>(i,j)[1]!=255
                    || image.at<cv::Vec3b>(i,j)[2]!=255)
-                feaArray[0]++;
+                res++;
     }
     else
     {
@@ -348,7 +366,7 @@ void Fea::setProjectArea()
             {
                 if(image.at<uchar>(i,j)!=255)
                 {
-                    feaArray[0]++;
+                    res++;
                     img.at<uchar>(i,j) = 255;
                 }
                 else
@@ -373,17 +391,17 @@ void Fea::setProjectArea()
 
     cvSaveImage(projPath.toStdString().c_str(),&(IplImage(img)));
 
-    feaArray[0] /= image.cols*image.rows;
+    res /= image.cols*image.rows;
+    fea3D.push_back(res);
     img.release();
-    std::cout<<"fea projectArea "<<feaArray[0]<<std::endl;
+    std::cout<<"fea projectArea "<<res<<std::endl;
 
 }
 
 void Fea::setVisSurfaceArea(std::vector<GLfloat> &vertex,
                              std::vector<GLuint> &face)
 {
-
-    feaArray[1] = 0;
+    double res = 0.0;
     for(int i=0 ; i<face.size() ; i+=3)
     {
 /*
@@ -401,16 +419,18 @@ void Fea::setVisSurfaceArea(std::vector<GLfloat> &vertex,
         CvPoint3D64f p1 = cvPoint3D64f(vertex[3*face[i]],vertex[3*face[i]+1],vertex[3*face[i]+2]);
         CvPoint3D64f p2 = cvPoint3D64f(vertex[3*face[i+1]],vertex[3*face[i+1]+1],vertex[3*face[i+1]+2]);
         CvPoint3D64f p3 = cvPoint3D64f(vertex[3*face[i+2]],vertex[3*face[i+2]+1],vertex[3*face[i+2]+2]);
-        feaArray[1] += getArea3D(&p1,&p2,&p3);
+        res += getArea3D(&p1,&p2,&p3);
     }
 
-    std::cout<<"fea visSurfaceArea "<< feaArray[1]<<std::endl;
+    std::cout<<"fea visSurfaceArea "<< res<<std::endl;
+
+    fea3D.push_back(res);
     // used for test
 }
 
 void Fea::setViewpointEntropy2(std::vector<GLfloat> &vertex, std::vector<GLuint> &face)
 {
-    feaArray[2] = 0.0;
+    double res = 0.0;
     double area = 0.0;
     double totalArea = image.cols*image.rows;
 //    qDebug()<<"viewPointEntropy ... "<<totalArea<<endl;
@@ -422,20 +442,23 @@ void Fea::setViewpointEntropy2(std::vector<GLfloat> &vertex, std::vector<GLuint>
         area = getArea2D(&a,&b,&c);
 //        qDebug()<<"viewPointEntropy ... "<<area<<endl;
         if(area)
-            feaArray[2] += area/totalArea * log2(area/totalArea);
+            res += area/totalArea * log2(area/totalArea);
         else
             qDebug()<<"viewpoint Entropy "<<area<<endl;
     }
     // background
-    if((feaArray[0] - totalArea) > 0)
-        feaArray[2] += (totalArea - feaArray[0])/totalArea * log2((totalArea - feaArray[0])/totalArea);
+    if((totalArea - fea3D[0]) > 0)
+        res += (totalArea - fea3D[0])/totalArea * log2((totalArea - fea3D[0])/totalArea);
 
-    feaArray[2] = - feaArray[2];
-    std::cout<<"fea viewpointEntropy "<<feaArray[2]<<std::endl;
+    res = - res;
+    std::cout<<"fea viewpointEntropy "<<res<<std::endl;
+
+    fea3D.push_back(res);
 }
 
 void Fea::setViewpointEntropy(std::vector<GLfloat> &vertex, std::vector<GLuint> &face)
 {
+    double res = 0.0;
 //    double hist[15];
     double *hist = new double[NumHistViewEntropy];
 //    还有此处，写成 double hist[15]; memest(hist,0,sizeof(hist));也会出错！
@@ -443,7 +466,7 @@ void Fea::setViewpointEntropy(std::vector<GLfloat> &vertex, std::vector<GLuint> 
     double *area = new double[face.size()/3];
     double min = 1e10;
     double max = -1.0;
-    feaArray[2] = 0.0;
+    res = 0.0;
 //    setArea
 //    qDebug()<<"face size"<<face.size()<<endl;
     if(face.size())
@@ -480,12 +503,12 @@ void Fea::setViewpointEntropy(std::vector<GLfloat> &vertex, std::vector<GLuint> 
 //    setEntropy
     for(int i=0;i<NumHistViewEntropy;i++)
         if(hist[i])
-            feaArray[2] += hist[i]*log2(hist[i]);
+            res += hist[i]*log2(hist[i]);
 //    NND绝对的未解之谜！加了下面一句话会报错！
     delete []hist;
-    feaArray[2] = - feaArray[2];
+    res = - res;
 
-    std::cout<<"fea viewpointEntropy "<<feaArray[2]<<std::endl;
+    std::cout<<"fea viewpointEntropy "<<res<<std::endl;
 //    delete []hist;
     delete []area;
 /*
@@ -494,55 +517,12 @@ void Fea::setViewpointEntropy(std::vector<GLfloat> &vertex, std::vector<GLuint> 
         printf("%f %f %f\n",vertex[i],vertex[i+1],vertex[i+2]);
     fclose(stdout);
 */
-
+    fea3D.push_back(res);
 }
 
 void Fea::setSilhouetteLength()
 {
-//    feaArray[3] = 0.0;
-////    ref http://blog.csdn.net/augusdi/article/details/9000893
-//    IplImage *tmpImage =
-//            cvCreateImage(cvSize(image.cols,image.rows),
-//                          8,1);
-//    if(image.channels()==3)
-//        cv::cvtColor(image,image,CV_BGR2GRAY);
-
-//    tmpImage->imageData = (char*)image.data;
-//    cvThreshold(tmpImage,tmpImage,250,255,CV_THRESH_BINARY_INV);
-////    cvShowImage("tmpimage",tmpImage);
-//    IplImage *img_tmp =
-//            cvCreateImage(cvGetSize(tmpImage),8,1);
-//    img_tmp = cvCloneImage(tmpImage);
-
-//    mem_storage = cvCreateMemStorage(0);
-
-//    contour = NULL;
-//    cvFindContours(
-//                img_tmp,
-//                mem_storage,
-//                &contour,
-//                sizeof(CvContour),
-//                CV_RETR_EXTERNAL
-//                );
-//    cvZero(img_tmp);
-//    cvDrawContours(
-//                img_tmp,
-//                contour,
-//                cvScalar(100),
-//                cvScalar(100),
-//                1);
-////    cvShowImage("image",img_tmp);
-////    ref http://blog.csdn.net/fdl19881/article/details/6730112
-//    if(contour)
-//        feaArray[3] = cvArcLength(contour);
-//    else
-//        feaArray[3] = 0.0;
-//    std::cout<<"fea silhouetteLength "<<feaArray[3]<<std::endl;
-//    cvReleaseImage(&tmpImage);
-//    cvReleaseImage(&img_tmp);
-
-
-    feaArray[3] = 0.0;
+    double res = 0.0;
     // ref http://docs.opencv.org/2.4/doc/tutorials/imgproc/shapedescriptors/find_contours/find_contours.html
     cv::Mat gray;
 
@@ -560,13 +540,14 @@ void Fea::setSilhouetteLength()
     if(contour.size())
         for(int i=0;i<contour.size();i++)
         {
-            feaArray[3] += cv::arcLength(contour[i],true);
+            res += cv::arcLength(contour[i],true);
         }
     else
-        feaArray[3] = 0.0;
+        res = 0.0;
 
+    fea3D.push_back(res);
 
-    std::cout<<"fea silhouetteLength "<<feaArray[3]<<std::endl;
+    std::cout<<"fea silhouetteLength "<<res<<std::endl;
 
     std::vector<cv::Vec4i>().swap(hierarchy);
 
@@ -587,8 +568,8 @@ void Fea::setSilhouetteLength()
 
 void Fea::setSilhouetteCE()
 {
-    feaArray[4] = 0.0;
-    feaArray[5] = 0.0;
+    double res0 = 0.0;
+    double res1 = 0.0;
     double curva = 0;
     double dis = 0.0;
 
@@ -615,13 +596,7 @@ void Fea::setSilhouetteCE()
             points.push_back(cv::Point2d(c.x, c.y));
 
 
-    //        if(getCurvature(&a,&b,&c,curva))
-    //        {
-    ////            std::cout << curva << std::endl;
                 dis = getDis2D(&a,&b) + getDis2D(&b,&c);
-    //            feaArray[4] += abs(curva) * dis;
-    //            feaArray[5] += curva*curva * dis;
-    //        }
 
             double curvab = getContourCurvature(points,1);
             if (std::isnan(curvab)) {
@@ -632,8 +607,8 @@ void Fea::setSilhouetteCE()
             }
             else
             {
-                feaArray[4] += abs(curvab);
-                feaArray[5] += curvab*curvab;
+                res0 += abs(curvab);
+                res1 += curvab*curvab;
             }
 
     //        qDebug()<<"curvature a"<<curva<<" "<<abs(curvab)<< " "<<abs(curvab) - abs(curva)<<endl;
@@ -641,23 +616,27 @@ void Fea::setSilhouetteCE()
     }
 
 
+    fea3D.push_back(res0);
+    fea3D.push_back(res1);
 
-    std::cout<<"fea silhouetteCurvature "<<feaArray[4]<<std::endl;
-    std::cout<<"fea silhouetteCurvatureExtrema "<<feaArray[5]<<std::endl;
+    std::cout<<"fea silhouetteCurvature "<<res0<<std::endl;
+    std::cout<<"fea silhouetteCurvatureExtrema "<<res1<<std::endl;
 }
 
 void Fea::setMaxDepth(float *array,int len)
 {
-    feaArray[6] = -1.0;
+    double res = -1.0;
     for(int i=0;i<len;i++)
         if(array[i] < 1.0)
-            feaArray[6] = feaArray[6] > array[i] ? feaArray[6] : array[i];
-    std::cout<<"fea maxDepth "<<feaArray[6]<<std::endl;
+            res = res > array[i] ? res : array[i];
+    std::cout<<"fea maxDepth "<<res<<std::endl;
+
+    fea3D.push_back(res);
 }
 
 void Fea::setDepthDistribute(float *zBuffer, int num)
 {
-    feaArray[7] = 0.0;
+    double res = 0.0;
     double min = 1.0;
     double max = -1.0;
     double *hist = new double[NumHistDepth];
@@ -690,30 +669,34 @@ void Fea::setDepthDistribute(float *zBuffer, int num)
 
     std::cout<<"step "<<step<<std::endl;
     for(int i=0; i<NumHistDepth; i++)
-        feaArray[7] += hist[i]*hist[i]*step;
-    feaArray[7] = 1 - feaArray[7];
+        res += hist[i]*hist[i]*step;
+    res = 1 - res;
 
-    std::cout<<"fea depthDistriubute "<<feaArray[7]<<std::endl;
+    std::cout<<"fea depthDistriubute "<<res<<std::endl;
     delete []hist;
+    fea3D.push_back(res);
 //    qDebug()<<"depth distribute"<<endl;
 }
 
 void Fea::setMeanCurvature(MeanCurvature<MyMesh> &a, std::vector<bool> &isVertexVisible)
 {
-    feaArray[8] = 0.0;
-    feaArray[8] = a.getMeanCurvature(isVertexVisible);
-    if(feaArray[1])
-        feaArray[8] /= feaArray[1];
-    std::cout<<"fea meanCurvature "<<feaArray[8]<<std::endl;
+    double res = 0.0;
+    res = a.getMeanCurvature(isVertexVisible);
+    if(fea3D[1])
+        res /= fea3D[1];
+
+    fea3D.push_back(res);
+    std::cout<<"fea meanCurvature "<<res<<std::endl;
 }
 
 void Fea::setMeanCurvature(std::vector<MeanCurvature<MyMesh>> &a,
                            std::vector<bool> &isVertexVisible,
                            std::vector<std::vector<int>> &indiceArray)
 {
+    double res = 0.0;
 //    qDebug()<<"set Mean Curvature "<<a.size()<<endl;
 
-    feaArray[8] = 0.0;
+    res = 0.0;
     for(int i=0;i<a.size();i++)
     {
         // 查看在哪个mesh上面crash掉了
@@ -739,36 +722,38 @@ void Fea::setMeanCurvature(std::vector<MeanCurvature<MyMesh>> &a,
         for(;it!=verIndice.end();it++)
             isVerVis.push_back(isVertexVisible[*it]);
 
-        feaArray[8] += a[i].getMeanCurvature(isVerVis);
+        res += a[i].getMeanCurvature(isVerVis);
     }
 
 //    fclose(stdout);
 
-//    qDebug()<<"fea meanCurvature feaArray[1] "<<feaArray[1]<<endl;
-//    qDebug()<<"fea meanCurvature feaArray[8] "<<feaArray[8]<<endl;
-    if(feaArray[1])
-        feaArray[8] /= feaArray[1];
-    std::cout<<"fea meanCurvature "<<feaArray[8]<<std::endl;
-//    qDebug()<<"fea meanCurvature "<<feaArray[8]<<endl;
+//    qDebug()<<"fea meanCurvature res "<<res<<endl;
+//    qDebug()<<"fea meanCurvature fea3D[8] "<<fea3D[8]<<endl;
+    if(fea3D[1])
+        res /= fea3D[1];
+    std::cout<<"fea meanCurvature "<<res<<std::endl;
+//    qDebug()<<"fea meanCurvature "<<fea3D[8]<<endl;
 
 }
 
 void Fea::setGaussianCurvature(GaussCurvature<MyMesh> &mesh,
                                std::vector<bool> &isVertexVisible)
 {
-    feaArray[9] = 0.0;
+    double res = 0.0;
+    res = 0.0;
 //    GaussCurvature<MyMesh> a(mesh);
-    feaArray[9] = mesh.getGaussianCurvature(isVertexVisible);
-    if(feaArray[1])
-        feaArray[9] /= feaArray[1];
-    std::cout<<"fea gaussianCurvature "<<feaArray[9]<<std::endl;
+    res = mesh.getGaussianCurvature(isVertexVisible);
+    if(fea3D[1])
+        res /= fea3D[1];
+    fea3D.push_back(res);
+    std::cout<<"fea gaussianCurvature "<<res<<std::endl;
 }
 
 void Fea::setGaussianCurvature(std::vector<GaussCurvature<MyMesh>> &a,
                                std::vector<bool> &isVertexVisible,
                                std::vector<std::vector<int>> &indiceArray)
 {
-    feaArray[9] = 0.0;
+    double res = 0.0;
 //    freopen("D:/viewpoint/kmx/kxm.txt","w",stdout);
     for(int i=0;i<a.size();i++)
     {
@@ -781,18 +766,19 @@ void Fea::setGaussianCurvature(std::vector<GaussCurvature<MyMesh>> &a,
         for(;it!=verIndice.end();it++)
             isVerVis.push_back(isVertexVisible[*it]);
 //        std::cout<<"gauss ... hi "<<std::endl;
-        feaArray[9] += a[i].getGaussianCurvature(isVerVis);
-//        std::cout<<feaArray[9]<<std::endl;
+        res += a[i].getGaussianCurvature(isVerVis);
+//        std::cout<<res<<std::endl;
     }
-    if(feaArray[1])
-    feaArray[9] /= feaArray[1];
+    if(fea3D[1])
+    res /= fea3D[1];
 //    fclose(stdout);
-    std::cout<<"fea gaussianCurvature "<<feaArray[9]<<std::endl;
+    std::cout<<"fea gaussianCurvature "<<res<<std::endl;
+    fea3D.push_back(res);
 }
 
 void Fea::setMeshSaliency(std::vector<MeanCurvature<MyMesh>> &a, std::vector<GLfloat> &vertex, std::vector<bool> &isVertexVisible)
 {
-    feaArray[10] = 0.0;
+    double res = 0.0;
     double length = getDiagonalLength(vertex);
     std::vector<double> meanCurvature;
     double *nearDis = new double[vertex.size()/3];
@@ -840,10 +826,11 @@ void Fea::setMeshSaliency(std::vector<MeanCurvature<MyMesh>> &a, std::vector<GLf
 
     for(int i=0;i<isVertexVisible.size();i++)
         if(isVertexVisible[i])
-            feaArray[10] += meshSaliencyMiddle[0][i];
+            res += meshSaliencyMiddle[0][i];
 //    std::cout<<"fea meshSaliency ";
-    printf("fea meshSaliency %e\n",feaArray[10]);
+    printf("fea meshSaliency %e\n",res);
 
+    fea3D.push_back(res);
     delete []nearDis;
 }
 
@@ -852,7 +839,7 @@ void Fea::setMeshSaliencyCompute(std::vector<MeanCurvature<MyMesh> > &a,
                                  std::vector<bool> &isVertexVisible,
                                  std::vector<std::vector<int> > &indiceArray)
 {
-    feaArray[10] = 0.0;
+    double res = 0.0;
     double length = getDiagonalLength(vertex);
     double *meanCurvature = new double[vertex.size()/3];
     memset(meanCurvature,0,sizeof(double)*vertex.size()/3);
@@ -917,10 +904,11 @@ void Fea::setMeshSaliencyCompute(std::vector<MeanCurvature<MyMesh> > &a,
     for(int i=0;i<num;i++)
     {
         if(isVertexVisible[i])
-            feaArray[10] += meshSaliencyMiddle[0][i];
+            res += meshSaliencyMiddle[0][i];
     }
+    fea3D.push_back(res);
 //    std::cout<<"fea meshSaliency ";
-    //printf("fea meshSaliency %e\n",feaArray[10]);
+    //printf("fea meshSaliency %e\n",res);
     qDebug()<<"mesh saliency ... done"<<endl;
     delete []nearDis;
 }
@@ -932,8 +920,7 @@ void Fea::setMeshSaliency(int t_case,// for debug can be used to output the mesh
                           std::vector<std::vector<int>> &indiceArray)
 {
 
-
-    feaArray[10] = 0.0;
+    double res = 0.0;
     double length = getDiagonalLength(vertex);
 //    std::vector<double> meanCurvature;
     double *meanCurvature = new double[vertex.size()/3];
@@ -999,19 +986,20 @@ void Fea::setMeshSaliency(int t_case,// for debug can be used to output the mesh
 
     for(int i=0;i<isVertexVisible.size();i++)
         if(isVertexVisible[i])
-            feaArray[10] += meshSaliencyMiddle[0][i];
-    std::cout<<"fea meshSaliency "<<feaArray[10]<<std::endl;
+            res += meshSaliencyMiddle[0][i];
+    std::cout<<"fea meshSaliency "<<res<<std::endl;
 
     delete []nearDis;
     delete []meanCurvature;
 }
 
-void Fea::setAbovePreference(double theta)
+double Fea::setAbovePreference(double theta)
 {
-    this->feaArray[11] = 0.0;
+    double res = 0.0;
     double pi = asin(1.0)*2.0;
-    feaArray[11] = exp(-(theta - pi/8.0*3.0)*(theta - pi/8.0*3.0)
+    res = exp(-(theta - pi/8.0*3.0)*(theta - pi/8.0*3.0)
                           / pi/4.0*pi/4.0);
+    return res;
 }
 
 void Fea::setAbovePreference(glm::mat4 &model2, glm::mat4 &model,glm::mat4 &view)
@@ -1051,9 +1039,11 @@ void Fea::setAbovePreference(glm::mat4 &model2, glm::mat4 &model,glm::mat4 &view
 
         double theta = acos(cosTheta);
 
-        setAbovePreference(theta);
+        double res = setAbovePreference(theta);
 
-        std::cout<<"abovePreference "<<feaArray[11]<<std::endl;
+        fea3D.push_back(res);
+
+        std::cout<<"abovePreference "<<res<<std::endl;
 }
 
 void Fea::setAbovePreference(glm::mat4 &modelZ, glm::mat4 &modelView)
@@ -1068,21 +1058,23 @@ void Fea::setAbovePreference(glm::mat4 &modelZ, glm::mat4 &modelView)
 void Fea::setOutlierCount()
 {
     // 看看渲染之后，有多少点是不在可视窗口内的
-    feaArray[12] = (double)render->p_outsidePointsNum / render->p_vertices.size();
+    double res = (double)render->p_outsidePointsNum / render->p_vertices.size();
+    fea3D.push_back(res);
 }
 
 void Fea::getColorDistribution()
 {
     double *hist = new double[NUM_Distribution];
 
-    hist = memset(hist,0,sizeof(double)*NUM_Distribution);
+    memset(hist,0,sizeof(double)*NUM_Distribution);
     int index = 0;
-    for(int i=0;i<image.rows;i++)
-        for(int j=0;j<image.cols;j++)
+
+    for(int i=0;i<image2D.rows;i++)
+        for(int j=0;j<image2D.cols;j++)
         {
-            index = image.at<cv::Vec3b>(i,j)[0]>>4;
-            index = (image.at<cv::Vec3b>(i,j)[1]>>4) + (index << 4);
-            index = (image.at<cv::Vec3b>(i,j)[2]>>4) + (index << 4);
+            index = image2D.at<cv::Vec3b>(i,j)[0]>>5;
+            index = (image2D.at<cv::Vec3b>(i,j)[1]>>5) + (index * 8);
+            index = (image2D.at<cv::Vec3b>(i,j)[2]>>5) + (index * 8);
             hist[index]++;
         }
 
@@ -1090,6 +1082,8 @@ void Fea::getColorDistribution()
         fea2D.push_back(hist[i]);
 
     delete []hist;
+
+    qDebug()<<"color distribution done"<<endl;
 }
 
 void Fea::getHueCount()
@@ -1103,9 +1097,9 @@ void Fea::getHueCount()
     float alpha = 0.05;
 
 
-    cv::Mat mask0 = cv::Mat(image.rows,image.cols,CV_8UC1,cv::Scalar(0));
+    cv::Mat mask0 = cv::Mat(image2D.rows,image2D.cols,CV_8UC1,cv::Scalar(0));
     // it is useful to convert CV_8UC3 to CV_32FC3
-    image.convertTo(tmp,CV_32FC3,1/255.0);
+    image2D.convertTo(tmp,CV_32FC3,1/255.0);
 
     cv::cvtColor(tmp,tmp,CV_BGR2HSV);
 
@@ -1128,21 +1122,25 @@ void Fea::getHueCount()
 
     float max = 0.0;
     for(int i=0;i<histSize[0];i++)
-        max = max < hist.at<float>[i] ? hist.at<float>[i] : max;
+        max = max < hist.at<float>(i) ? hist.at<float>(i) : max;
 
     float level = alpha * max;
     int count = 0;
     for(int i=0;i<histSize[0];i++)
-        if(hist.at<float>[i] > level)
+        if(hist.at<float>(i) > level)
             count ++;
     double hueVal = histSize[0] - count;
     fea2D.push_back(hueVal);
+
+    qDebug()<<"hue count ... "<<hueVal<<" ... done"<<endl;
+
 }
 
 void Fea::getBlur()
 {
     cv::Mat tmp;
-    image.copyTo(tmp);
+//    image2D.copyTo(tmp);
+    cv::cvtColor(image2D,tmp,CV_BGR2GRAY);
     /*
      * Mat padded;                            //expand input image to optimal size
         int m = getOptimalDFTSize( I.rows );
@@ -1166,7 +1164,7 @@ void Fea::getBlur()
     cv::merge(planes,2,complexI);
     cv::dft(complexI,complexI);
     cv::split(complexI,planes);
-    magnitude(planes[0],planes[1],planes[0]);
+    cv::magnitude(planes[0],planes[1],planes[0]);
     cv::Mat magl = planes[0];
     double blur = 0;
     for(int i=0;i<magl.rows;i++)
@@ -1175,6 +1173,10 @@ void Fea::getBlur()
                 blur ++;
 
     fea2D.push_back(blur);
+
+    blur = blur / image2D.rows / image2D.cols;
+    qDebug()<<" get blur ... "<<blur<<" ... done"<<endl;
+
 }
 
 void Fea::getContrast()
@@ -1184,12 +1186,12 @@ void Fea::getContrast()
     double *hist = new double[256];
     memset(hist,0,sizeof(double)*256);
 
-    for(int i=0;i<image.rows;i++)
-        for(int j=0;j<image.cols;j++)
+    for(int i=0;i<image2D.rows;i++)
+        for(int j=0;j<image2D.cols;j++)
             for(int k = 0;k<3;k++)
-                hist[image.at<cv::Vec3b>(i,j)[k]]++;
+                hist[image2D.at<cv::Vec3b>(i,j)[k]]++;
 
-    int num = image.cols*image.rows*3;
+    int num = image2D.cols*image2D.rows*3;
     num = num*(1.0 - widthRatio);
     int count = 0;
     int from  = 0;
@@ -1205,13 +1207,16 @@ void Fea::getContrast()
     double contrast = to - from;
 
     fea2D.push_back(contrast);
+    delete []hist;
+
+    qDebug()<<"get contrast ..."<<contrast<<" done"<<endl;
 
 }
 
 void Fea::getBrightness()
 {
     cv::Mat tmp;
-    image.copyTo(tmp);
+    image2D.copyTo(tmp);
     cv::cvtColor(tmp,tmp,CV_BGR2GRAY);
 
     double sum = 0;
@@ -1223,6 +1228,9 @@ void Fea::getBrightness()
 
     fea2D.push_back(brightness);
 
+    tmp.release();
+
+    qDebug()<<"get Brightness ... "<<brightness<<endl;
 }
 
 void Fea::getRuleOfThird()
@@ -1231,21 +1239,30 @@ void Fea::getRuleOfThird()
     double centroidCol = 0;
     // ref http://mathworld.wolfram.com/GeometricCentroid.html
     double mess = 0;
+
+//    qDebug()<<"getRuleOfThird .. "<<mask.rows<<" "<<mask.cols<<endl;
+
     for(int i=0;i<mask.rows;i++)
         for(int j=0;j<mask.cols;j++)
-            if(mask.at<uchar>(i,j) == 255)
+            if(mask.at<uchar>(i,j) != 255)
             {
                 mess ++;
                 centroidRow += i;
                 centroidCol += j;
             }
 
-    centroidRow /= mess;
-    centroidCol /= mess;
+    if(mess)
+    {
+        centroidRow /= mess;
+        centroidCol /= mess;
+    }
 
     //    scale to [0,1]
-    centroidRow /= mask.rows;
-    centroidCol /= mask.cols;
+    if(mask.rows && mask.cols)
+    {
+        centroidRow /= mask.rows;
+        centroidCol /= mask.cols;
+    }
 
     double ruleOfThirdRow[2] = {1.0/3.0,2.0/3.0};
     double ruleOfThirdCol[2] = {1.0/3.0,2.0/3.0};
@@ -1260,6 +1277,9 @@ void Fea::getRuleOfThird()
         }
 
     fea2D.push_back(res);
+
+    qDebug()<<"rule of third ... "<<res<<" ... done"<<endl;
+
 }
 
 void Fea::getLightingFeature()
@@ -1272,12 +1292,13 @@ void Fea::getLightingFeature()
     double bb = 0;
 
     cv::Mat tmp;
-    image.copyTo(tmp);
+    image2D.copyTo(tmp);
+
     cv::cvtColor(tmp,tmp,CV_BGR2GRAY);
 
-    for(int i=0;i<tmp.rows;i++)
-        for(int j=0;j<tmp.cols;j++)
-            if(mask.at<uchar>(i,j) == 255)
+    for(int i=0;i<mask.rows;i++)
+        for(int j=0;j<mask.cols;j++)
+            if(mask.at<uchar>(i,j) != 255)
                 bs += tmp.at<uchar>(i,j);
             else
                 bb += tmp.at<uchar>(i,j);
@@ -1287,6 +1308,8 @@ void Fea::getLightingFeature()
     fea2D.push_back(fl);
 
     tmp.release();
+
+    qDebug()<<"lighting feature .. "<<fl<<" ...done"<<endl;
 }
 
 void Fea::getHog()
@@ -1296,11 +1319,11 @@ void Fea::getHog()
     // ref http://gz-ricky.blogbus.com/logs/85326280.html
     // ref http://blog.sciencenet.cn/blog-702148-762019.html
     cv::Mat gray;
-    cv::cvtColor(image,gray,CV_BGR2GRAY);
+    cv::cvtColor(image2D,gray,CV_BGR2GRAY);
 
-    cv::resize(gray,gray,cv::Size(32,32));
+    cv::resize(gray,gray,cv::Size(16,16));
     // widnowsSize,blockSize,blockStride,cellSize
-    cv::HOGDescriptor d(cv::Size(32,32),cv::Size(8,8),cv::Size(4,4),cv::Size(4,4),9);
+    cv::HOGDescriptor d(cv::Size(16,16),cv::Size(8,8),cv::Size(4,4),cv::Size(4,4),9);
 
     std::vector<float> descriptorsValues;
     std::vector<cv::Point> locations;
@@ -1309,6 +1332,8 @@ void Fea::getHog()
 
     for(int i=0;i<descriptorsValues.size();i++)
         fea2D.push_back(descriptorsValues[i]);
+
+    qDebug()<<"hog done"<<endl;
 }
 
 
@@ -1699,15 +1724,26 @@ void Fea::printOut()
     printf("%s\n",fileName.at(t_case).toStdString().c_str());
 #endif
 
-    for(int i=0;i<FEA_NUM;i++)
+    // output 3d feature
+    for(int i=0;i<fea3D.size();i++)
     {
-        if(i==8 || i== 9 || i == 10)
-            printf("%e ",feaArray[i]);
+        // 8 mean curvature
+        // 9 gauss curvature
+        // 10 mesh saliency did not count now
+        if(i==8 || i== 9)
+            printf("%e ",fea3D[i]);
         else
-            printf("%lf ",feaArray[i]);
+            printf("%lf ",fea3D[i]);
     }
+    // output 2D feature
+    for(int i=0;i<fea2D.size();i++)
+        printf("%lf ",fea2D[i]);
+
     printf("\n");
     fclose(stdout);
+
+
+
     freopen(mmPath.toStdString().c_str(),"w",stdout);
 #ifdef CHECK
     for(int i=0;i<4;i++)
@@ -1784,6 +1820,17 @@ void Fea::computeModel(glm::mat4 &m_model_tmp)
 
 }
 
+/*
+double *Fea::getFeaArray() const
+{
+    return feaArray;
+}
+
+void Fea::setFeaArray(double *value)
+{
+    feaArray = value;
+}
+*/
 void Fea::showImage()
 {
     render->showImage();

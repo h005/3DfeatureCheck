@@ -17,7 +17,7 @@
 #define NumHistViewEntropy 15
 #define PI 3.1415926
 #define MAX_LEN 32
-#define NUM_Distribution 4096
+#define NUM_Distribution 512
 
 
 class Fea
@@ -52,8 +52,7 @@ private:
 
     // render image
     cv::Mat image;
-    // mask is a gray image only have 255 and 0 two values
-    // 255 means foreground
+    // 255 means background
     cv::Mat mask;
     // 2Dimage
     cv::Mat image2D;
@@ -68,7 +67,7 @@ private:
 
     Render *render;
 
-    double *feaArray;
+    std::vector<double> fea3D;
 
     std::vector<double> fea2D;
 
@@ -86,6 +85,8 @@ public:
 private:
 
     void readMask();
+
+    void setMask();
 
     void setMat(float *img, int width, int height,int dstWidth,int dstHeight);
 
@@ -132,7 +133,7 @@ private:
                          std::vector<bool> &isVertexVisible,
                          std::vector<std::vector<int>> &indiceArray);
 
-    void setAbovePreference(double theta);
+    double setAbovePreference(double theta);
 
     void setAbovePreference(glm::mat4 &modelZ,glm::mat4 &model,glm::mat4 &view);
 
