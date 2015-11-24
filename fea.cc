@@ -90,6 +90,8 @@ void Fea::setFeature()
         b.push_back(tmpGauss);
     }
 
+    computePCA();
+
     qDebug() << "fea set mean gauss curvature .... "<< render->p_vecMesh.size() <<endl;
     qDebug() << "NUM ... " << NUM <<endl;
 
@@ -190,6 +192,12 @@ void Fea::setFeature()
             getRuleOfThird();
 
             getLightingFeature();
+
+            setGLCM();
+
+            setSaliency();
+
+            setPCA();
 
             clear();
 
@@ -1336,6 +1344,165 @@ void Fea::getHog()
     qDebug()<<"hog done"<<endl;
 }
 
+//compute the GLCM of horizonal veritical and dialog
+//and get the 4 features
+//details in http://blog.csdn.net/carson2005/article/details/38442533
+//the glcmMatirx has 16 values, so the size is 16*16
+void Fea::setGLCM()
+{
+    double glcmMatrix[GLCM_CLASS][GLCM_CLASS];
+    double glcm[12];
+
+    cv::Mat gray;
+    cv::Mat grade;
+    cv::cvtColor(image2D,gray,CV_BGR2GRAY);
+    grade = grade16(gray);
+    memset(glcm,0,sizeof(double)*12);
+    int width = grade.cols;
+    int height = grade.rows;
+
+    //        horizontal
+            memset(glcmMatrix,0,sizeof(glcmMatrix));
+            for(int i=0;i<height;i++)
+                for(int j=0;j<width;j++)
+                {
+                    if((j+GLCM_DIS)<width)
+                        glcmMatrix[grade.at<uchar>(i,j)][grade.at<uchar>(i,j+GLCM_DIS)]++;
+                    if((j-GLCM_DIS)>0)
+                        glcmMatrix[grade.at<uchar>(i,j)][grade.at<uchar>(i,j-GLCM_DIS)]++;
+                }
+            setGLCMfeatures(glcm,0,glcmMatrix);
+    //        vertical
+            memset(glcmMatrix,0,sizeof(glcmMatrix));
+            for(int i=0;i<height;i++)
+                for(int j=0;j<width;j++)
+                {
+                    if((i+GLCM_DIS)<height)
+                        glcmMatrix[grade.at<uchar>(i,j)][grade.at<uchar>(i+GLCM_DIS,j)]++;
+                    if((i-GLCM_DIS)>0)
+                        glcmMatrix[grade.at<uchar>(i,j)][grade.at<uchar>(i-GLCM_DIS,j)]++;
+                }
+            setGLCMfeatures(glcm,1,glcmMatrix);
+    //        diagonal
+            memset(glcmMatrix,0,sizeof(glcmMatrix));
+            for(int i=0;i<height;i++)
+                for(int j=0;j<width;j++)
+                {
+                    if((i+GLCM_DIS)<height && (j+GLCM_DIS)<width)
+                        glcmMatrix[grade.at<uchar>(i,j)][grade.at<uchar>(i+GLCM_DIS,j+GLCM_DIS)]++;
+                    if((i-GLCM_DIS)>0 && (j-GLCM_DIS)>0)
+                        glcmMatrix[grade.at<uchar>(i,j)][grade.at<uchar>(i-GLCM_DIS,j-GLCM_DIS)]++;
+                }
+            setGLCMfeatures(glcm,2,glcmMatrix);
+
+
+
+    gray.release();
+    grade.release();
+
+    for(int i=0;i<12;i++)
+        fea2D.push_back(glcm[i]);
+
+    for(int i=0;i<GLCM_CLASS;i++)
+        delete []glcmMatrix[i];
+
+    delete []glcm;
+
+//    qDebug()<<"glcm done"<<endl;
+}
+
+void Fea::setSaliency()
+{
+
+    double thresh = 200;
+    double salientArea = 0.0;
+
+    double max = 0.0, min = 1e30;
+    cv::Mat gray;
+    cv::cvtColor(image2D,gray,CV_BGR2GRAY);
+
+    // set hist
+    double hist[256];
+    memset(hist,0,sizeof(double)*256);
+    for(int i=0;i<gray.rows;i++)
+        for(int j=0;j<gray.cols;j++)
+            hist[(int)gray.at<uchar>(i,j)]++;
+
+    double **salient;
+    salient = new double*[gray.rows];
+    for(int i=0;i<gray.rows;i++)
+    {
+        salient[i] = new double[gray.cols];
+        memset(salient[i],0,sizeof(double)*(gray.cols));
+    }
+    for(int i=0;i<gray.rows;i++)
+        for(int j=0;j<gray.cols;j++)
+        {
+            for(int k=0;k<256;k++)
+                salient[i][j] += abs(hist[k] - hist[(int)gray.at<uchar>(i,j)]);
+            max = max >salient[i][j]?max:salient[i][j];
+            min = min<salient[i][j]?min:salient[i][j];
+        }
+
+    if(min == max)
+    {
+        salientArea = 0.0;
+        fea2D.push_back(salientArea);
+        gray.release();
+        delete []hist;
+        for(int i=0;i<gray.rows;i++)
+            delete[] salient[i];
+        delete [] salient;
+        return;
+    }
+
+    double a = 255.0/(max-min);
+    double b = -255.0/(max-min)*min;
+
+    for(int i=0;i<gray.rows;i++)
+        for(int j=0;j<gray.cols;j++)
+        {
+            salient[i][j] = a*salient[i][j]+b;
+            if(salient[i][j]>thresh)
+                salientArea++;
+        }
+
+    fea2D.push_back(salientArea);
+    delete []hist;
+    gray.release();
+    for(int i=0;i<gray.rows;i++)
+        delete [] salient[i];
+    delete []salient;
+
+}
+
+void Fea::setPCA()
+{
+    for(int i=0;i<5;i++)
+        fea2D.push_back(pcaResult.at<float>(i,t_case));
+}
+
+void Fea::computePCA()
+{
+    cv::Mat pcaOriginal = cv::Mat(CoWidth*CoHeight,NUM,CV_32FC1);
+    for(int i=0;i<NUM;i++)
+    {
+        cv::Mat gray = cv::imread(fileName.at(i).toStdString(),0);
+        cv::resize(gray,gray,cv::Size(CoWidth,CoHeight));
+        cv::Mat grayTmp = gray.reshape(1,gray.cols*gray.rows);
+
+        cv::Mat tmp0 = pcaOriginal.col(i);
+
+        grayTmp.convertTo(tmp0,CV_32FC1,1.0/255);
+
+        gray.release();
+    }
+
+    cv::PCA pca0(pcaOriginal,cv::Mat(),CV_PCA_DATA_AS_COL,5);
+
+    pcaResult = pca0.project(pcaOriginal);
+
+}
 
 double Fea::getMeshSaliencyLocalMax(double *nearDis, int len, std::vector<double> meshSaliency)
 {
@@ -1870,6 +2037,31 @@ double Fea::getContourCurvature(const std::vector<cv::Point2d> &points, int targ
     LD frac = up / down;
 
     return (double)frac;
+}
+
+cv::Mat Fea::grade16(cv::Mat gray)
+{
+    for(int i=0;i<gray.rows;i++)
+        for(int j=0;j<gray.cols;j++)
+            gray.at<uchar>(i,j) = (gray.at<uchar>(i,j) & 0xF0)>>4;
+    return gray;
+}
+
+void Fea::setGLCMfeatures(double *glcm, int index, double glcmMatrix[][GLCM_CLASS])
+{
+    for(int i=0;i<GLCM_CLASS;i++)
+        for(int j=0;j<GLCM_CLASS;j++)
+        {
+            // entropy
+            if(glcmMatrix[i][j]>0)
+                glcm[index*4] -= glcmMatrix[i][j]*log10(glcmMatrix[i][j]);
+            // energy
+            glcm[index*4+1] += glcmMatrix[i][j]*glcmMatrix[i][j];
+            // contrast
+            glcm[index*4+2] += (i-j)*(i-j)*glcmMatrix[i][j];
+            // homogenity
+            glcm[index*4+3] += 1.0/(1+(i-j)*(i-j))*glcmMatrix[i][j];
+        }
 }
 
 void Fea::clear()

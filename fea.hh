@@ -19,10 +19,17 @@
 #define MAX_LEN 32
 #define NUM_Distribution 512
 
+#define GLCM_DIS 3
+#define GLCM_CLASS 16
+#define NUM_GLCM_FEATURES 4
+#define NUM_GLCM_DIRECTONS 3
+
+#define CoWidth 64
+#define CoHeight 64
 
 class Fea
 {
-    static const int FEA_NUM = 13;
+//    static const int FEA_NUM = 13;
 private:
 
     int t_case;
@@ -43,6 +50,8 @@ private:
     glm::mat4 m_projection;
     glm::mat4 m_abv;
 
+    cv::Mat pcaResult;
+
     std::vector<glm::mat4> m_modelList;
     std::vector<glm::mat4> m_viewList;
     std::vector<glm::mat4> m_projectionList;
@@ -50,7 +59,7 @@ private:
     int NUM;
     int P_NUM;
 
-    // render image
+    // render image the same as background
     cv::Mat image;
     // 255 means background
     cv::Mat mask;
@@ -158,6 +167,15 @@ private:
     void getLightingFeature();
     // hog
     void getHog();
+    // glcm
+    void setGLCM();
+    // saliecny
+    void setSaliency();
+    // pca
+    // add pca to fea2D
+    void setPCA();
+    // compute PCA
+    void computePCA();
 
     double getMeshSaliencyLocalMax(double *nearDis,int len,std::vector<double> meshSaliency);
 
@@ -202,6 +220,13 @@ private:
     void computeModel(glm::mat4 &m_model_tmp);
 
     double getContourCurvature(const std::vector<cv::Point2d> &points, int target);
+
+    cv::Mat grade16(cv::Mat gray);
+
+    //    index means the direction of GLCM
+    //    glcmMatrix means the glcm matrix
+    //    glcm stores the result
+    void setGLCMfeatures(double *glcm,int index,double glcmMatrix[][GLCM_CLASS]);
 
     void clear();
 
