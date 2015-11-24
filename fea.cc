@@ -191,16 +191,19 @@ void Fea::setFeature()
 
             getLightingFeature();
 
-            clear();
+            getHog();
 
         }
 
-
+        qDebug()<<t_case<<" ... done"<<endl;
 //        break;
         printOut();
 
+        clear();
+
     }
 
+    qDebug()<<"fea output done"<<endl;
 }
 
 void Fea::setMMPara(QString mmFile)
@@ -218,7 +221,7 @@ void Fea::setMMPara(QString mmFile)
     label = path.left(pos);
     pos = label.lastIndexOf('/');
     label = label.remove(0,pos+1);
-    label = label.append(QString(".3df"));
+    label = label.append(QString(".fea"));
 
     pos = output.lastIndexOf('.');
     output.replace(pos,7,label);
@@ -1083,7 +1086,7 @@ void Fea::getColorDistribution()
 
     delete []hist;
 
-    qDebug()<<"color distribution done"<<endl;
+//    qDebug()<<"color distribution done"<<endl;
 }
 
 void Fea::getHueCount()
@@ -1132,7 +1135,7 @@ void Fea::getHueCount()
     double hueVal = histSize[0] - count;
     fea2D.push_back(hueVal);
 
-    qDebug()<<"hue count ... "<<hueVal<<" ... done"<<endl;
+//    qDebug()<<"hue count ... "<<hueVal<<" ... done"<<endl;
 
 }
 
@@ -1175,7 +1178,7 @@ void Fea::getBlur()
     fea2D.push_back(blur);
 
     blur = blur / image2D.rows / image2D.cols;
-    qDebug()<<" get blur ... "<<blur<<" ... done"<<endl;
+//    qDebug()<<" get blur ... "<<blur<<" ... done"<<endl;
 
 }
 
@@ -1209,7 +1212,7 @@ void Fea::getContrast()
     fea2D.push_back(contrast);
     delete []hist;
 
-    qDebug()<<"get contrast ..."<<contrast<<" done"<<endl;
+//    qDebug()<<"get contrast ..."<<contrast<<" done"<<endl;
 
 }
 
@@ -1230,7 +1233,7 @@ void Fea::getBrightness()
 
     tmp.release();
 
-    qDebug()<<"get Brightness ... "<<brightness<<endl;
+//    qDebug()<<"get Brightness ... "<<brightness<<endl;
 }
 
 void Fea::getRuleOfThird()
@@ -1278,7 +1281,7 @@ void Fea::getRuleOfThird()
 
     fea2D.push_back(res);
 
-    qDebug()<<"rule of third ... "<<res<<" ... done"<<endl;
+//    qDebug()<<"rule of third ... "<<res<<" ... done"<<endl;
 
 }
 
@@ -1309,7 +1312,7 @@ void Fea::getLightingFeature()
 
     tmp.release();
 
-    qDebug()<<"lighting feature .. "<<fl<<" ...done"<<endl;
+//    qDebug()<<"lighting feature .. "<<fl<<" ...done"<<endl;
 }
 
 void Fea::getHog()
@@ -1333,7 +1336,7 @@ void Fea::getHog()
     for(int i=0;i<descriptorsValues.size();i++)
         fea2D.push_back(descriptorsValues[i]);
 
-    qDebug()<<"hog done"<<endl;
+//    qDebug()<<"hog done"<<endl;
 }
 
 
@@ -1880,4 +1883,11 @@ void Fea::clear()
         contour[i].clear();
     contour.clear();
 
+    mask.release();
+
+    image2D.release();
+
+    fea2D.clear();
+
+    fea3D.clear();
 }
