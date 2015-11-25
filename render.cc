@@ -298,11 +298,15 @@ void Render::storeImage(QString path,QString fileName0,int width,int height)
     glReadBuffer(GL_BACK_LEFT);
     glReadPixels(0,0,viewport[2],viewport[3],GL_DEPTH_COMPONENT,GL_FLOAT,img0);
 
+    float min = 1.0;
+    for(int i=0;i<viewport[2]*viewport[3];i++)
+        min = min < img0[i] ? min : img0[i];
+
     cv::Mat depthImgFliped = cv::Mat(viewport[3],viewport[2],CV_32FC1,img0);
     cv::Mat depthImg;
     cv::flip(depthImgFliped,depthImg,0);
     cv::resize(depthImg,depthImg,cv::Size(width,height));
-    depthImg.convertTo(depthImg,CV_8UC1,255,0);
+    depthImg.convertTo(depthImg,CV_8UC1,255.0 / (1.0 - min),255.0 * min / (min - 1.0));
 
     GLubyte *img =
             new GLubyte[(viewport[2] - viewport[0])

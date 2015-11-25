@@ -204,7 +204,7 @@ void Fea::setFeature()
         }
 
         qDebug()<<t_case<<" ... done"<<endl;
-//        break;
+        break;
         printOut();
 
         clear();
@@ -332,11 +332,19 @@ void Fea::setMask()
 void Fea::setMat(float *img, int width, int height,int dstWidth,int dstHeight)
 {
 //    image.release();
+    float min = 1.0;
+    for(int i=0;i<width*height;i++)
+        min = min < img[i] ? min : img[i];
+
     cv::Mat image0 = cv::Mat(width,height,CV_32FC1,img);
-    image0.convertTo(image,CV_8UC1,255.0);
+    image0.convertTo(image,CV_8UC1,255.0/(1.0 - min),255.0 * min / (min - 1.0));
+    cv::flip(image,image,0);
     cv::resize(image,image,cv::Size(dstWidth,dstHeight));
     // release memory
     image0.release();
+
+    cv::namedWindow("0025");
+    cv::imshow("0025",image);
 
     // resize
 //    qDebug()<<"setMat "<<fileName.at(t_case)<<endl;
@@ -349,7 +357,7 @@ void Fea::setMat(float *img, int width, int height,int dstWidth,int dstHeight)
 //    cv::namedWindow("check");
 //    cv::imshow("check",image);
 //    cv::waitKey(0);
-//    image.resize(img0.size)q;
+//    image.resize(img0.size);
 
 
 
