@@ -65,6 +65,11 @@ private:
     cv::Mat mask;
     // 2Dimage
     cv::Mat image2D;
+    // 2D gray Imge
+    cv::Mat gray;
+    // 2D CV_32FC3 hsv image
+    cv::Mat image2D32f3c;
+
 
     // used for contour
 //    CvMemStorage *mem_storage;
@@ -165,8 +170,6 @@ private:
     void getRuleOfThird();
     // lighting feature
     void getLightingFeature();
-    // hog
-    void getHog();
     // glcm
     void setGLCM();
     // saliecny
@@ -174,6 +177,8 @@ private:
     // pca
     // add pca to fea2D
     void setPCA();
+    // hog
+    void getHog();
     // compute PCA
     void computePCA();
 

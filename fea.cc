@@ -125,6 +125,15 @@ void Fea::setFeature()
 //            render->showImage();
             image2D = cv::imread(fileName.at(t_case).toStdString().c_str());
 
+            cv::cvtColor(image2D,gray,CV_BGR2GRAY);
+
+            image2D32f3c = cv::Mat(image2D.rows,image2D.cols,CV_32FC3,cv::Scalar(0,0,0));
+            // it is useful to convert CV_8UC3 to CV_32FC3
+            image2D.convertTo(image2D32f3c,CV_32FC3,1/255.0);
+
+            cv::cvtColor(image2D32f3c,image2D32f3c,CV_BGR2HSV);
+
+
             int width = image2D.cols;
             int height = image2D.rows;
 
@@ -194,17 +203,17 @@ void Fea::setFeature()
 
             getLightingFeature();
 
-//            getHog();
-
             setGLCM();
 
             setSaliency();
 
             setPCA();
+
+            getHog();
         }
 
         qDebug()<<t_case<<" ... done"<<endl;
-        break;
+//        break;
         printOut();
 
         clear();
@@ -343,8 +352,8 @@ void Fea::setMat(float *img, int width, int height,int dstWidth,int dstHeight)
     // release memory
     image0.release();
 
-    cv::namedWindow("0025");
-    cv::imshow("0025",image);
+//    cv::namedWindow("0025");
+//    cv::imshow("0025",image);
 
     // resize
 //    qDebug()<<"setMat "<<fileName.at(t_case)<<endl;
@@ -414,6 +423,7 @@ void Fea::setProjectArea()
     fea3D.push_back(res);
     img.release();
     std::cout<<"fea projectArea "<<res<<std::endl;
+//    qDebug()<<"fea3D size "<<fea3D.size()<<endl;
 
 }
 
@@ -444,6 +454,7 @@ void Fea::setVisSurfaceArea(std::vector<GLfloat> &vertex,
     std::cout<<"fea visSurfaceArea "<< res<<std::endl;
 
     fea3D.push_back(res);
+//    qDebug()<<"fea3D size "<<fea3D.size()<<endl;
     // used for test
 }
 
@@ -473,6 +484,7 @@ void Fea::setViewpointEntropy2(std::vector<GLfloat> &vertex, std::vector<GLuint>
     std::cout<<"fea viewpointEntropy "<<res<<std::endl;
 
     fea3D.push_back(res);
+//    qDebug()<<"fea3D size "<<fea3D.size()<<endl;
 }
 
 void Fea::setViewpointEntropy(std::vector<GLfloat> &vertex, std::vector<GLuint> &face)
@@ -537,6 +549,7 @@ void Fea::setViewpointEntropy(std::vector<GLfloat> &vertex, std::vector<GLuint> 
     fclose(stdout);
 */
     fea3D.push_back(res);
+//    qDebug()<<"fea3D size "<<fea3D.size()<<endl;
 }
 
 void Fea::setSilhouetteLength()
@@ -570,6 +583,7 @@ void Fea::setSilhouetteLength()
 
     std::vector<cv::Vec4i>().swap(hierarchy);
 
+//    qDebug()<<"fea3D size "<<fea3D.size()<<endl;
 // see contour result
 /*
     cv::Mat drawing = cv::Mat::zeros(gray.size(),CV_8UC3);
@@ -640,6 +654,7 @@ void Fea::setSilhouetteCE()
 
     std::cout<<"fea silhouetteCurvature "<<res0<<std::endl;
     std::cout<<"fea silhouetteCurvatureExtrema "<<res1<<std::endl;
+//    qDebug()<<"fea3D size "<<fea3D.size()<<endl;
 }
 
 void Fea::setMaxDepth(float *array,int len)
@@ -651,6 +666,7 @@ void Fea::setMaxDepth(float *array,int len)
     std::cout<<"fea maxDepth "<<res<<std::endl;
 
     fea3D.push_back(res);
+//    qDebug()<<"fea3D size "<<fea3D.size()<<endl;
 }
 
 void Fea::setDepthDistribute(float *zBuffer, int num)
@@ -695,6 +711,7 @@ void Fea::setDepthDistribute(float *zBuffer, int num)
     delete []hist;
     fea3D.push_back(res);
 //    qDebug()<<"depth distribute"<<endl;
+//    qDebug()<<"fea3D size "<<fea3D.size()<<endl;
 }
 
 void Fea::setMeanCurvature(MeanCurvature<MyMesh> &a, std::vector<bool> &isVertexVisible)
@@ -706,6 +723,7 @@ void Fea::setMeanCurvature(MeanCurvature<MyMesh> &a, std::vector<bool> &isVertex
 
     fea3D.push_back(res);
     std::cout<<"fea meanCurvature "<<res<<std::endl;
+//    qDebug()<<"fea3D size "<<fea3D.size()<<endl;
 }
 
 void Fea::setMeanCurvature(std::vector<MeanCurvature<MyMesh>> &a,
@@ -750,7 +768,9 @@ void Fea::setMeanCurvature(std::vector<MeanCurvature<MyMesh>> &a,
 //    qDebug()<<"fea meanCurvature fea3D[8] "<<fea3D[8]<<endl;
     if(fea3D[1])
         res /= fea3D[1];
+    fea3D.push_back(res);
     std::cout<<"fea meanCurvature "<<res<<std::endl;
+//    qDebug()<<"fea3D size "<<fea3D.size()<<endl;
 //    qDebug()<<"fea meanCurvature "<<fea3D[8]<<endl;
 
 }
@@ -1007,7 +1027,7 @@ void Fea::setMeshSaliency(int t_case,// for debug can be used to output the mesh
         if(isVertexVisible[i])
             res += meshSaliencyMiddle[0][i];
     std::cout<<"fea meshSaliency "<<res<<std::endl;
-
+    fea3D.push_back(res);
     delete []nearDis;
     delete []meanCurvature;
 }
@@ -1107,8 +1127,10 @@ void Fea::getColorDistribution()
 
 void Fea::getHueCount()
 {
-    cv::Mat tmp;
+    cv::Mat tmp = image2D32f3c;
 
+//    qDebug()<<"image2D32f3c  "<<image2D32f3c.rows<<" "<<image2D32f3c.cols<<" "<<image2D32f3c.channels()<<endl;
+//    qDebug()<<"image2D "<<image2D.rows<<" "<<image2D.cols<<endl;
     int histSize[1] = {20};
     int channels[1] = {0};
     float hranges[] = {0.f,360.f};
@@ -1117,10 +1139,10 @@ void Fea::getHueCount()
 
 
     cv::Mat mask0 = cv::Mat(image2D.rows,image2D.cols,CV_8UC1,cv::Scalar(0));
-    // it is useful to convert CV_8UC3 to CV_32FC3
-    image2D.convertTo(tmp,CV_32FC3,1/255.0);
+//    // it is useful to convert CV_8UC3 to CV_32FC3
+//    image2D.convertTo(tmp,CV_32FC3,1/255.0);
 
-    cv::cvtColor(tmp,tmp,CV_BGR2HSV);
+//    cv::cvtColor(tmp,tmp,CV_BGR2HSV);
 
     double valueRange[2] = {0.15,0.95};
 
@@ -1149,7 +1171,11 @@ void Fea::getHueCount()
         if(hist.at<float>(i) > level)
             count ++;
     double hueVal = histSize[0] - count;
-    fea2D.push_back(hueVal);
+    fea2D.push_back(hueVal);    
+
+//    tmp.release();
+    mask0.release();
+    hist.release();
 
 //    qDebug()<<"hue count ... "<<hueVal<<" ... done"<<endl;
 
@@ -1157,9 +1183,10 @@ void Fea::getHueCount()
 
 void Fea::getBlur()
 {
-    cv::Mat tmp;
+    cv::Mat tmp = gray;
+//    qDebug()<<"blur "<<tmp.rows<<" "<<tmp.cols<<" "<<tmp.channels()<<endl;
 //    image2D.copyTo(tmp);
-    cv::cvtColor(image2D,tmp,CV_BGR2GRAY);
+//    cv::cvtColor(image2D,tmp,CV_BGR2GRAY);
     /*
      * Mat padded;                            //expand input image to optimal size
         int m = getOptimalDFTSize( I.rows );
@@ -1191,9 +1218,15 @@ void Fea::getBlur()
             if(magl.at<float>(i,j) > theta)
                 blur ++;
 
-    fea2D.push_back(blur);
-
     blur = blur / image2D.rows / image2D.cols;
+
+    fea2D.push_back(blur);
+//    tmp.release();
+    padded.release();
+    complexI.release();
+    planes[0].release();
+    planes[1].release();
+    magl.release();
 //    qDebug()<<" get blur ... "<<blur<<" ... done"<<endl;
 
 }
@@ -1234,9 +1267,9 @@ void Fea::getContrast()
 
 void Fea::getBrightness()
 {
-    cv::Mat tmp;
-    image2D.copyTo(tmp);
-    cv::cvtColor(tmp,tmp,CV_BGR2GRAY);
+    cv::Mat tmp = gray;
+//    image2D.copyTo(tmp);
+//    cv::cvtColor(tmp,tmp,CV_BGR2GRAY);
 
     double sum = 0;
     for(int i=0;i<tmp.rows;i++)
@@ -1247,7 +1280,7 @@ void Fea::getBrightness()
 
     fea2D.push_back(brightness);
 
-    tmp.release();
+//    tmp.release();
 
 //    qDebug()<<"get Brightness ... "<<brightness<<endl;
 }
@@ -1295,8 +1328,7 @@ void Fea::getRuleOfThird()
             res = res < tmp ? res : tmp;
         }
 
-    fea2D.push_back(res);
-
+    fea2D.push_back(res);    
 //    qDebug()<<"rule of third ... "<<res<<" ... done"<<endl;
 
 }
@@ -1310,10 +1342,10 @@ void Fea::getLightingFeature()
     // brightness of background
     double bb = 0;
 
-    cv::Mat tmp;
-    image2D.copyTo(tmp);
+    cv::Mat tmp = gray;
+//    image2D.copyTo(tmp);
 
-    cv::cvtColor(tmp,tmp,CV_BGR2GRAY);
+//    cv::cvtColor(tmp,tmp,CV_BGR2GRAY);
 
     for(int i=0;i<mask.rows;i++)
         for(int j=0;j<mask.cols;j++)
@@ -1326,33 +1358,9 @@ void Fea::getLightingFeature()
 
     fea2D.push_back(fl);
 
-    tmp.release();
+//    tmp.release();
 
 //    qDebug()<<"lighting feature .. "<<fl<<" ...done"<<endl;
-}
-
-void Fea::getHog()
-{
-    // ref http://blog.csdn.net/yangtrees/article/details/7463431
-    // ref http://blog.csdn.net/raodotcong/article/details/6239431
-    // ref http://gz-ricky.blogbus.com/logs/85326280.html
-    // ref http://blog.sciencenet.cn/blog-702148-762019.html
-    cv::Mat gray;
-    cv::cvtColor(image2D,gray,CV_BGR2GRAY);
-
-    cv::resize(gray,gray,cv::Size(16,16));
-    // widnowsSize,blockSize,blockStride,cellSize
-    cv::HOGDescriptor d(cv::Size(16,16),cv::Size(8,8),cv::Size(4,4),cv::Size(4,4),9);
-
-    std::vector<float> descriptorsValues;
-    std::vector<cv::Point> locations;
-
-    d.compute(gray,descriptorsValues,cv::Size(0,0),cv::Size(0,0),locations);
-
-    for(int i=0;i<descriptorsValues.size();i++)
-        fea2D.push_back(descriptorsValues[i]);
-
-//    qDebug()<<"hog done"<<endl;
 }
 
 //compute the GLCM of horizonal veritical and dialog
@@ -1364,10 +1372,10 @@ void Fea::setGLCM()
     double glcmMatrix[GLCM_CLASS][GLCM_CLASS];
     double *glcm = new double[12];
 
-    cv::Mat gray;
+    cv::Mat gray0 = cv::Mat(gray.size(),CV_8UC1);
+    gray.copyTo(gray0);
     cv::Mat grade;
-    cv::cvtColor(image2D,gray,CV_BGR2GRAY);
-    grade = grade16(gray);
+    grade = grade16(gray0);
     memset(glcm,0,sizeof(double)*12);
     int width = grade.cols;
     int height = grade.rows;
@@ -1410,7 +1418,7 @@ void Fea::setGLCM()
             setGLCMfeatures(glcm,2,glcmMatrix);
 
 
-    gray.release();
+    gray0.release();
     grade.release();
 
     for(int i=0;i<12;i++)
@@ -1428,8 +1436,8 @@ void Fea::setSaliency()
     double salientArea = 0.0;
 
     double max = 0.0, min = 1e30;
-    cv::Mat gray;
-    cv::cvtColor(image2D,gray,CV_BGR2GRAY);
+//    cv::Mat gray;
+//    cv::cvtColor(image2D,gray,CV_BGR2GRAY);
 
     // set hist
     double *hist = new double[256];
@@ -1458,11 +1466,12 @@ void Fea::setSaliency()
     {
         salientArea = 0.0;
         fea2D.push_back(salientArea);
-        gray.release();
+
         delete []hist;
         for(int i=0;i<gray.rows;i++)
             delete[] salient[i];
         delete [] salient;
+        gray.release();
         return;
     }
 
@@ -1477,19 +1486,48 @@ void Fea::setSaliency()
                 salientArea++;
         }
 
+    salientArea = salientArea / gray.rows / gray.cols;
     fea2D.push_back(salientArea);
     delete []hist;
-    gray.release();
+
     for(int i=0;i<gray.rows;i++)
         delete [] salient[i];
     delete []salient;
+//    gray.release();
 
+//    qDebug()<<"set saliency done"<<endl;
 }
 
 void Fea::setPCA()
 {
     for(int i=0;i<5;i++)
         fea2D.push_back(pcaResult.at<float>(i,t_case));
+}
+
+void Fea::getHog()
+{
+    // ref http://blog.csdn.net/yangtrees/article/details/7463431
+    // ref http://blog.csdn.net/raodotcong/article/details/6239431
+    // ref http://gz-ricky.blogbus.com/logs/85326280.html
+    // ref http://blog.sciencenet.cn/blog-702148-762019.html
+    cv::Mat gray0;
+//    cv::cvtColor(image2D,gray0,CV_BGR2GRAY);
+
+    cv::resize(gray,gray0,cv::Size(16,16));
+    // widnowsSize,blockSize,blockStride,cellSize
+    cv::HOGDescriptor d(cv::Size(16,16),cv::Size(8,8),cv::Size(4,4),cv::Size(4,4),9);
+
+    std::vector<float> descriptorsValues;
+    std::vector<cv::Point> locations;
+
+    d.compute(gray0,descriptorsValues,cv::Size(0,0),cv::Size(0,0),locations);
+
+    for(int i=0;i<descriptorsValues.size();i++)
+        fea2D.push_back(descriptorsValues[i]);
+
+    gray0.release();
+
+//    qDebug()<<"hog done"<<endl;
 }
 
 void Fea::computePCA()
@@ -1511,6 +1549,8 @@ void Fea::computePCA()
     cv::PCA pca0(pcaOriginal,cv::Mat(),CV_PCA_DATA_AS_COL,5);
 
     pcaResult = pca0.project(pcaOriginal);
+
+    pcaOriginal.release();
 
 }
 
@@ -2085,6 +2125,8 @@ void Fea::clear()
     mask.release();
 
     image2D.release();
+
+    gray.release();
 
     fea2D.clear();
 
