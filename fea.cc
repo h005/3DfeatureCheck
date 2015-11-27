@@ -189,6 +189,7 @@ void Fea::setFeature()
             /*
               add 2D fea function here
             */
+
             getColorDistribution();
 
             getHueCount();
@@ -199,9 +200,13 @@ void Fea::setFeature()
 
             getBrightness();
 
+#ifdef FOREGROUND
+
             getRuleOfThird();
 
             getLightingFeature();
+
+#endif
 
             setGLCM();
 
@@ -415,7 +420,7 @@ void Fea::setProjectArea()
 
     QString projPath = path + QString("proj/").append(fileName);
 
-    cv::flip(img,img,0);
+//    cv::flip(img,img,0);
 
     cvSaveImage(projPath.toStdString().c_str(),&(IplImage(img)));
 
@@ -1513,7 +1518,12 @@ void Fea::getHog()
     cv::Mat gray0;
 //    cv::cvtColor(image2D,gray0,CV_BGR2GRAY);
 
+#ifdef FOREGROUND
+    roundingBox(gray0);
+    cv::resize(gray0,gray0,cv::Size(16,16));
+#else
     cv::resize(gray,gray0,cv::Size(16,16));
+#endif
     // widnowsSize,blockSize,blockStride,cellSize
     cv::HOGDescriptor d(cv::Size(16,16),cv::Size(8,8),cv::Size(4,4),cv::Size(4,4),9);
 
@@ -1551,6 +1561,82 @@ void Fea::computePCA()
     pcaResult = pca0.project(pcaOriginal);
 
     pcaOriginal.release();
+
+}
+
+void Fea::roundingBox(cv::Mat &boxImage)
+{
+    int up,bottom,left,right;
+    int sum = 0;
+//    qDebug()<<"round box mask "<<mask.rows<<" "<<mask.cols<<endl;
+    int back = mask.cols*255;
+    // up
+    for(int i=0;i<mask.rows;i++)
+    {
+        sum  = 0;
+        for(int j=0;j<mask.cols;j++)
+            sum += mask.at<uchar>(i,j);
+        if(sum != back)
+        {
+            up = i;
+            break;
+        }
+    }
+//    qDebug()<<"roundBox up"<<endl;
+    // bottom
+    for(int i=mask.rows-1 ; i>=0 ; i--)
+    {
+        sum = 0;
+        for(int j=0;j<mask.cols;j++)
+            sum += mask.at<uchar>(i,j);
+        if(sum != back)
+        {
+            bottom = i + 1;
+            break;
+        }
+    }
+//    qDebug()<<"roundBox bottom"<<endl;
+    // left
+    back = mask.rows*255;
+    for(int i=0;i<mask.cols;i++)
+    {
+        sum = 0;
+        for(int j=0;j<mask.rows;j++)
+            sum += mask.at<uchar>(j,i);
+        if(sum != back)
+        {
+            left = i;
+            break;
+        }
+    }
+//    qDebug()<<"roundBox left"<<endl;
+    // right
+    for(int i=mask.cols-1;i>=0;i--)
+    {
+        sum = 0;
+        for(int j=0;j<mask.rows;j++)
+            sum += mask.at<uchar>(j,i);
+        if(sum != back)
+        {
+            right = i + 1;
+            break;
+        }
+    }
+//    qDebug()<<"roundBox right"<<endl;
+//    qDebug()<<"bound box up bottom "<<up<<" "<<bottom<<endl;
+//    qDebug()<<"bound box left right "<<left<<" "<<right<<endl;
+
+    // image [left right) [up bottom)
+//    Mat srcROI = src(Rect(0,0,src.cols/2,src.rows/2));
+    cv::Mat tmp = gray(cv::Rect(left,up,right - left - 1,bottom - up - 1));
+//    cv::namedWindow("gray");
+//    cv::imshow("gray",gray);
+    tmp.copyTo(boxImage);
+//    qDebug()<<"bound box size "<<tmp.rows<<" "<<tmp.cols<<endl;
+
+//    cv::namedWindow("boundingbox");
+//    cv::imshow("boundingbox",boxImage);
+
 
 }
 

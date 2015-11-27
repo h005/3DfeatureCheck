@@ -181,6 +181,8 @@ private:
     void getHog();
     // compute PCA
     void computePCA();
+    // rounding box used for HOG foreground
+    void roundingBox(cv::Mat &boxImage);
 
     double getMeshSaliencyLocalMax(double *nearDis,int len,std::vector<double> meshSaliency);
 
