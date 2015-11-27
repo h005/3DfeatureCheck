@@ -89,9 +89,9 @@ void Fea::setFeature()
         a.push_back(tmpMean);
         b.push_back(tmpGauss);
     }
-
+#ifndef FOREGROUND
     computePCA();
-
+#endif
     qDebug() << "pca done"<<endl;
 
     qDebug() << "fea set mean gauss curvature .... "<< render->p_vecMesh.size() <<endl;
@@ -190,30 +190,32 @@ void Fea::setFeature()
               add 2D fea function here
             */
 
+            // 可以只计算mask对应部分的前景区域
             getColorDistribution();
-
+            // 可以只计算mask对应部分的前景区域
             getHueCount();
-
+            // 不计算
             getBlur();
-
-            getContrast();
-
+            // 可以只计算mask对应部分的前景区域
+            getContrast(); // 直方图中占98%区域的宽度
+            // 可以只计算mask对应部分的前景区域
             getBrightness();
 
-#ifdef FOREGROUND
+#ifndef FOREGROUND
 
             getRuleOfThird();
 
             getLightingFeature();
 
-#endif
-
+            // 不计算
             setGLCM();
 
             setSaliency();
 
             setPCA();
 
+#endif
+            // 各种不同方向的梯度叠加
             getHog();
         }
 
@@ -1108,6 +1110,27 @@ void Fea::setOutlierCount()
 
 void Fea::getColorDistribution()
 {
+#ifdef FOREGROUND
+    double *hist = new double[NUM_Distribution];
+    memset(hist,0,sizeof(double)*NUM_Distribution);
+
+    int index = 0;
+
+    for(int i=0;i<image2D.rows;i++)
+        for(int j=0;j<image2D.cols;j++)
+            if(mask.at<uchar>(i,j) != 255)
+            {
+                index = image2D.at<cv::Vec3b>(i,j)[0]>>5;
+                index = (image2D.at<cv::Vec3b>(i,j)[1]>>5) + (index * 8);
+                index = (image2D.at<cv::Vec3b>(i,j)[2]>>5) + (index * 8);
+                hist[index]++;
+            }
+
+    for(int i=0;i<NUM_Distribution;i++)
+        fea2D.push_back(hist[i]);
+    delete []hist;
+
+#else
     double *hist = new double[NUM_Distribution];
 
     memset(hist,0,sizeof(double)*NUM_Distribution);
@@ -1126,7 +1149,7 @@ void Fea::getColorDistribution()
         fea2D.push_back(hist[i]);
 
     delete []hist;
-
+#endif
 //    qDebug()<<"color distribution done"<<endl;
 }
 
@@ -1155,10 +1178,18 @@ void Fea::getHueCount()
     {
         for(int j=0;j<tmp.cols;j++)
         {
+#ifdef FOREGROUND
+            if(mask.at<uchar>(i,j)!=255)
+                if(tmp.at<cv::Vec3f>(i,j)[2] > valueRange[0] && tmp.at<cv::Vec3f>(i,j)[2] < valueRange[1] && tmp.at<cv::Vec3f>(i,j)[1]>0.2)
+                {
+                    mask0.at<uchar>(i,j) = 255;
+                }
+#else
             if(tmp.at<cv::Vec3f>(i,j)[2] > valueRange[0] && tmp.at<cv::Vec3f>(i,j)[2] < valueRange[1] && tmp.at<cv::Vec3f>(i,j)[1]>0.2)
             {
                 mask0.at<uchar>(i,j) = 255;
             }
+#endif
         }
     }
     cv::MatND hist;
@@ -1188,6 +1219,7 @@ void Fea::getHueCount()
 
 void Fea::getBlur()
 {
+#ifndef FOREGROUND
     cv::Mat tmp = gray;
 //    qDebug()<<"blur "<<tmp.rows<<" "<<tmp.cols<<" "<<tmp.channels()<<endl;
 //    image2D.copyTo(tmp);
@@ -1232,6 +1264,11 @@ void Fea::getBlur()
     planes[0].release();
     planes[1].release();
     magl.release();
+
+#else
+    return;
+#endif
+
 //    qDebug()<<" get blur ... "<<blur<<" ... done"<<endl;
 
 }
@@ -1246,7 +1283,12 @@ void Fea::getContrast()
     for(int i=0;i<image2D.rows;i++)
         for(int j=0;j<image2D.cols;j++)
             for(int k = 0;k<3;k++)
+#ifdef FOREGROUND
+                if(mask.at<uchar>(i,j)!=255)
+                    hist[image2D.at<cv::Vec3b>(i,j)[k]]++;
+#else
                 hist[image2D.at<cv::Vec3b>(i,j)[k]]++;
+#endif
 
     int num = image2D.cols*image2D.rows*3;
     num = num*(1.0 - widthRatio);
@@ -1276,12 +1318,21 @@ void Fea::getBrightness()
 //    image2D.copyTo(tmp);
 //    cv::cvtColor(tmp,tmp,CV_BGR2GRAY);
 
+    double count = 0.0;
     double sum = 0;
     for(int i=0;i<tmp.rows;i++)
         for(int j=0;j<tmp.cols;j++)
+#ifdef FOREGROUND
+            if(mask.at<uchar>(i,j)!=255)
+            {
+                sum += tmp.at<uchar>(i,j);
+                count ++;
+            }
+    double brightness = sum / count;
+#else
             sum += tmp.at<uchar>(i,j);
-
     double brightness = sum / tmp.rows / tmp.cols;
+#endif
 
     fea2D.push_back(brightness);
 
@@ -1374,6 +1425,7 @@ void Fea::getLightingFeature()
 //the glcmMatirx has 16 values, so the size is 16*16
 void Fea::setGLCM()
 {
+#ifndef FOREGROUND
     double glcmMatrix[GLCM_CLASS][GLCM_CLASS];
     double *glcm = new double[12];
 
@@ -1430,13 +1482,15 @@ void Fea::setGLCM()
         fea2D.push_back(glcm[i]);
 
     delete []glcm;
-
+#else
+    return;
+#endif
 //    qDebug()<<"glcm done"<<endl;
 }
 
 void Fea::setSaliency()
 {
-
+#ifndef FOREGROUND
     double thresh = 200;
     double salientArea = 0.0;
 
@@ -1499,6 +1553,9 @@ void Fea::setSaliency()
         delete [] salient[i];
     delete []salient;
 //    gray.release();
+#else
+    return;
+#endif
 
 //    qDebug()<<"set saliency done"<<endl;
 }
@@ -1517,15 +1574,17 @@ void Fea::getHog()
     // ref http://blog.sciencenet.cn/blog-702148-762019.html
     cv::Mat gray0;
 //    cv::cvtColor(image2D,gray0,CV_BGR2GRAY);
-
+    int NUMbins = 9;
+    double *hist = new double[NUMbins];
+    memset(hist,0,sizeof(double)*NUMbins);
 #ifdef FOREGROUND
     roundingBox(gray0);
     cv::resize(gray0,gray0,cv::Size(16,16));
 #else
     cv::resize(gray,gray0,cv::Size(16,16));
 #endif
-    // widnowsSize,blockSize,blockStride,cellSize
-    cv::HOGDescriptor d(cv::Size(16,16),cv::Size(8,8),cv::Size(4,4),cv::Size(4,4),9);
+    // widnowsSize,blockSize,blockStride,cellSize,numBins
+    cv::HOGDescriptor d(cv::Size(16,16),cv::Size(8,8),cv::Size(4,4),cv::Size(4,4),NUMbins);
 
     std::vector<float> descriptorsValues;
     std::vector<cv::Point> locations;
@@ -1533,8 +1592,12 @@ void Fea::getHog()
     d.compute(gray0,descriptorsValues,cv::Size(0,0),cv::Size(0,0),locations);
 
     for(int i=0;i<descriptorsValues.size();i++)
-        fea2D.push_back(descriptorsValues[i]);
+        hist[i % NUMbins] += descriptorsValues[i];
 
+    for(int i=0;i<NUMbins;i++)
+        fea2D.push_back(hist[i]);
+
+    delete hist;
     gray0.release();
 
 //    qDebug()<<"hog done"<<endl;
