@@ -10,7 +10,8 @@ Fea::Fea(QString fileName, QString path)
     this->path = path;
 
     qDebug()<<"path ... "<<path<<endl;
-
+    // fileName
+    qDebug()<<"fileName ... "<<fileName<<endl;
     // the number of feature is FEA_NUM
     // std::vector<double> fea3D;
 
@@ -22,6 +23,14 @@ Fea::Fea(QString fileName, QString path)
         std::cerr << "Error: Cannot read mesh from "<<std::endl;
         return ;
     }
+
+#ifdef OUTPUT_OFF
+    QString offName = fileName;
+    int tmpPos = offName.lastIndexOf('.');
+    offName.remove(tmpPos,20);
+//    qDebug()<<"offName "<<offName<<endl;
+    exImporter->outputMesh(mesh,offName);
+#endif
 
     // If the file did not provide vertex normals, then calculate them
     if (!mesh.has_vertex_normals())
@@ -90,6 +99,7 @@ void Fea::setFeature()
         b.push_back(tmpGauss);
     }
 #ifndef FOREGROUND
+    // 关于PCA这里还有问题，是否要将前景物体提取出来然后再进行PCA计算？目前没有这么做
     computePCA();
 #endif
     qDebug() << "pca done"<<endl;
@@ -186,6 +196,8 @@ void Fea::setFeature()
 
             setOutlierCount();
 
+            setBoundingBox3D();
+
             /*
               add 2D fea function here
             */
@@ -200,6 +212,8 @@ void Fea::setFeature()
             getContrast(); // 直方图中占98%区域的宽度
             // 可以只计算mask对应部分的前景区域
             getBrightness();
+            //
+
 
 #ifndef FOREGROUND
 
@@ -217,6 +231,8 @@ void Fea::setFeature()
 #endif
             // 各种不同方向的梯度叠加
             getHog();
+
+            get2DTheta();
         }
 
         qDebug()<<t_case<<" ... done"<<endl;
@@ -1108,6 +1124,52 @@ void Fea::setOutlierCount()
     fea3D.push_back(res);
 }
 
+void Fea::setBoundingBox3D()
+{
+    double dotval = 0.0;
+    double cosTheta = 0.0;
+    glm::vec4 axisx = glm::vec4(1,0,0,0);
+    glm::vec4 axisy = glm::vec4(0,1,0,0);
+    glm::vec4 axisz = glm::vec4(0,0,1,0);
+
+    // p_model_x x
+    dotval = glm::dot(render->p_model_x,axisx);
+    cosTheta = dotval / (glm::length(render->p_model_x) * glm::length(axisx));
+    fea3D.push_back(cosTheta);
+    // p_model_x y
+    dotval = glm::dot(render->p_model_x,axisy);
+    cosTheta = dotval / (glm::length(render->p_model_x) * glm::length(axisy));
+    fea3D.push_back(cosTheta);
+    // p_model_x z
+    dotval = glm::dot(render->p_model_x,axisz);
+    cosTheta = dotval / (glm::length(render->p_model_x) * glm::length(axisz));
+    fea3D.push_back(cosTheta);
+    // p_model_y x
+    dotval = glm::dot(render->p_model_y,axisx);
+    cosTheta = dotval / (glm::length(render->p_model_y) * glm::length(axisx));
+    fea3D.push_back(cosTheta);
+    // p_model_y y
+    dotval = glm::dot(render->p_model_y,axisy);
+    cosTheta = dotval / (glm::length(render->p_model_y) * glm::length(axisy));
+    fea3D.push_back(cosTheta);
+    // p_model_y z
+    dotval = glm::dot(render->p_model_y,axisz);
+    cosTheta = dotval / (glm::length(render->p_model_y) * glm::length(axisz));
+    fea3D.push_back(cosTheta);
+    // p_model_z x
+    dotval = glm::dot(render->p_model_z,axisx);
+    cosTheta = dotval / (glm::length(render->p_model_z) * glm::length(axisx));
+    fea3D.push_back(cosTheta);
+    // p_model_z y
+    dotval = glm::dot(render->p_model_z,axisy);
+    cosTheta = dotval / (glm::length(render->p_model_z) * glm::length(axisy));
+    fea3D.push_back(cosTheta);
+    // p_model_z z
+    dotval = glm::dot(render->p_model_z,axisz);
+    cosTheta = dotval / (glm::length(render->p_model_z) * glm::length(axisz));
+    fea3D.push_back(cosTheta);
+}
+
 void Fea::getColorDistribution()
 {
 #ifdef FOREGROUND
@@ -1624,6 +1686,63 @@ void Fea::computePCA()
     pcaResult = pca0.project(pcaOriginal);
 
     pcaOriginal.release();
+
+}
+
+void Fea::get2DTheta()
+{
+    // bocaGyy 2b
+    glm::vec3 axis_x = glm::vec3(1,0,0);
+    glm::vec3 axis_y = glm::vec3(0,1,0);
+    // 可能会出现零向量的问题，目前先当结果为-1来处理
+    glm::vec3 x_3d = glm::vec3(render->p_model_x[0],render->p_model_x[1],0);
+    glm::vec3 y_3d = glm::vec3(render->p_model_y[0],render->p_model_y[1],0);
+    glm::vec3 z_3d = glm::vec3(render->p_model_z[0],render->p_model_z[1],0);
+
+    if(x_3d.x == 0 && x_3d.y == 0)
+    {
+        fea2D.push_back( -1 );
+        fea2D.push_back( -1 );
+        return;
+    }
+    if(y_3d.x == 0 && y_3d.y == 0)
+    {
+        fea2D.push_back( -1 );
+        fea2D.push_back( -1 );
+        return;
+    }
+    if(z_3d.x == 0 && z_3d.y == 0)
+    {
+        fea2D.push_back( -1 );
+        fea2D.push_back( -1 );
+        return;
+    }
+
+    double theta = 0.0;
+    double sinTheta = 0.0;
+    // y_axis x_3d
+    sinTheta = glm::length(glm::cross(axis_y,x_3d)) / glm::length(axis_y) / glm::length(x_3d);
+    theta = sinTheta;
+    // y_axis y_3d
+    sinTheta = glm::length(glm::cross(axis_y,x_3d)) / glm::length(axis_y) / glm::length(x_3d);
+    theta = theta < sinTheta ? theta : sinTheta;
+    // y_axis z_3d
+    sinTheta = glm::length(glm::cross(axis_y,x_3d)) / glm::length(axis_y) / glm::length(x_3d);
+    theta = theta < sinTheta ? theta : sinTheta;
+    theta = asin(theta);
+    fea2D.push_back(theta);
+
+    // x_axis x_3d
+    sinTheta = glm::length(glm::cross(axis_x,x_3d)) / glm::length(axis_x) / glm::length(x_3d);
+    theta = sinTheta;
+    // x_axis y_3d
+    sinTheta = glm::length(glm::cross(axis_x,x_3d)) / glm::length(axis_x) / glm::length(x_3d);
+    theta = theta < sinTheta ? theta : sinTheta;
+    // x_axis z_3d
+    sinTheta = glm::length(glm::cross(axis_x,x_3d)) / glm::length(axis_x) / glm::length(x_3d);
+    theta = theta < sinTheta ? theta : sinTheta;
+    theta = asin(theta);
+    fea2D.push_back(theta);
 
 }
 

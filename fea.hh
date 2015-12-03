@@ -155,6 +155,8 @@ private:
 
     void setOutlierCount();
 
+    void setBoundingBox3D();
+
     /*  2D feature */
     // fill fea2D 0~4095
     void getColorDistribution();
@@ -162,7 +164,7 @@ private:
     void getHueCount();
     // 4097
     void getBlur();
-    //    4098
+    //  4098
     void getContrast();
     // 4099
     void getBrightness();
@@ -181,6 +183,8 @@ private:
     void getHog();
     // compute PCA
     void computePCA();
+    // 3D bounding box 2D x y axis theta
+    void get2DTheta();
     // rounding box used for HOG foreground
     void roundingBox(cv::Mat &boxImage);
 

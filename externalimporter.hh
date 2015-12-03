@@ -47,6 +47,8 @@ public:
 #endif
         buildMesh_h005(vertices,indices,mesh);
 
+//        outputMesh(mesh,"D:/viewpoint/bigBen/201511271435/bigBen");
+
         std::cout<<"Assimp Importer: "<<count<<" Meshes Loaded."<<std::endl;
         return true;
     }
