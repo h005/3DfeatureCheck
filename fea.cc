@@ -203,7 +203,7 @@ void Fea::setFeature()
             */
 
             // 可以只计算mask对应部分的前景区域
-            getColorDistribution();
+//            getColorDistribution();
             // 可以只计算mask对应部分的前景区域
             getHueCount();
             // 不计算
@@ -233,6 +233,8 @@ void Fea::setFeature()
             getHog();
 
             get2DTheta();
+
+            getColorEntropyVariance();
         }
 
         qDebug()<<t_case<<" ... done"<<endl;
@@ -1128,6 +1130,7 @@ void Fea::setBoundingBox3D()
 {
     double dotval = 0.0;
     double cosTheta = 0.0;
+    double theta = 0.0;
     glm::vec4 axisx = glm::vec4(1,0,0,0);
     glm::vec4 axisy = glm::vec4(0,1,0,0);
     glm::vec4 axisz = glm::vec4(0,0,1,0);
@@ -1135,39 +1138,48 @@ void Fea::setBoundingBox3D()
     // p_model_x x
     dotval = glm::dot(render->p_model_x,axisx);
     cosTheta = dotval / (glm::length(render->p_model_x) * glm::length(axisx));
-    fea3D.push_back(cosTheta);
+    theta = acos(cosTheta);
+    fea3D.push_back(theta);
     // p_model_x y
     dotval = glm::dot(render->p_model_x,axisy);
     cosTheta = dotval / (glm::length(render->p_model_x) * glm::length(axisy));
-    fea3D.push_back(cosTheta);
+    theta = acos(cosTheta);
+    fea3D.push_back(theta);
     // p_model_x z
     dotval = glm::dot(render->p_model_x,axisz);
     cosTheta = dotval / (glm::length(render->p_model_x) * glm::length(axisz));
-    fea3D.push_back(cosTheta);
+    theta = acos(cosTheta);
+    fea3D.push_back(theta);
     // p_model_y x
     dotval = glm::dot(render->p_model_y,axisx);
     cosTheta = dotval / (glm::length(render->p_model_y) * glm::length(axisx));
-    fea3D.push_back(cosTheta);
+    theta = acos(cosTheta);
+    fea3D.push_back(theta);
     // p_model_y y
     dotval = glm::dot(render->p_model_y,axisy);
     cosTheta = dotval / (glm::length(render->p_model_y) * glm::length(axisy));
-    fea3D.push_back(cosTheta);
+    theta = acos(cosTheta);
+    fea3D.push_back(theta);
     // p_model_y z
     dotval = glm::dot(render->p_model_y,axisz);
     cosTheta = dotval / (glm::length(render->p_model_y) * glm::length(axisz));
-    fea3D.push_back(cosTheta);
+    theta = acos(cosTheta);
+    fea3D.push_back(theta);
     // p_model_z x
     dotval = glm::dot(render->p_model_z,axisx);
     cosTheta = dotval / (glm::length(render->p_model_z) * glm::length(axisx));
-    fea3D.push_back(cosTheta);
+    theta = acos(cosTheta);
+    fea3D.push_back(theta);
     // p_model_z y
     dotval = glm::dot(render->p_model_z,axisy);
     cosTheta = dotval / (glm::length(render->p_model_z) * glm::length(axisy));
-    fea3D.push_back(cosTheta);
+    theta = acos(cosTheta);
+    fea3D.push_back(theta);
     // p_model_z z
     dotval = glm::dot(render->p_model_z,axisz);
     cosTheta = dotval / (glm::length(render->p_model_z) * glm::length(axisz));
-    fea3D.push_back(cosTheta);
+    theta = acos(cosTheta);
+    fea3D.push_back(theta);
 }
 
 void Fea::getColorDistribution()
@@ -1694,54 +1706,67 @@ void Fea::get2DTheta()
     // bocaGyy 2b
     glm::vec3 axis_x = glm::vec3(1,0,0);
     glm::vec3 axis_y = glm::vec3(0,1,0);
-    // 可能会出现零向量的问题，目前先当结果为-1来处理
+    // 可能会出现零向量的问题，目前先当结果为2*pi来处理
     glm::vec3 x_3d = glm::vec3(render->p_model_x[0],render->p_model_x[1],0);
     glm::vec3 y_3d = glm::vec3(render->p_model_y[0],render->p_model_y[1],0);
     glm::vec3 z_3d = glm::vec3(render->p_model_z[0],render->p_model_z[1],0);
-
-    if(x_3d.x == 0 && x_3d.y == 0)
-    {
-        fea2D.push_back( -1 );
-        fea2D.push_back( -1 );
-        return;
-    }
-    if(y_3d.x == 0 && y_3d.y == 0)
-    {
-        fea2D.push_back( -1 );
-        fea2D.push_back( -1 );
-        return;
-    }
-    if(z_3d.x == 0 && z_3d.y == 0)
-    {
-        fea2D.push_back( -1 );
-        fea2D.push_back( -1 );
-        return;
-    }
-
     double theta = 0.0;
-    double sinTheta = 0.0;
-    // y_axis x_3d
-    sinTheta = glm::length(glm::cross(axis_y,x_3d)) / glm::length(axis_y) / glm::length(x_3d);
-    theta = sinTheta;
-    // y_axis y_3d
-    sinTheta = glm::length(glm::cross(axis_y,x_3d)) / glm::length(axis_y) / glm::length(x_3d);
-    theta = theta < sinTheta ? theta : sinTheta;
-    // y_axis z_3d
-    sinTheta = glm::length(glm::cross(axis_y,x_3d)) / glm::length(axis_y) / glm::length(x_3d);
-    theta = theta < sinTheta ? theta : sinTheta;
-    theta = asin(theta);
+    double cosTheta = 0.0;
+    // compute minium theta between axis and the perspective vector
+    if((x_3d.x == 0 && x_3d.y == 0) ||
+            (y_3d.x == 0 && y_3d.y == 0) ||
+            (z_3d.x == 0 && z_3d.y == 0))
+    {
+        fea2D.push_back( 2 * PI );
+        fea2D.push_back( 2 * PI );
+    }
+    else{
+
+        // y_axis x_3d
+        cosTheta = glm::length(glm::dot(axis_y,x_3d)) / glm::length(axis_y) / glm::length(x_3d);
+        theta = cosTheta;
+        // y_axis y_3d
+        cosTheta = glm::length(glm::dot(axis_y,x_3d)) / glm::length(axis_y) / glm::length(x_3d);
+        theta = theta < cosTheta ? theta : cosTheta;
+        // y_axis z_3d
+        cosTheta = glm::length(glm::dot(axis_y,x_3d)) / glm::length(axis_y) / glm::length(x_3d);
+        theta = theta < cosTheta ? theta : cosTheta;
+        theta = acos(theta);
+        fea2D.push_back(theta);
+
+        // x_axis x_3d
+        cosTheta = glm::length(glm::dot(axis_x,x_3d)) / glm::length(axis_x) / glm::length(x_3d);
+        theta = cosTheta;
+        // x_axis y_3d
+        cosTheta = glm::length(glm::dot(axis_x,x_3d)) / glm::length(axis_x) / glm::length(x_3d);
+        theta = theta < cosTheta ? theta : cosTheta;
+        // x_axis z_3d
+        cosTheta = glm::length(glm::dot(axis_x,x_3d)) / glm::length(axis_x) / glm::length(x_3d);
+        theta = theta < cosTheta ? theta : cosTheta;
+        theta = acos(theta);
+        fea2D.push_back(theta);
+    }
+
+    //    double cosTheta = 0.0;
+    //    double theta = 0.0;
+
+    // thetas between three axis
+
+    cosTheta = 0.0;
+    theta = 0.0;
+    // x_3d y_3d
+    cosTheta = glm::length(glm::dot(x_3d,y_3d)) / glm::length(x_3d) / glm::length(y_3d);
+    theta = acos(cosTheta);
     fea2D.push_back(theta);
 
-    // x_axis x_3d
-    sinTheta = glm::length(glm::cross(axis_x,x_3d)) / glm::length(axis_x) / glm::length(x_3d);
-    theta = sinTheta;
-    // x_axis y_3d
-    sinTheta = glm::length(glm::cross(axis_x,x_3d)) / glm::length(axis_x) / glm::length(x_3d);
-    theta = theta < sinTheta ? theta : sinTheta;
-    // x_axis z_3d
-    sinTheta = glm::length(glm::cross(axis_x,x_3d)) / glm::length(axis_x) / glm::length(x_3d);
-    theta = theta < sinTheta ? theta : sinTheta;
-    theta = asin(theta);
+    // x_3d z_3d
+    cosTheta = glm::length(glm::dot(x_3d,z_3d)) / glm::length(x_3d) / glm::length(z_3d);
+    theta = acos(cosTheta);
+    fea2D.push_back(theta);
+
+    // y_3d z_3d
+    cosTheta = glm::length(glm::dot(y_3d,z_3d)) /  glm::length(y_3d) / glm::length(z_3d);
+    theta = acos(cosTheta);
     fea2D.push_back(theta);
 
 }
@@ -1820,6 +1845,63 @@ void Fea::roundingBox(cv::Mat &boxImage)
 //    cv::imshow("boundingbox",boxImage);
 
 
+}
+
+void Fea::getColorEntropyVariance()
+{
+#ifdef FOREGROUND
+    double *hist = new double[NUM_Distribution];
+    memset(hist,0,sizeof(double)*NUM_Distribution);
+    double count = 0.0;
+    int index = 0;
+
+    for(int i=0;i<image2D.rows;i++)
+        for(int j=0;j<image2D.cols;j++)
+            if(mask.at<uchar>(i,j) != 255)
+            {
+                index = image2D.at<cv::Vec3b>(i,j)[0]>>5;
+                index = (image2D.at<cv::Vec3b>(i,j)[1]>>5) + (index * 8);
+                index = (image2D.at<cv::Vec3b>(i,j)[2]>>5) + (index * 8);
+                hist[index]++;
+                count ++;
+            }
+    double mean = 0.0;
+    // normalize
+    for(int i=0;i<NUM_Distribution;i++)
+    {
+        hist[i] = hist[i] / count;
+        mean += hist[i] * i;
+    }
+    mean /= NUM_Distribution;
+
+    double entropy = 0.0;
+    // entropy
+    for(int i=0;i<NUM_Distribution;i++)
+        if(hist[i])
+            entropy += hist[i] * log2(hist[i]);
+    entropy = -entropy;
+
+    // variance
+    double variance = 0.0;
+    for(int i=0;i<NUM_Distribution;i++)
+        variance += hist[i] * (i - mean) * (i - mean);
+
+    // dirstribution as depth distribution
+    double dis = 0.0;
+    for(int i=0;i<NUM_Distribution;i++)
+        dis += hist[i] * hist[i];
+    dis = 1 - dis;
+
+    fea2D.push_back(entropy);
+    fea2D.push_back(variance);
+    fea2D.push_back(dis);
+
+//    for(int i=0;i<NUM_Distribution;i++)
+//        fea2D.push_back(hist[i]);
+    delete []hist;
+#else
+
+#endif
 }
 
 double Fea::getMeshSaliencyLocalMax(double *nearDis, int len, std::vector<double> meshSaliency)

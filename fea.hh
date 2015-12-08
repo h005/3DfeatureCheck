@@ -185,8 +185,15 @@ private:
     void computePCA();
     // 3D bounding box 2D x y axis theta
     void get2DTheta();
+    // color variance
+    void getColorEntropyVariance();
+
+
+
+
     // rounding box used for HOG foreground
     void roundingBox(cv::Mat &boxImage);
+
 
     double getMeshSaliencyLocalMax(double *nearDis,int len,std::vector<double> meshSaliency);
 
