@@ -271,7 +271,11 @@ void Fea::setMMPara(QString mmFile)
 
 //    std::cout<<std::endl<< "output " << output.toStdString() << std::endl<<std::endl;
 
-    freopen(mmPath.toStdString().c_str(),"r",stdin);
+    if(!freopen(mmPath.toStdString().c_str(),"r",stdin))
+    {
+        t_case = 0;
+        return;
+    }
 
 //    set_tCase();
 
@@ -311,12 +315,16 @@ void Fea::setMMPara(QString mmFile)
 #else
     // for compute there is one matirx is abv matrix
     // and the last two para is from to
-    float tmp;
-    for(int i=0;i<16;i++)
-    {
-        scanf("%f",&tmp);
-        m_abv[i/4][i%4] = tmp;
-    }
+
+    // rearrange the model needless to read the parameters
+
+//    float tmp;
+//    for(int i=0;i<16;i++)
+//    {
+//        scanf("%f",&tmp);
+//        m_abv[i/4][i%4] = tmp;
+//    }
+    m_abv = glm::mat4(1.f);
     scanf("%d",&t_case);
 #endif
 //    std::cout<<t_case<<" "<<NUM<<std::endl;
@@ -2329,12 +2337,15 @@ void Fea::printOut()
 
     printf("%d %d\n",t_case+1,NUM);
 #else
-    for(int i=0;i<4;i++)
-    {
-        for(int j=0;j<4;j++)
-            printf("%f ",m_abv[i][j]);
-        printf("\n");
-    }
+
+    // rearrange the model needless to printout the parameters
+
+//    for(int i=0;i<4;i++)
+//    {
+//        for(int j=0;j<4;j++)
+//            printf("%f ",m_abv[i][j]);
+//        printf("\n");
+//    }
 
     printf("%d\n",t_case+1);
 
