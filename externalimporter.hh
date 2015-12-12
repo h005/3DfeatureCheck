@@ -46,6 +46,8 @@ public:
         std::cout << "union ... done "<<std::endl;
 #endif
         buildMesh_h005(vertices,indices,mesh);
+        // output the file
+//        outputMesh(mesh,"E:/ViewPoint/kxm/201511231826/kxm");
 
         std::cout<<"Assimp Importer: "<<count<<" Meshes Loaded."<<std::endl;
         return true;
@@ -106,6 +108,8 @@ public:
          * vHandle push进tmpMesh的vHandle
          * tmpIndex[*it] 值为*it的vertex索引在vHandle出现在第几次
         */
+
+        qDebug()<<"setMeshVector ... "<<cateSet.size()<<endl;
         for(int i=0;i<cateSet.size();i++)
         {
             MeshT tmpMesh;

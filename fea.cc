@@ -204,7 +204,7 @@ void Fea::setFeature()
         }
 
 
-//        break;
+        break;
         printOut();
 
     }
