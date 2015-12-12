@@ -187,7 +187,8 @@ private:
     void get2DTheta();
     // color variance
     void getColorEntropyVariance();
-
+    // ball coordinate
+    void getBallCoord();
 
 
 

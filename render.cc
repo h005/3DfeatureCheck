@@ -498,9 +498,9 @@ void Render::setParameters()
     p_model_x = glm::vec4(xmax - xmin,0,0,0);
     p_model_y = glm::vec4(0,ymax - ymin,0,0);
     p_model_z = glm::vec4(0,0,zmax - zmin,0);
-    p_model_x = mvp * p_model_x;
-    p_model_y = mvp * p_model_y;
-    p_model_z = mvp * p_model_z;
+    p_model_x = modelViewMatrix * p_model_x;
+    p_model_y = modelViewMatrix * p_model_y;
+    p_model_z = modelViewMatrix * p_model_z;
     p_model_x[3] = 0;
     p_model_y[3] = 0;
     p_model_z[3] = 0;

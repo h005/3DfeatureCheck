@@ -212,8 +212,8 @@ void Fea::setFeature()
             getContrast(); // 直方图中占98%区域的宽度
             // 可以只计算mask对应部分的前景区域
             getBrightness();
-            //
-
+            // 球面坐标系
+            getBallCoord();
 
 #ifndef FOREGROUND
 
@@ -1715,9 +1715,15 @@ void Fea::get2DTheta()
     glm::vec3 axis_x = glm::vec3(1,0,0);
     glm::vec3 axis_y = glm::vec3(0,1,0);
     // 可能会出现零向量的问题，目前先当结果为2*pi来处理
-    glm::vec3 x_3d = glm::vec3(render->p_model_x[0],render->p_model_x[1],0);
-    glm::vec3 y_3d = glm::vec3(render->p_model_y[0],render->p_model_y[1],0);
-    glm::vec3 z_3d = glm::vec3(render->p_model_z[0],render->p_model_z[1],0);
+
+    // p_model_x,p_model_y,p_model_z  transaction by MV without P
+    // so we need multiply P matrix
+    glm::vec4 mvp_model_x = m_projectionList[t_case] * render->p_model_x;
+    glm::vec4 mvp_model_y = m_projectionList[t_case] * render->p_model_y;
+    glm::vec4 mvp_model_z = m_projectionList[t_case] * render->p_model_z;
+    glm::vec3 x_3d = glm::vec3(mvp_model_x[0],mvp_model_x[1],0);
+    glm::vec3 y_3d = glm::vec3(mvp_model_y[0],mvp_model_y[1],0);
+    glm::vec3 z_3d = glm::vec3(mvp_model_z[0],mvp_model_z[1],0);
     double theta = 0.0;
     double cosTheta = 0.0;
     // compute minium theta between axis and the perspective vector
@@ -1910,6 +1916,21 @@ void Fea::getColorEntropyVariance()
 #else
 
 #endif
+}
+
+void Fea::getBallCoord()
+{
+    // ref https://zh.wikipedia.org/wiki/%E7%90%83%E5%BA%A7%E6%A8%99%E7%B3%BB
+    glm::mat4 mv = m_viewList[t_case] *  m_modelList[t_case];
+    glm::vec4 camera = glm::vec4(0,0,-1,0);
+    camera = glm::inverse(mv) * camera;
+    camera[3] = 0.0;
+//    double r = glm::length(camera);
+    double theta = atan(sqrt(camera[0] * camera[0] + camera[1] * camera[1]) / camera[2]);
+    double fani = atan(camera[1] / camera[0]);
+    fea3D.push_back(theta);
+    fea3D.push_back(fani);
+
 }
 
 double Fea::getMeshSaliencyLocalMax(double *nearDis, int len, std::vector<double> meshSaliency)
