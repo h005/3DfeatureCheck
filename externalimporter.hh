@@ -49,6 +49,8 @@ public:
         // output the file
 //        outputMesh(mesh,"E:/ViewPoint/kxm/201511231826/kxm");
 
+//        outputMesh(mesh,"D:/viewpoint/bigBen/201511271435/bigBen");
+
         std::cout<<"Assimp Importer: "<<count<<" Meshes Loaded."<<std::endl;
         return true;
     }

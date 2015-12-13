@@ -48,6 +48,8 @@ public:
     // fileName is absolute name
     void storeImage(QString path,QString fileName,int width,int height);
 
+    double getArea(std::vector<GLuint> &indices,int p);
+
     ~Render();
 
 
@@ -77,10 +79,16 @@ public:
     glm::mat4 m_view;
     glm::mat4 m_proj;
 
+    glm::vec4 p_model_x;
+    glm::vec4 p_model_y;
+    glm::vec4 p_model_z;
+
+
 protected:
     glm::mat4 getModelViewMatrix();
     glm::mat4 getModelMatrix();
 
+    glm::mat3 getVecMatrix(glm::vec3 &v1);
 
 /*
     glm::mat4 m_camera;

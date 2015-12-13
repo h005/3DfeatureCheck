@@ -11,8 +11,8 @@
 
 #define CHECK_
 #define NoProjection_
-
-
+#define FOREGROUND
+#define OUTPUT_OFF_
 
 #endif // PREDEFINE
 

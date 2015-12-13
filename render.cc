@@ -298,11 +298,15 @@ void Render::storeImage(QString path,QString fileName0,int width,int height)
     glReadBuffer(GL_BACK_LEFT);
     glReadPixels(0,0,viewport[2],viewport[3],GL_DEPTH_COMPONENT,GL_FLOAT,img0);
 
+    float min = 1.0;
+    for(int i=0;i<viewport[2]*viewport[3];i++)
+        min = min < img0[i] ? min : img0[i];
+
     cv::Mat depthImgFliped = cv::Mat(viewport[3],viewport[2],CV_32FC1,img0);
     cv::Mat depthImg;
     cv::flip(depthImgFliped,depthImg,0);
     cv::resize(depthImg,depthImg,cv::Size(width,height));
-    depthImg.convertTo(depthImg,CV_8UC1,255,0);
+    depthImg.convertTo(depthImg,CV_8UC1,255.0 / (1.0 - min),255.0 * min / (min - 1.0));
 
     GLubyte *img =
             new GLubyte[(viewport[2] - viewport[0])
@@ -356,6 +360,47 @@ void Render::storeImage(QString path,QString fileName0,int width,int height)
     rgbImg.release();
 }
 
+double Render::getArea(std::vector<GLuint> &indices,int p)
+{
+    double area = 0.0;
+
+    glm::vec3 pa = glm::vec3(p_vertices[indices[p]*3],p_vertices[indices[p]*3+1],p_vertices[indices[p]*3+2]);
+    glm::vec3 pb = glm::vec3(p_vertices[indices[p+1]*3],p_vertices[indices[p+1]*3+1],p_vertices[indices[p+1]*3+2]);
+    glm::vec3 pc = glm::vec3(p_vertices[indices[p+2]*3],p_vertices[indices[p+2]*3+1],p_vertices[indices[p+2]*3+2]);
+
+//    qDebug()<<"pca vec pa "<<pa[0]<<" "<<pa[1]<<" "<<pa[2]<<endl;
+//    qDebug()<<"pca vec pb "<<pb[0]<<" "<<pb[1]<<" "<<pb[2]<<endl;
+//    qDebug()<<"pca vec pc "<<pc[0]<<" "<<pc[1]<<" "<<pc[2]<<endl;
+
+    glm::vec3 BC = pc - pb;
+    double a = glm::l2Norm(BC);
+//    qDebug()<<"pca vec pc-pb "<<BC[0]<<" "<<BC[1]<<" "<<BC[2]<<endl;
+//    qDebug()<<"pca area a "<<a<<endl;
+    glm::vec3 CA = pa - pc;
+    double b = glm::l2Norm(CA);
+//    qDebug()<<"pca vec pa-pc "<<CA[0]<<" "<<CA[1]<<" "<<CA[2]<<endl;
+//    qDebug()<<"pca area b "<<b<<endl;
+    glm::vec3 BA = pa - pb;
+    double c = glm::l2Norm(BA);
+//    qDebug()<<"pca vec pa-pb "<<BA[0]<<" "<<BA[1]<<" "<<BA[2]<<endl;
+//    qDebug()<<"pca area c "<<c<<endl;
+    if(glm::l2Norm(glm::cross(BA,BC)) < 1e-2)
+        return 0;
+    double s = (a + b + c) / 2.0;
+//    qDebug()<<"pca s "<<s<<endl;
+//    qDebug()<<"pca ss "<<s*(s-a)*(s-b)*(s-c)<<endl;
+    // pca ss  -1.42503e-09
+    // I am drunk!
+    double tmpres = s*(s-a)*(s-b)*(s-c);
+    if(abs(tmpres) < 1e-5)
+        area = sqrt(0);
+    else
+        area = sqrt(tmpres);
+//    qDebug()<<"pca area ... "<<area;
+
+    return area;
+}
+
 void Render::setParameters()
 {
     std::vector<GLuint> indices;
@@ -372,6 +417,7 @@ void Render::setParameters()
     }
 
     m_helper.getVerticesAndFaces_AddedByZwz(p_vertices,indices);
+
     makeCurrent();
 
     glBindFramebuffer(GL_FRAMEBUFFER,frameBufferId);
@@ -390,11 +436,25 @@ void Render::setParameters()
     glReadPixels(0,0,p_width,p_height,GL_DEPTH_COMPONENT,GL_FLOAT,p_img);
 
     int visibleVertexCount = 0;
+
+    GLfloat xmin,xmax,ymin,ymax,zmin,zmax;
+
+    xmin = xmax = p_vertices[0];
+    ymin = ymax = p_vertices[1];
+    zmin = zmax = p_vertices[2];
+
     for(int i=0;i<p_vertices.size();i+=3)
     {
         glm::vec4 position = mvp * glm::vec4(p_vertices[i],p_vertices[i+1],p_vertices[i+2],1.0);
         position = position / position.w;
 
+
+        xmin = xmin < p_vertices[i] ? xmin : p_vertices[i];
+        xmax = xmax > p_vertices[i] ? xmax : p_vertices[i];
+        ymin = ymin < p_vertices[i+1] ? ymin : p_vertices[i+1];
+        ymax = ymax > p_vertices[i+1] ? ymax : p_vertices[i+1];
+        zmin = zmin < p_vertices[i+2] ? zmin : p_vertices[i+2];
+        zmax = zmax > p_vertices[i+2] ? zmax : p_vertices[i+2];
         // 看来读到的z-buffer并不是position.z，而是将position.z变换到[0, 1]之间
         // ref http://gamedev.stackexchange.com/a/18858
         GLfloat finalZ = position.z * 0.5 + 0.5;
@@ -435,6 +495,16 @@ void Render::setParameters()
         visibleVertexCount += isVisible ? 1 : 0;
     }
 
+    p_model_x = glm::vec4(xmax - xmin,0,0,0);
+    p_model_y = glm::vec4(0,ymax - ymin,0,0);
+    p_model_z = glm::vec4(0,0,zmax - zmin,0);
+    p_model_x = modelViewMatrix * p_model_x;
+    p_model_y = modelViewMatrix * p_model_y;
+    p_model_z = modelViewMatrix * p_model_z;
+    p_model_x[3] = 0;
+    p_model_y[3] = 0;
+    p_model_z[3] = 0;
+
     // 筛选出可见面
     // 所谓可见面，就是指该面上其中一个顶点可见
     p_VisibleFaces.clear();
@@ -472,5 +542,14 @@ glm::mat4 Render::getModelViewMatrix()
 glm::mat4 Render::getModelMatrix()
 {
     return m_model;
+}
+
+glm::mat3 Render::getVecMatrix(glm::vec3 &v1)
+{
+    glm::mat3 res;
+    for(int i=0;i<3;i++)
+        for(int j=0;j<3;j++)
+            res[j][i] = v1[i]*v1[j];
+    return res;
 }
 

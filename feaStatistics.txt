@@ -1,0 +1,22 @@
+20151212			
+1	projectArea		
+2	VisSurfaceArea		
+3	ViewPointEntropy		
+4	SilhouetteLength		
+5	SilhouetteCurvature		
+6	SilhouetteCurvatureExtreme		
+7	MaxDepth		
+8	DepthDistribute		
+9	MeanCurvature		
+10	GaussianCurvature		
+11	AbovePreference		
+12	OutlierCount		
+13	BoundingBox3D		模型包围盒在MVP变换之后与坐标轴的夹角，现改为经过MV变化之后与坐标轴的夹角，共9个值
+14	HueCount		
+15	Contrast		
+16	Brightness		
+17	BallCoord		
+18	Hog		
+19	2DTheta		模型包围盒MVP变换之后与X,Y坐标系的最小夹角，以及变化之后包围盒三个轴之间的夹角
+20	ColorEntropyVariance		颜色熵值和方差
+21	Vanish Point / Line		

@@ -10,7 +10,8 @@ Fea::Fea(QString fileName, QString path)
     this->path = path;
 
     qDebug()<<"path ... "<<path<<endl;
-
+    // fileName
+    qDebug()<<"fileName ... "<<fileName<<endl;
     // the number of feature is FEA_NUM
     // std::vector<double> fea3D;
 
@@ -22,6 +23,14 @@ Fea::Fea(QString fileName, QString path)
         std::cerr << "Error: Cannot read mesh from "<<std::endl;
         return ;
     }
+
+#ifdef OUTPUT_OFF
+    QString offName = fileName;
+    int tmpPos = offName.lastIndexOf('.');
+    offName.remove(tmpPos,20);
+//    qDebug()<<"offName "<<offName<<endl;
+    exImporter->outputMesh(mesh,offName);
+#endif
 
     // If the file did not provide vertex normals, then calculate them
     if (!mesh.has_vertex_normals())
@@ -89,8 +98,11 @@ void Fea::setFeature()
         a.push_back(tmpMean);
         b.push_back(tmpGauss);
     }
-
+#ifndef FOREGROUND
+    // 关于PCA这里还有问题，是否要将前景物体提取出来然后再进行PCA计算？目前没有这么做
     computePCA();
+#endif
+    qDebug() << "pca done"<<endl;
 
     qDebug() << "fea set mean gauss curvature .... "<< render->p_vecMesh.size() <<endl;
     qDebug() << "NUM ... " << NUM <<endl;
@@ -122,6 +134,15 @@ void Fea::setFeature()
             //used for check the image
 //            render->showImage();
             image2D = cv::imread(fileName.at(t_case).toStdString().c_str());
+
+            cv::cvtColor(image2D,gray,CV_BGR2GRAY);
+
+            image2D32f3c = cv::Mat(image2D.rows,image2D.cols,CV_32FC3,cv::Scalar(0,0,0));
+            // it is useful to convert CV_8UC3 to CV_32FC3
+            image2D.convertTo(image2D32f3c,CV_32FC3,1/255.0);
+
+            cv::cvtColor(image2D32f3c,image2D32f3c,CV_BGR2HSV);
+
 
             int width = image2D.cols;
             int height = image2D.rows;
@@ -169,46 +190,66 @@ void Fea::setFeature()
 
 //            setMeshSaliencyCompute(a,render->p_vertices,render->p_isVertexVisible,render->p_indiceArray);
 
-            setAbovePreference(m_abv,render->m_model,render->m_view);
+            setAbovePreference(m_abv,
+                               render->m_model,
+                               render->m_view);
 
 #endif
 
             setOutlierCount();
 
+            setBoundingBox3D();
 
             /*
               add 2D fea function here
             */
-            getColorDistribution();
 
+            // 可以只计算mask对应部分的前景区域
+//            getColorDistribution();
+            // 可以只计算mask对应部分的前景区域
             getHueCount();
-
+            // 不计算
             getBlur();
-
-            getContrast();
-
+            // 可以只计算mask对应部分的前景区域
+            getContrast(); // 直方图中占98%区域的宽度
+            // 可以只计算mask对应部分的前景区域
             getBrightness();
+            // 球面坐标系
+            getBallCoord();
+
+#ifndef FOREGROUND
 
             getRuleOfThird();
 
             getLightingFeature();
 
+            // 不计算
             setGLCM();
 
             setSaliency();
 
             setPCA();
 
-            clear();
+#endif
+            // 各种不同方向的梯度叠加
+            getHog();
 
+            get2DTheta();
+
+            getColorEntropyVariance();
         }
 
 
         break;
+        qDebug()<<t_case<<" ... done"<<endl;
+        break;
         printOut();
+
+        clear();
 
     }
 
+    qDebug()<<"fea output done"<<endl;
 }
 
 void Fea::setMMPara(QString mmFile)
@@ -226,7 +267,7 @@ void Fea::setMMPara(QString mmFile)
     label = path.left(pos);
     pos = label.lastIndexOf('/');
     label = label.remove(0,pos+1);
-    label = label.append(QString(".3df"));
+    label = label.append(QString(".fea"));
 
     pos = output.lastIndexOf('.');
     output.replace(pos,7,label);
@@ -234,7 +275,11 @@ void Fea::setMMPara(QString mmFile)
 
 //    std::cout<<std::endl<< "output " << output.toStdString() << std::endl<<std::endl;
 
-    freopen(mmPath.toStdString().c_str(),"r",stdin);
+    if(!freopen(mmPath.toStdString().c_str(),"r",stdin))
+    {
+        t_case = 0;
+        return;
+    }
 
 //    set_tCase();
 
@@ -274,12 +319,16 @@ void Fea::setMMPara(QString mmFile)
 #else
     // for compute there is one matirx is abv matrix
     // and the last two para is from to
-    float tmp;
-    for(int i=0;i<16;i++)
-    {
-        scanf("%f",&tmp);
-        m_abv[i/4][i%4] = tmp;
-    }
+
+    // rearrange the model needless to read the parameters
+
+//    float tmp;
+//    for(int i=0;i<16;i++)
+//    {
+//        scanf("%f",&tmp);
+//        m_abv[i/4][i%4] = tmp;
+//    }
+    m_abv = glm::mat4(1.f);
     scanf("%d",&t_case);
 #endif
 //    std::cout<<t_case<<" "<<NUM<<std::endl;
@@ -329,11 +378,19 @@ void Fea::setMask()
 void Fea::setMat(float *img, int width, int height,int dstWidth,int dstHeight)
 {
 //    image.release();
+    float min = 1.0;
+    for(int i=0;i<width*height;i++)
+        min = min < img[i] ? min : img[i];
+
     cv::Mat image0 = cv::Mat(width,height,CV_32FC1,img);
-    image0.convertTo(image,CV_8UC1,255.0);
+    image0.convertTo(image,CV_8UC1,255.0/(1.0 - min),255.0 * min / (min - 1.0));
+    cv::flip(image,image,0);
     cv::resize(image,image,cv::Size(dstWidth,dstHeight));
     // release memory
     image0.release();
+
+//    cv::namedWindow("0025");
+//    cv::imshow("0025",image);
 
     // resize
 //    qDebug()<<"setMat "<<fileName.at(t_case)<<endl;
@@ -346,7 +403,7 @@ void Fea::setMat(float *img, int width, int height,int dstWidth,int dstHeight)
 //    cv::namedWindow("check");
 //    cv::imshow("check",image);
 //    cv::waitKey(0);
-//    image.resize(img0.size)q;
+//    image.resize(img0.size);
 
 
 
@@ -395,7 +452,7 @@ void Fea::setProjectArea()
 
     QString projPath = path + QString("proj/").append(fileName);
 
-    cv::flip(img,img,0);
+//    cv::flip(img,img,0);
 
     cvSaveImage(projPath.toStdString().c_str(),&(IplImage(img)));
 
@@ -403,6 +460,7 @@ void Fea::setProjectArea()
     fea3D.push_back(res);
     img.release();
     std::cout<<"fea projectArea "<<res<<std::endl;
+//    qDebug()<<"fea3D size "<<fea3D.size()<<endl;
 
 }
 
@@ -433,6 +491,7 @@ void Fea::setVisSurfaceArea(std::vector<GLfloat> &vertex,
     std::cout<<"fea visSurfaceArea "<< res<<std::endl;
 
     fea3D.push_back(res);
+//    qDebug()<<"fea3D size "<<fea3D.size()<<endl;
     // used for test
 }
 
@@ -462,6 +521,7 @@ void Fea::setViewpointEntropy2(std::vector<GLfloat> &vertex, std::vector<GLuint>
     std::cout<<"fea viewpointEntropy "<<res<<std::endl;
 
     fea3D.push_back(res);
+//    qDebug()<<"fea3D size "<<fea3D.size()<<endl;
 }
 
 void Fea::setViewpointEntropy(std::vector<GLfloat> &vertex, std::vector<GLuint> &face)
@@ -526,6 +586,7 @@ void Fea::setViewpointEntropy(std::vector<GLfloat> &vertex, std::vector<GLuint> 
     fclose(stdout);
 */
     fea3D.push_back(res);
+//    qDebug()<<"fea3D size "<<fea3D.size()<<endl;
 }
 
 void Fea::setSilhouetteLength()
@@ -559,6 +620,7 @@ void Fea::setSilhouetteLength()
 
     std::vector<cv::Vec4i>().swap(hierarchy);
 
+//    qDebug()<<"fea3D size "<<fea3D.size()<<endl;
 // see contour result
 /*
     cv::Mat drawing = cv::Mat::zeros(gray.size(),CV_8UC3);
@@ -629,6 +691,7 @@ void Fea::setSilhouetteCE()
 
     std::cout<<"fea silhouetteCurvature "<<res0<<std::endl;
     std::cout<<"fea silhouetteCurvatureExtrema "<<res1<<std::endl;
+//    qDebug()<<"fea3D size "<<fea3D.size()<<endl;
 }
 
 void Fea::setMaxDepth(float *array,int len)
@@ -640,6 +703,7 @@ void Fea::setMaxDepth(float *array,int len)
     std::cout<<"fea maxDepth "<<res<<std::endl;
 
     fea3D.push_back(res);
+//    qDebug()<<"fea3D size "<<fea3D.size()<<endl;
 }
 
 void Fea::setDepthDistribute(float *zBuffer, int num)
@@ -684,6 +748,7 @@ void Fea::setDepthDistribute(float *zBuffer, int num)
     delete []hist;
     fea3D.push_back(res);
 //    qDebug()<<"depth distribute"<<endl;
+//    qDebug()<<"fea3D size "<<fea3D.size()<<endl;
 }
 
 void Fea::setMeanCurvature(MeanCurvature<MyMesh> &a, std::vector<bool> &isVertexVisible)
@@ -695,6 +760,7 @@ void Fea::setMeanCurvature(MeanCurvature<MyMesh> &a, std::vector<bool> &isVertex
 
     fea3D.push_back(res);
     std::cout<<"fea meanCurvature "<<res<<std::endl;
+//    qDebug()<<"fea3D size "<<fea3D.size()<<endl;
 }
 
 void Fea::setMeanCurvature(std::vector<MeanCurvature<MyMesh>> &a,
@@ -739,7 +805,9 @@ void Fea::setMeanCurvature(std::vector<MeanCurvature<MyMesh>> &a,
 //    qDebug()<<"fea meanCurvature fea3D[8] "<<fea3D[8]<<endl;
     if(fea3D[1])
         res /= fea3D[1];
+    fea3D.push_back(res);
     std::cout<<"fea meanCurvature "<<res<<std::endl;
+//    qDebug()<<"fea3D size "<<fea3D.size()<<endl;
 //    qDebug()<<"fea meanCurvature "<<fea3D[8]<<endl;
 
 }
@@ -996,7 +1064,7 @@ void Fea::setMeshSaliency(int t_case,// for debug can be used to output the mesh
         if(isVertexVisible[i])
             res += meshSaliencyMiddle[0][i];
     std::cout<<"fea meshSaliency "<<res<<std::endl;
-
+    fea3D.push_back(res);
     delete []nearDis;
     delete []meanCurvature;
 }
@@ -1010,7 +1078,9 @@ double Fea::setAbovePreference(double theta)
     return res;
 }
 
-void Fea::setAbovePreference(glm::mat4 &model2, glm::mat4 &model,glm::mat4 &view)
+void Fea::setAbovePreference(glm::mat4 &model2,
+                             glm::mat4 &model,
+                             glm::mat4 &view)
 {
 
 //    int pos = filename.lastIndexOf('.');
@@ -1029,7 +1099,15 @@ void Fea::setAbovePreference(glm::mat4 &model2, glm::mat4 &model,glm::mat4 &view
 //            }
 //        model2 = glm::transpose(model2);
         glm::vec4 z = glm::vec4(0.0,0.0,1.0,0.0);
-        glm::vec4 yyy = model*model2*z;
+
+        glm::vec4 x = glm::vec4(1.0,0.0,0.0,0.0);
+
+        glm::vec4 y = glm::vec4(0.0,1.0,0.0,0.0);
+
+        glm::vec4 mz = model*model2*z;
+        glm::vec4 mx = model*model2*x;
+        glm::vec4 my = model*model2*y;
+
     //    the theta between yyy and (0,1,0,1)
 //        qDebug()<<"........."<<endl;
 //        qDebug()<<yyy.x<<" "<<yyy.y<<" "<<yyy.z<<" "<<yyy.w<<endl;
@@ -1037,21 +1115,37 @@ void Fea::setAbovePreference(glm::mat4 &model2, glm::mat4 &model,glm::mat4 &view
         // I need center to eye // center - eye
         glm::vec4 lookAxis = glm::vec4(-view[0][2],-view[1][2],-view[2][2],0.f);
 
-        float norm_yyy = glm::dot(yyy,yyy);
+        float norm_mz = glm::dot(mz,mz);
+        float norm_my = glm::dot(my,my);
+        float norm_mx = glm::dot(mx,mx);
 
         float norm_lookAxis = glm::dot(lookAxis,lookAxis);
 
-        float dot = glm::dot(yyy,lookAxis);
+        float dotz = glm::dot(mz,lookAxis);
+        float doty = glm::dot(my,lookAxis);
+        float dotx = glm::dot(mx,lookAxis);
 
-        double cosTheta = dot / sqrt(norm_yyy) / sqrt(norm_lookAxis);
+        double cosThetaz = dotz / sqrt(norm_mz) / sqrt(norm_lookAxis);
+        double cosThetay = doty / sqrt(norm_my) / sqrt(norm_lookAxis);
+        double cosThetax = dotx / sqrt(norm_mx) / sqrt(norm_lookAxis);
 
-        double theta = acos(cosTheta);
+        qDebug() << cosThetax << " "
+                 << cosThetay << " "
+                 << cosThetaz << endl;
 
-        double res = setAbovePreference(theta);
+        double thetaz = acos(cosThetaz);
+        double thetay = acos(cosThetay);
+        double thetax = acos(cosThetax);
 
-        fea3D.push_back(res);
+        double resz = setAbovePreference(thetaz);
+        double resx = setAbovePreference(thetax);
+        double resy = setAbovePreference(thetay);
 
-        std::cout<<"abovePreference "<<res<<std::endl;
+        fea3D.push_back(resx);
+        fea3D.push_back(resy);
+        fea3D.push_back(resz);
+
+        std::cout<<"abovePreference "<<resz<<std::endl;
 }
 
 void Fea::setAbovePreference(glm::mat4 &modelZ, glm::mat4 &modelView)
@@ -1070,8 +1164,95 @@ void Fea::setOutlierCount()
     fea3D.push_back(res);
 }
 
+void Fea::setBoundingBox3D()
+{
+    double dotval = 0.0;
+    double cosTheta = 0.0;
+    double theta = 0.0;
+    glm::vec4 axisx = glm::vec4(1,0,0,0);
+    glm::vec4 axisy = glm::vec4(0,1,0,0);
+    glm::vec4 axisz = glm::vec4(0,0,1,0);
+
+    std::cout << "bounding box 3d "<<std::endl;
+    // p_model_x x
+    dotval = glm::dot(render->p_model_x,axisx);
+    cosTheta = dotval / (glm::length(render->p_model_x) * glm::length(axisx));
+    theta = acos(cosTheta);
+    std::cout << theta << " ";
+    fea3D.push_back(theta);
+    // p_model_x y
+    dotval = glm::dot(render->p_model_x,axisy);
+    cosTheta = dotval / (glm::length(render->p_model_x) * glm::length(axisy));
+    theta = acos(cosTheta);
+    std::cout << theta << " ";
+    fea3D.push_back(theta);
+    // p_model_x z
+    dotval = glm::dot(render->p_model_x,axisz);
+    cosTheta = dotval / (glm::length(render->p_model_x) * glm::length(axisz));
+    theta = acos(cosTheta);
+    std::cout << theta << " ";
+    fea3D.push_back(theta);
+    // p_model_y x
+    dotval = glm::dot(render->p_model_y,axisx);
+    cosTheta = dotval / (glm::length(render->p_model_y) * glm::length(axisx));
+    theta = acos(cosTheta);
+    std::cout << theta << " ";
+    fea3D.push_back(theta);
+    // p_model_y y
+    dotval = glm::dot(render->p_model_y,axisy);
+    cosTheta = dotval / (glm::length(render->p_model_y) * glm::length(axisy));
+    theta = acos(cosTheta);
+    std::cout << theta << " ";
+    fea3D.push_back(theta);
+    // p_model_y z
+    dotval = glm::dot(render->p_model_y,axisz);
+    cosTheta = dotval / (glm::length(render->p_model_y) * glm::length(axisz));
+    theta = acos(cosTheta);
+    std::cout << theta << " ";
+    fea3D.push_back(theta);
+    // p_model_z x
+    dotval = glm::dot(render->p_model_z,axisx);
+    cosTheta = dotval / (glm::length(render->p_model_z) * glm::length(axisx));
+    theta = acos(cosTheta);
+    std::cout << theta << " ";
+    fea3D.push_back(theta);
+    // p_model_z y
+    dotval = glm::dot(render->p_model_z,axisy);
+    cosTheta = dotval / (glm::length(render->p_model_z) * glm::length(axisy));
+    theta = acos(cosTheta);
+    std::cout << theta << " ";
+    fea3D.push_back(theta);
+    // p_model_z z
+    dotval = glm::dot(render->p_model_z,axisz);
+    cosTheta = dotval / (glm::length(render->p_model_z) * glm::length(axisz));
+    theta = acos(cosTheta);
+    std::cout << theta << std::endl;
+    fea3D.push_back(theta);
+}
+
 void Fea::getColorDistribution()
 {
+#ifdef FOREGROUND
+    double *hist = new double[NUM_Distribution];
+    memset(hist,0,sizeof(double)*NUM_Distribution);
+
+    int index = 0;
+
+    for(int i=0;i<image2D.rows;i++)
+        for(int j=0;j<image2D.cols;j++)
+            if(mask.at<uchar>(i,j) != 255)
+            {
+                index = image2D.at<cv::Vec3b>(i,j)[0]>>5;
+                index = (image2D.at<cv::Vec3b>(i,j)[1]>>5) + (index * 8);
+                index = (image2D.at<cv::Vec3b>(i,j)[2]>>5) + (index * 8);
+                hist[index]++;
+            }
+
+    for(int i=0;i<NUM_Distribution;i++)
+        fea2D.push_back(hist[i]);
+    delete []hist;
+
+#else
     double *hist = new double[NUM_Distribution];
 
     memset(hist,0,sizeof(double)*NUM_Distribution);
@@ -1090,14 +1271,16 @@ void Fea::getColorDistribution()
         fea2D.push_back(hist[i]);
 
     delete []hist;
-
-    qDebug()<<"color distribution done"<<endl;
+#endif
+//    qDebug()<<"color distribution done"<<endl;
 }
 
 void Fea::getHueCount()
 {
-    cv::Mat tmp;
+    cv::Mat tmp = image2D32f3c;
 
+//    qDebug()<<"image2D32f3c  "<<image2D32f3c.rows<<" "<<image2D32f3c.cols<<" "<<image2D32f3c.channels()<<endl;
+//    qDebug()<<"image2D "<<image2D.rows<<" "<<image2D.cols<<endl;
     int histSize[1] = {20};
     int channels[1] = {0};
     float hranges[] = {0.f,360.f};
@@ -1106,10 +1289,10 @@ void Fea::getHueCount()
 
 
     cv::Mat mask0 = cv::Mat(image2D.rows,image2D.cols,CV_8UC1,cv::Scalar(0));
-    // it is useful to convert CV_8UC3 to CV_32FC3
-    image2D.convertTo(tmp,CV_32FC3,1/255.0);
+//    // it is useful to convert CV_8UC3 to CV_32FC3
+//    image2D.convertTo(tmp,CV_32FC3,1/255.0);
 
-    cv::cvtColor(tmp,tmp,CV_BGR2HSV);
+//    cv::cvtColor(tmp,tmp,CV_BGR2HSV);
 
     double valueRange[2] = {0.15,0.95};
 
@@ -1117,10 +1300,18 @@ void Fea::getHueCount()
     {
         for(int j=0;j<tmp.cols;j++)
         {
+#ifdef FOREGROUND
+            if(mask.at<uchar>(i,j)!=255)
+                if(tmp.at<cv::Vec3f>(i,j)[2] > valueRange[0] && tmp.at<cv::Vec3f>(i,j)[2] < valueRange[1] && tmp.at<cv::Vec3f>(i,j)[1]>0.2)
+                {
+                    mask0.at<uchar>(i,j) = 255;
+                }
+#else
             if(tmp.at<cv::Vec3f>(i,j)[2] > valueRange[0] && tmp.at<cv::Vec3f>(i,j)[2] < valueRange[1] && tmp.at<cv::Vec3f>(i,j)[1]>0.2)
             {
                 mask0.at<uchar>(i,j) = 255;
             }
+#endif
         }
     }
     cv::MatND hist;
@@ -1138,17 +1329,23 @@ void Fea::getHueCount()
         if(hist.at<float>(i) > level)
             count ++;
     double hueVal = histSize[0] - count;
-    fea2D.push_back(hueVal);
+    fea2D.push_back(hueVal);    
 
-    qDebug()<<"hue count ... "<<hueVal<<" ... done"<<endl;
+//    tmp.release();
+    mask0.release();
+    hist.release();
+
+//    qDebug()<<"hue count ... "<<hueVal<<" ... done"<<endl;
 
 }
 
 void Fea::getBlur()
 {
-    cv::Mat tmp;
+#ifndef FOREGROUND
+    cv::Mat tmp = gray;
+//    qDebug()<<"blur "<<tmp.rows<<" "<<tmp.cols<<" "<<tmp.channels()<<endl;
 //    image2D.copyTo(tmp);
-    cv::cvtColor(image2D,tmp,CV_BGR2GRAY);
+//    cv::cvtColor(image2D,tmp,CV_BGR2GRAY);
     /*
      * Mat padded;                            //expand input image to optimal size
         int m = getOptimalDFTSize( I.rows );
@@ -1180,10 +1377,21 @@ void Fea::getBlur()
             if(magl.at<float>(i,j) > theta)
                 blur ++;
 
-    fea2D.push_back(blur);
-
     blur = blur / image2D.rows / image2D.cols;
-    qDebug()<<" get blur ... "<<blur<<" ... done"<<endl;
+
+    fea2D.push_back(blur);
+//    tmp.release();
+    padded.release();
+    complexI.release();
+    planes[0].release();
+    planes[1].release();
+    magl.release();
+
+#else
+    return;
+#endif
+
+//    qDebug()<<" get blur ... "<<blur<<" ... done"<<endl;
 
 }
 
@@ -1197,7 +1405,12 @@ void Fea::getContrast()
     for(int i=0;i<image2D.rows;i++)
         for(int j=0;j<image2D.cols;j++)
             for(int k = 0;k<3;k++)
+#ifdef FOREGROUND
+                if(mask.at<uchar>(i,j)!=255)
+                    hist[image2D.at<cv::Vec3b>(i,j)[k]]++;
+#else
                 hist[image2D.at<cv::Vec3b>(i,j)[k]]++;
+#endif
 
     int num = image2D.cols*image2D.rows*3;
     num = num*(1.0 - widthRatio);
@@ -1217,28 +1430,37 @@ void Fea::getContrast()
     fea2D.push_back(contrast);
     delete []hist;
 
-    qDebug()<<"get contrast ..."<<contrast<<" done"<<endl;
+//    qDebug()<<"get contrast ..."<<contrast<<" done"<<endl;
 
 }
 
 void Fea::getBrightness()
 {
-    cv::Mat tmp;
-    image2D.copyTo(tmp);
-    cv::cvtColor(tmp,tmp,CV_BGR2GRAY);
+    cv::Mat tmp = gray;
+//    image2D.copyTo(tmp);
+//    cv::cvtColor(tmp,tmp,CV_BGR2GRAY);
 
+    double count = 0.0;
     double sum = 0;
     for(int i=0;i<tmp.rows;i++)
         for(int j=0;j<tmp.cols;j++)
+#ifdef FOREGROUND
+            if(mask.at<uchar>(i,j)!=255)
+            {
+                sum += tmp.at<uchar>(i,j);
+                count ++;
+            }
+    double brightness = sum / count;
+#else
             sum += tmp.at<uchar>(i,j);
-
     double brightness = sum / tmp.rows / tmp.cols;
+#endif
 
     fea2D.push_back(brightness);
 
-    tmp.release();
+//    tmp.release();
 
-    qDebug()<<"get Brightness ... "<<brightness<<endl;
+//    qDebug()<<"get Brightness ... "<<brightness<<endl;
 }
 
 void Fea::getRuleOfThird()
@@ -1284,9 +1506,8 @@ void Fea::getRuleOfThird()
             res = res < tmp ? res : tmp;
         }
 
-    fea2D.push_back(res);
-
-    qDebug()<<"rule of third ... "<<res<<" ... done"<<endl;
+    fea2D.push_back(res);    
+//    qDebug()<<"rule of third ... "<<res<<" ... done"<<endl;
 
 }
 
@@ -1299,10 +1520,10 @@ void Fea::getLightingFeature()
     // brightness of background
     double bb = 0;
 
-    cv::Mat tmp;
-    image2D.copyTo(tmp);
+    cv::Mat tmp = gray;
+//    image2D.copyTo(tmp);
 
-    cv::cvtColor(tmp,tmp,CV_BGR2GRAY);
+//    cv::cvtColor(tmp,tmp,CV_BGR2GRAY);
 
     for(int i=0;i<mask.rows;i++)
         for(int j=0;j<mask.cols;j++)
@@ -1315,33 +1536,9 @@ void Fea::getLightingFeature()
 
     fea2D.push_back(fl);
 
-    tmp.release();
+//    tmp.release();
 
-    qDebug()<<"lighting feature .. "<<fl<<" ...done"<<endl;
-}
-
-void Fea::getHog()
-{
-    // ref http://blog.csdn.net/yangtrees/article/details/7463431
-    // ref http://blog.csdn.net/raodotcong/article/details/6239431
-    // ref http://gz-ricky.blogbus.com/logs/85326280.html
-    // ref http://blog.sciencenet.cn/blog-702148-762019.html
-    cv::Mat gray;
-    cv::cvtColor(image2D,gray,CV_BGR2GRAY);
-
-    cv::resize(gray,gray,cv::Size(16,16));
-    // widnowsSize,blockSize,blockStride,cellSize
-    cv::HOGDescriptor d(cv::Size(16,16),cv::Size(8,8),cv::Size(4,4),cv::Size(4,4),9);
-
-    std::vector<float> descriptorsValues;
-    std::vector<cv::Point> locations;
-
-    d.compute(gray,descriptorsValues,cv::Size(0,0),cv::Size(0,0),locations);
-
-    for(int i=0;i<descriptorsValues.size();i++)
-        fea2D.push_back(descriptorsValues[i]);
-
-    qDebug()<<"hog done"<<endl;
+//    qDebug()<<"lighting feature .. "<<fl<<" ...done"<<endl;
 }
 
 //compute the GLCM of horizonal veritical and dialog
@@ -1350,16 +1547,18 @@ void Fea::getHog()
 //the glcmMatirx has 16 values, so the size is 16*16
 void Fea::setGLCM()
 {
+#ifndef FOREGROUND
     double glcmMatrix[GLCM_CLASS][GLCM_CLASS];
-    double glcm[12];
+    double *glcm = new double[12];
 
-    cv::Mat gray;
+    cv::Mat gray0 = cv::Mat(gray.size(),CV_8UC1);
+    gray.copyTo(gray0);
     cv::Mat grade;
-    cv::cvtColor(image2D,gray,CV_BGR2GRAY);
-    grade = grade16(gray);
+    grade = grade16(gray0);
     memset(glcm,0,sizeof(double)*12);
     int width = grade.cols;
     int height = grade.rows;
+
 
     //        horizontal
             memset(glcmMatrix,0,sizeof(glcmMatrix));
@@ -1372,6 +1571,7 @@ void Fea::setGLCM()
                         glcmMatrix[grade.at<uchar>(i,j)][grade.at<uchar>(i,j-GLCM_DIS)]++;
                 }
             setGLCMfeatures(glcm,0,glcmMatrix);
+
     //        vertical
             memset(glcmMatrix,0,sizeof(glcmMatrix));
             for(int i=0;i<height;i++)
@@ -1383,6 +1583,7 @@ void Fea::setGLCM()
                         glcmMatrix[grade.at<uchar>(i,j)][grade.at<uchar>(i-GLCM_DIS,j)]++;
                 }
             setGLCMfeatures(glcm,1,glcmMatrix);
+
     //        diagonal
             memset(glcmMatrix,0,sizeof(glcmMatrix));
             for(int i=0;i<height;i++)
@@ -1396,33 +1597,31 @@ void Fea::setGLCM()
             setGLCMfeatures(glcm,2,glcmMatrix);
 
 
-
-    gray.release();
+    gray0.release();
     grade.release();
 
     for(int i=0;i<12;i++)
         fea2D.push_back(glcm[i]);
 
-    for(int i=0;i<GLCM_CLASS;i++)
-        delete []glcmMatrix[i];
-
     delete []glcm;
-
+#else
+    return;
+#endif
 //    qDebug()<<"glcm done"<<endl;
 }
 
 void Fea::setSaliency()
 {
-
+#ifndef FOREGROUND
     double thresh = 200;
     double salientArea = 0.0;
 
     double max = 0.0, min = 1e30;
-    cv::Mat gray;
-    cv::cvtColor(image2D,gray,CV_BGR2GRAY);
+//    cv::Mat gray;
+//    cv::cvtColor(image2D,gray,CV_BGR2GRAY);
 
     // set hist
-    double hist[256];
+    double *hist = new double[256];
     memset(hist,0,sizeof(double)*256);
     for(int i=0;i<gray.rows;i++)
         for(int j=0;j<gray.cols;j++)
@@ -1448,11 +1647,12 @@ void Fea::setSaliency()
     {
         salientArea = 0.0;
         fea2D.push_back(salientArea);
-        gray.release();
+
         delete []hist;
         for(int i=0;i<gray.rows;i++)
             delete[] salient[i];
         delete [] salient;
+        gray.release();
         return;
     }
 
@@ -1467,19 +1667,62 @@ void Fea::setSaliency()
                 salientArea++;
         }
 
+    salientArea = salientArea / gray.rows / gray.cols;
     fea2D.push_back(salientArea);
     delete []hist;
-    gray.release();
+
     for(int i=0;i<gray.rows;i++)
         delete [] salient[i];
     delete []salient;
+//    gray.release();
+#else
+    return;
+#endif
 
+//    qDebug()<<"set saliency done"<<endl;
 }
 
 void Fea::setPCA()
 {
     for(int i=0;i<5;i++)
         fea2D.push_back(pcaResult.at<float>(i,t_case));
+}
+
+void Fea::getHog()
+{
+    // ref http://blog.csdn.net/yangtrees/article/details/7463431
+    // ref http://blog.csdn.net/raodotcong/article/details/6239431
+    // ref http://gz-ricky.blogbus.com/logs/85326280.html
+    // ref http://blog.sciencenet.cn/blog-702148-762019.html
+    cv::Mat gray0;
+//    cv::cvtColor(image2D,gray0,CV_BGR2GRAY);
+    int NUMbins = 9;
+    double *hist = new double[NUMbins];
+    memset(hist,0,sizeof(double)*NUMbins);
+#ifdef FOREGROUND
+    roundingBox(gray0);
+    cv::resize(gray0,gray0,cv::Size(16,16));
+#else
+    cv::resize(gray,gray0,cv::Size(16,16));
+#endif
+    // widnowsSize,blockSize,blockStride,cellSize,numBins
+    cv::HOGDescriptor d(cv::Size(16,16),cv::Size(8,8),cv::Size(4,4),cv::Size(4,4),NUMbins);
+
+    std::vector<float> descriptorsValues;
+    std::vector<cv::Point> locations;
+
+    d.compute(gray0,descriptorsValues,cv::Size(0,0),cv::Size(0,0),locations);
+
+    for(int i=0;i<descriptorsValues.size();i++)
+        hist[i % NUMbins] += descriptorsValues[i];
+
+    for(int i=0;i<NUMbins;i++)
+        fea2D.push_back(hist[i]);
+
+    delete hist;
+    gray0.release();
+
+//    qDebug()<<"hog done"<<endl;
 }
 
 void Fea::computePCA()
@@ -1501,6 +1744,234 @@ void Fea::computePCA()
     cv::PCA pca0(pcaOriginal,cv::Mat(),CV_PCA_DATA_AS_COL,5);
 
     pcaResult = pca0.project(pcaOriginal);
+
+    pcaOriginal.release();
+
+}
+
+void Fea::get2DTheta()
+{
+    // bocaGyy 2b
+    glm::vec3 axis_x = glm::vec3(1,0,0);
+    glm::vec3 axis_y = glm::vec3(0,1,0);
+    // 可能会出现零向量的问题，目前先当结果为2*pi来处理
+
+    // p_model_x,p_model_y,p_model_z  transaction by MV without P
+    // so we need multiply P matrix
+    glm::vec4 mvp_model_x = m_projectionList[t_case] * render->p_model_x;
+    glm::vec4 mvp_model_y = m_projectionList[t_case] * render->p_model_y;
+    glm::vec4 mvp_model_z = m_projectionList[t_case] * render->p_model_z;
+    glm::vec3 x_3d = glm::vec3(mvp_model_x[0],mvp_model_x[1],0);
+    glm::vec3 y_3d = glm::vec3(mvp_model_y[0],mvp_model_y[1],0);
+    glm::vec3 z_3d = glm::vec3(mvp_model_z[0],mvp_model_z[1],0);
+    double theta = 0.0;
+    double cosTheta = 0.0;
+    // compute minium theta between axis and the perspective vector
+    if((x_3d.x == 0 && x_3d.y == 0) ||
+            (y_3d.x == 0 && y_3d.y == 0) ||
+            (z_3d.x == 0 && z_3d.y == 0))
+    {
+        fea2D.push_back( 2 * PI );
+        fea2D.push_back( 2 * PI );
+    }
+    else{
+
+        // y_axis x_3d
+        cosTheta = glm::length(glm::dot(axis_y,x_3d)) / glm::length(axis_y) / glm::length(x_3d);
+        theta = cosTheta;
+        // y_axis y_3d
+        cosTheta = glm::length(glm::dot(axis_y,x_3d)) / glm::length(axis_y) / glm::length(x_3d);
+        theta = theta < cosTheta ? theta : cosTheta;
+        // y_axis z_3d
+        cosTheta = glm::length(glm::dot(axis_y,x_3d)) / glm::length(axis_y) / glm::length(x_3d);
+        theta = theta < cosTheta ? theta : cosTheta;
+        theta = acos(theta);
+        fea2D.push_back(theta);
+
+        // x_axis x_3d
+        cosTheta = glm::length(glm::dot(axis_x,x_3d)) / glm::length(axis_x) / glm::length(x_3d);
+        theta = cosTheta;
+        // x_axis y_3d
+        cosTheta = glm::length(glm::dot(axis_x,x_3d)) / glm::length(axis_x) / glm::length(x_3d);
+        theta = theta < cosTheta ? theta : cosTheta;
+        // x_axis z_3d
+        cosTheta = glm::length(glm::dot(axis_x,x_3d)) / glm::length(axis_x) / glm::length(x_3d);
+        theta = theta < cosTheta ? theta : cosTheta;
+        theta = acos(theta);
+        fea2D.push_back(theta);
+    }
+
+    //    double cosTheta = 0.0;
+    //    double theta = 0.0;
+
+    // thetas between three axis
+
+    cosTheta = 0.0;
+    theta = 0.0;
+    // x_3d y_3d
+    cosTheta = glm::length(glm::dot(x_3d,y_3d)) / glm::length(x_3d) / glm::length(y_3d);
+    theta = acos(cosTheta);
+    fea2D.push_back(theta);
+
+    // x_3d z_3d
+    cosTheta = glm::length(glm::dot(x_3d,z_3d)) / glm::length(x_3d) / glm::length(z_3d);
+    theta = acos(cosTheta);
+    fea2D.push_back(theta);
+
+    // y_3d z_3d
+    cosTheta = glm::length(glm::dot(y_3d,z_3d)) /  glm::length(y_3d) / glm::length(z_3d);
+    theta = acos(cosTheta);
+    fea2D.push_back(theta);
+
+}
+
+void Fea::roundingBox(cv::Mat &boxImage)
+{
+    int up,bottom,left,right;
+    int sum = 0;
+//    qDebug()<<"round box mask "<<mask.rows<<" "<<mask.cols<<endl;
+    int back = mask.cols*255;
+    // up
+    for(int i=0;i<mask.rows;i++)
+    {
+        sum  = 0;
+        for(int j=0;j<mask.cols;j++)
+            sum += mask.at<uchar>(i,j);
+        if(sum != back)
+        {
+            up = i;
+            break;
+        }
+    }
+//    qDebug()<<"roundBox up"<<endl;
+    // bottom
+    for(int i=mask.rows-1 ; i>=0 ; i--)
+    {
+        sum = 0;
+        for(int j=0;j<mask.cols;j++)
+            sum += mask.at<uchar>(i,j);
+        if(sum != back)
+        {
+            bottom = i + 1;
+            break;
+        }
+    }
+//    qDebug()<<"roundBox bottom"<<endl;
+    // left
+    back = mask.rows*255;
+    for(int i=0;i<mask.cols;i++)
+    {
+        sum = 0;
+        for(int j=0;j<mask.rows;j++)
+            sum += mask.at<uchar>(j,i);
+        if(sum != back)
+        {
+            left = i;
+            break;
+        }
+    }
+//    qDebug()<<"roundBox left"<<endl;
+    // right
+    for(int i=mask.cols-1;i>=0;i--)
+    {
+        sum = 0;
+        for(int j=0;j<mask.rows;j++)
+            sum += mask.at<uchar>(j,i);
+        if(sum != back)
+        {
+            right = i + 1;
+            break;
+        }
+    }
+//    qDebug()<<"roundBox right"<<endl;
+//    qDebug()<<"bound box up bottom "<<up<<" "<<bottom<<endl;
+//    qDebug()<<"bound box left right "<<left<<" "<<right<<endl;
+
+    // image [left right) [up bottom)
+//    Mat srcROI = src(Rect(0,0,src.cols/2,src.rows/2));
+    cv::Mat tmp = gray(cv::Rect(left,up,right - left - 1,bottom - up - 1));
+//    cv::namedWindow("gray");
+//    cv::imshow("gray",gray);
+    tmp.copyTo(boxImage);
+//    qDebug()<<"bound box size "<<tmp.rows<<" "<<tmp.cols<<endl;
+
+//    cv::namedWindow("boundingbox");
+//    cv::imshow("boundingbox",boxImage);
+
+
+}
+
+void Fea::getColorEntropyVariance()
+{
+#ifdef FOREGROUND
+    double *hist = new double[NUM_Distribution];
+    memset(hist,0,sizeof(double)*NUM_Distribution);
+    double count = 0.0;
+    int index = 0;
+
+    for(int i=0;i<image2D.rows;i++)
+        for(int j=0;j<image2D.cols;j++)
+            if(mask.at<uchar>(i,j) != 255)
+            {
+                index = image2D.at<cv::Vec3b>(i,j)[0]>>5;
+                index = (image2D.at<cv::Vec3b>(i,j)[1]>>5) + (index * 8);
+                index = (image2D.at<cv::Vec3b>(i,j)[2]>>5) + (index * 8);
+                hist[index]++;
+                count ++;
+            }
+    double mean = 0.0;
+    // normalize
+    for(int i=0;i<NUM_Distribution;i++)
+    {
+        hist[i] = hist[i] / count;
+        mean += hist[i] * i;
+    }
+    mean /= NUM_Distribution;
+
+    double entropy = 0.0;
+    // entropy
+    for(int i=0;i<NUM_Distribution;i++)
+        if(hist[i])
+            entropy += hist[i] * log2(hist[i]);
+    entropy = -entropy;
+
+    // variance
+    double variance = 0.0;
+    for(int i=0;i<NUM_Distribution;i++)
+        variance += hist[i] * (i - mean) * (i - mean);
+
+    // dirstribution as depth distribution
+    double dis = 0.0;
+    for(int i=0;i<NUM_Distribution;i++)
+        dis += hist[i] * hist[i];
+    dis = 1 - dis;
+
+    fea2D.push_back(entropy);
+    fea2D.push_back(variance);
+    fea2D.push_back(dis);
+
+//    for(int i=0;i<NUM_Distribution;i++)
+//        fea2D.push_back(hist[i]);
+    delete []hist;
+#else
+
+#endif
+}
+
+void Fea::getBallCoord()
+{
+    // ref https://zh.wikipedia.org/wiki/%E7%90%83%E5%BA%A7%E6%A8%99%E7%B3%BB
+    glm::mat4 mv = m_viewList[t_case] *  m_modelList[t_case];
+    glm::vec4 camera = glm::vec4(0,0,-1,0);
+    camera = glm::inverse(mv) * camera;
+    camera[3] = 0.0;
+//    double r = glm::length(camera);
+    double theta = PI + atan(sqrt(camera[0] * camera[0] + camera[1] * camera[1]) / camera[2]);
+    double fani = atan(camera[1] / camera[0]);
+    std::cout << "ball coord" << std::endl;
+    std::cout << theta << " " << fani << std::endl;
+    fea3D.push_back(theta);
+    fea3D.push_back(fani);
 
 }
 
@@ -1929,12 +2400,15 @@ void Fea::printOut()
 
     printf("%d %d\n",t_case+1,NUM);
 #else
-    for(int i=0;i<4;i++)
-    {
-        for(int j=0;j<4;j++)
-            printf("%f ",m_abv[i][j]);
-        printf("\n");
-    }
+
+    // rearrange the model needless to printout the parameters
+
+//    for(int i=0;i<4;i++)
+//    {
+//        for(int j=0;j<4;j++)
+//            printf("%f ",m_abv[i][j]);
+//        printf("\n");
+//    }
 
     printf("%d\n",t_case+1);
 
@@ -2072,4 +2546,13 @@ void Fea::clear()
         contour[i].clear();
     contour.clear();
 
+    mask.release();
+
+    image2D.release();
+
+    gray.release();
+
+    fea2D.clear();
+
+    fea3D.clear();
 }
