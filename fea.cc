@@ -197,8 +197,9 @@ void Fea::setFeature()
 #endif
 
             setOutlierCount();
-
+//            std::cout << "outlier count done"<< std::endl;
             setBoundingBox3D();
+//            std::cout << "set Bounding box 3D "<< std::endl;
 
             /*
               add 2D fea function here
@@ -208,14 +209,19 @@ void Fea::setFeature()
 //            getColorDistribution();
             // 可以只计算mask对应部分的前景区域
             getHueCount();
+//            std::cout << "getHue count done" << std::endl;
             // 不计算
             getBlur();
+//            std::cout << "get Blur done" << std::endl;
             // 可以只计算mask对应部分的前景区域
             getContrast(); // 直方图中占98%区域的宽度
+//            std::cout << "get Contrast" << std::endl;
             // 可以只计算mask对应部分的前景区域
             getBrightness();
+//            std::cout << "getBrightness done " << std::endl;
             // 球面坐标系
             getBallCoord();
+//            std::cout << "getBall Coord done " << std::endl;
 
 #ifndef FOREGROUND
 
@@ -234,15 +240,21 @@ void Fea::setFeature()
             // 各种不同方向的梯度叠加
             getHog();
 
+//            std::cout << "get Hog done " << std::endl;
+
             get2DTheta();
 
+//            std::cout << "get2DTheta done " << std::endl;
+
             getColorEntropyVariance();
+
+//            std::cout << "get color entropy variance" << std:: endl;
         }
 
 
-        break;
+//        break;
         qDebug()<<t_case<<" ... done"<<endl;
-        break;
+
         printOut();
 
         clear();
@@ -411,21 +423,26 @@ void Fea::setMat(float *img, int width, int height,int dstWidth,int dstHeight)
 
 void Fea::setProjectArea()
 {
+    // 二值化
+    cv::threshold(image, image, 250, 255, CV_THRESH_BINARY);
+
     double res = 0.0;
     cv::Mat img = cv::Mat(image.rows,image.cols,CV_8UC1);
-//    qDebug()<<"img .... "<<image.rows<<" "<<image.cols<<endl;
+    cv::Mat foreGround = cv::Mat(image.rows,image.cols,CV_8UC4,cv::Scalar(0,0,0,0));
+//    qDebug()<<"set project area img .... "<<image.rows<<" "<<image.cols<<endl;
     if(image.channels()==3)
     {
+        std::cout << "set project area channels 3" << std::endl;
         for(int i=0;i<image.rows;i++)
             for(int j=0;j<image.cols;j++)
                 if(image.at<cv::Vec3b>(i,j)[0]!=255
                    || image.at<cv::Vec3b>(i,j)[1]!=255
                    || image.at<cv::Vec3b>(i,j)[2]!=255)
                 res++;
+
     }
     else
     {
-
         for(int i=0;i<image.rows;i++)
             for(int j=0;j<image.cols;j++)
             {
@@ -433,6 +450,10 @@ void Fea::setProjectArea()
                 {
                     res++;
                     img.at<uchar>(i,j) = 255;
+                    foreGround.at<cv::Vec4b>(i,j)[0] = image2D.at<cv::Vec3b>(i,j)[0];
+                    foreGround.at<cv::Vec4b>(i,j)[1] = image2D.at<cv::Vec3b>(i,j)[1];
+                    foreGround.at<cv::Vec4b>(i,j)[2] = image2D.at<cv::Vec3b>(i,j)[2];
+                    foreGround.at<cv::Vec4b>(i,j)[3] = 255;
                 }
                 else
                 {
@@ -441,7 +462,7 @@ void Fea::setProjectArea()
             }
 
     }
-
+//    qDebug()<<"set project area froeGround done .... " <<endl;
     QString fileName0 = fileName.at(t_case);
 
     int pos = fileName0.lastIndexOf('/');
@@ -455,12 +476,22 @@ void Fea::setProjectArea()
 //    cv::flip(img,img,0);
 
     cvSaveImage(projPath.toStdString().c_str(),&(IplImage(img)));
+//    cvSaveImage(projPath.toStdString().c_str(),&(IplImage(image)));
 
     res /= image.cols*image.rows;
     fea3D.push_back(res);
     img.release();
     std::cout<<"fea projectArea "<<res<<std::endl;
 //    qDebug()<<"fea3D size "<<fea3D.size()<<endl;
+
+    QString maskPath = path + QString("mask/").append(fileName);
+    pos = maskPath.lastIndexOf('.');
+    maskPath.replace(pos+1,5,"png");
+
+    std::cout << "foreGround path " << maskPath.toStdString() << std::endl;
+
+    cvSaveImage(maskPath.toStdString().c_str(),&(IplImage(foreGround)));
+
 
 }
 
@@ -1129,9 +1160,9 @@ void Fea::setAbovePreference(glm::mat4 &model2,
         double cosThetay = doty / sqrt(norm_my) / sqrt(norm_lookAxis);
         double cosThetax = dotx / sqrt(norm_mx) / sqrt(norm_lookAxis);
 
-        qDebug() << cosThetax << " "
-                 << cosThetay << " "
-                 << cosThetaz << endl;
+//        qDebug() << cosThetax << " "
+//                 << cosThetay << " "
+//                 << cosThetaz << endl;
 
         double thetaz = acos(cosThetaz);
         double thetay = acos(cosThetay);
@@ -1178,56 +1209,56 @@ void Fea::setBoundingBox3D()
     dotval = glm::dot(render->p_model_x,axisx);
     cosTheta = dotval / (glm::length(render->p_model_x) * glm::length(axisx));
     theta = acos(cosTheta);
-    std::cout << theta << " ";
     fea3D.push_back(theta);
+    std::cout << "x x" << std::endl;
     // p_model_x y
     dotval = glm::dot(render->p_model_x,axisy);
     cosTheta = dotval / (glm::length(render->p_model_x) * glm::length(axisy));
     theta = acos(cosTheta);
-    std::cout << theta << " ";
     fea3D.push_back(theta);
+    std::cout << "x y" << std::endl;
     // p_model_x z
     dotval = glm::dot(render->p_model_x,axisz);
     cosTheta = dotval / (glm::length(render->p_model_x) * glm::length(axisz));
     theta = acos(cosTheta);
-    std::cout << theta << " ";
     fea3D.push_back(theta);
+    std::cout << "x z" << std::endl;
     // p_model_y x
     dotval = glm::dot(render->p_model_y,axisx);
     cosTheta = dotval / (glm::length(render->p_model_y) * glm::length(axisx));
     theta = acos(cosTheta);
-    std::cout << theta << " ";
     fea3D.push_back(theta);
+    std::cout << "y x" << std::endl;
     // p_model_y y
     dotval = glm::dot(render->p_model_y,axisy);
     cosTheta = dotval / (glm::length(render->p_model_y) * glm::length(axisy));
     theta = acos(cosTheta);
-    std::cout << theta << " ";
     fea3D.push_back(theta);
+    std::cout << "y y" << std::endl;
     // p_model_y z
     dotval = glm::dot(render->p_model_y,axisz);
     cosTheta = dotval / (glm::length(render->p_model_y) * glm::length(axisz));
     theta = acos(cosTheta);
-    std::cout << theta << " ";
     fea3D.push_back(theta);
+    std::cout << "y z" << std::endl;
     // p_model_z x
     dotval = glm::dot(render->p_model_z,axisx);
     cosTheta = dotval / (glm::length(render->p_model_z) * glm::length(axisx));
     theta = acos(cosTheta);
-    std::cout << theta << " ";
     fea3D.push_back(theta);
+    std::cout << "z x" << std::endl;
     // p_model_z y
     dotval = glm::dot(render->p_model_z,axisy);
     cosTheta = dotval / (glm::length(render->p_model_z) * glm::length(axisy));
     theta = acos(cosTheta);
-    std::cout << theta << " ";
     fea3D.push_back(theta);
+    std::cout << "z y" << std::endl;
     // p_model_z z
     dotval = glm::dot(render->p_model_z,axisz);
     cosTheta = dotval / (glm::length(render->p_model_z) * glm::length(axisz));
     theta = acos(cosTheta);
-    std::cout << theta << std::endl;
     fea3D.push_back(theta);
+    std::cout << "z z" << std::endl;
 }
 
 void Fea::getColorDistribution()
@@ -1402,17 +1433,27 @@ void Fea::getContrast()
     double *hist = new double[256];
     memset(hist,0,sizeof(double)*256);
 
+    int num = 0;
+
     for(int i=0;i<image2D.rows;i++)
         for(int j=0;j<image2D.cols;j++)
             for(int k = 0;k<3;k++)
 #ifdef FOREGROUND
                 if(mask.at<uchar>(i,j)!=255)
+                {
                     hist[image2D.at<cv::Vec3b>(i,j)[k]]++;
+                    num++;
+                }
 #else
                 hist[image2D.at<cv::Vec3b>(i,j)[k]]++;
 #endif
 
-    int num = image2D.cols*image2D.rows*3;
+#ifndef FOREGROUND
+    num = image2D.cols*image2D.rows*3;
+#endif
+
+    // num 的定义有错误，如果只考虑前景，则应该是前景像素的个数
+//    int num = image2D.cols*image2D.rows*3;
     num = num*(1.0 - widthRatio);
     int count = 0;
     int from  = 0;
@@ -1968,8 +2009,8 @@ void Fea::getBallCoord()
 //    double r = glm::length(camera);
     double theta = PI + atan(sqrt(camera[0] * camera[0] + camera[1] * camera[1]) / camera[2]);
     double fani = atan(camera[1] / camera[0]);
-    std::cout << "ball coord" << std::endl;
-    std::cout << theta << " " << fani << std::endl;
+//    std::cout << "ball coord" << std::endl;
+//    std::cout << theta << " " << fani << std::endl;
     fea3D.push_back(theta);
     fea3D.push_back(fani);
 

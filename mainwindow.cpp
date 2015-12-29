@@ -48,7 +48,7 @@ void MainWindow::on_load_clicked()
 
     QFileInfo fileInfo(fileName);
     QString path = fileInfo.absoluteDir().absolutePath().append("/");
-
+//    qDebug() << path << endl;
     fea = new Fea(fileName,path);
 
 }

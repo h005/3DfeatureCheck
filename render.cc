@@ -432,7 +432,7 @@ void Render::setParameters()
     p_height = viewport[3]-viewport[1];
     p_width = viewport[2]-viewport[0];
     p_img = new GLfloat[p_width*p_height];
-    glReadBuffer(GL_BACK);
+    glReadBuffer(GL_BACK_LEFT);
     glReadPixels(0,0,p_width,p_height,GL_DEPTH_COMPONENT,GL_FLOAT,p_img);
 
     int visibleVertexCount = 0;
