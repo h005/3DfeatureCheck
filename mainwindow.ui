@@ -30,6 +30,20 @@
          </widget>
         </item>
         <item>
+         <widget class="QPushButton" name="load2D">
+          <property name="text">
+           <string>load2D</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="load3D">
+          <property name="text">
+           <string>load3D</string>
+          </property>
+         </widget>
+        </item>
+        <item>
          <widget class="QPushButton" name="showImage">
           <property name="text">
            <string>showImage</string>

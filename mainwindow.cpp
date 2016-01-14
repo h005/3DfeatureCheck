@@ -27,7 +27,7 @@ MainWindow::~MainWindow()
 
 void MainWindow::on_process_clicked()
 {
-    fea->setFeature();
+//    fea->setFeature();
 }
 
 
@@ -50,5 +50,42 @@ void MainWindow::on_load_clicked()
     QString path = fileInfo.absoluteDir().absolutePath().append("/");
 //    qDebug() << path << endl;
     fea = new Fea(fileName,path);
+    // mode 0 means compute 2D and 3D freatuers together
+    fea->setFeature(0);
+}
 
+void MainWindow::on_load2D_clicked()
+{
+    QString fileName = QFileDialog::getOpenFileName(this,
+                      tr("Open"),".",
+                      tr("matrix Files(*.off *.dae *.obj)"));
+    if(fileName == NULL)
+        return;
+
+    ui->modelPath->setText(fileName);
+
+    QFileInfo fileInfo(fileName);
+    QString path = fileInfo.absoluteDir().absolutePath().append("/");
+//    qDebug() << path << endl;
+    fea = new Fea(fileName,path);
+    // mode 2 means compute 2D feature
+    fea->setFeature(2);
+}
+
+void MainWindow::on_load3D_clicked()
+{
+    QString fileName = QFileDialog::getOpenFileName(this,
+                      tr("Open"),".",
+                      tr("matrix Files(*.off *.dae *.obj)"));
+    if(fileName == NULL)
+        return;
+
+    ui->modelPath->setText(fileName);
+
+    QFileInfo fileInfo(fileName);
+    QString path = fileInfo.absoluteDir().absolutePath().append("/");
+//    qDebug() << path << endl;
+    fea = new Fea(fileName,path);
+    // mode 3  means computes 3D feature
+    fea->setFeature(3);
 }

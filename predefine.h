@@ -7,8 +7,6 @@
  * define CHECK will check the feature
  *
 */
-
-
 #define CHECK_
 #define NoProjection_
 #define FOREGROUND

@@ -280,6 +280,7 @@ void Render::showImage()
 // fileName  = path + name
 void Render::storeImage(QString path,QString fileName0,int width,int height)
 {
+    qDebug() << "storeImage width " << width << "height " << height << endl;
 //    qDebug()<<"store Image "<<path<<endl;
 //    qDebug()<<"stroe Image  "<<fileName<<endl;
     int pos = fileName0.lastIndexOf('/');
@@ -308,6 +309,8 @@ void Render::storeImage(QString path,QString fileName0,int width,int height)
     cv::resize(depthImg,depthImg,cv::Size(width,height));
     depthImg.convertTo(depthImg,CV_8UC1,255.0 / (1.0 - min),255.0 * min / (min - 1.0));
 
+    qDebug() << "storeImage depth " << endl;
+
     GLubyte *img =
             new GLubyte[(viewport[2] - viewport[0])
             *(viewport[3] - viewport[1])*4];
@@ -326,6 +329,7 @@ void Render::storeImage(QString path,QString fileName0,int width,int height)
     cv::cvtColor(rgbImg,rgbImg,CV_RGBA2BGR);
     rgbImg.convertTo(rgbImg,CV_8UC3);
 
+    qDebug() << "storeImage RGB " << endl;
     // fileName  = path + name
 //    int len = path.length();
     QString outputDepthFile = fileName;

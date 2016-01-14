@@ -37,6 +37,8 @@ private:
 
     QString path;
     QString output;
+    QString output2D;
+    QString output3D;
     // path for .matrix
     QString matrixPath;
     // path for .mm
@@ -90,7 +92,7 @@ public:
 
     Fea(QString modelFile, QString path);
 
-    void setFeature();
+    void setFeature(int mode);
 
     void setMMPara(QString matrixPath);
 
@@ -232,7 +234,7 @@ private:
 
     void print(QString p_path);
 
-    void printOut();
+    void printOut(int mode);
 
     void computeModel(glm::mat4 &m_view_tmp,glm::mat4 &m_model_tmp);
 

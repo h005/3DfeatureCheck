@@ -1,4 +1,4 @@
-#ifndef MAINWINDOW_H
+﻿#ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
 #include <QMainWindow>
@@ -28,6 +28,10 @@ private slots:
     void on_showImage_clicked();
 
     void on_load_clicked();
+
+    void on_load2D_clicked();
+
+    void on_load3D_clicked();
 
 private:
     Ui::MainWindow *ui;
