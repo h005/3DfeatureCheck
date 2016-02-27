@@ -73,7 +73,7 @@ public:
         }
     }
 
-    void setMeshVector(std::vector<MeshT> &mesh,std::vector<std::vector<int>> &indicesArray)
+    void setMeshVector(std::vector<MeshT> &mesh,std::vector< std::vector<int> > &indicesArray)
     {
         // 设置不同mesh的面的索引
         setIndiceMesh(indices.size()/3);
@@ -314,7 +314,7 @@ private:
             for(int j=0;j<indiceMesh[i].size();j++)
                 std::vector<int>().swap(indiceMesh[i]);
         for(int i=0;i<indiceMesh.size();i++)
-            std::vector<std::vector<int>>().swap(indiceMesh);
+            std::vector< std::vector<int> >().swap(indiceMesh);
 
         indiceMesh.clear();
         // initial indiceMesh
@@ -346,7 +346,7 @@ private:
 
 
     // 可能会有很多个mesh，存储每个mesh中face的indices
-    std::vector<std::vector<int>> indiceMesh;
+    std::vector< std::vector<int> > indiceMesh;
     // 并查集合并之后的结果
     int *id;
     // 并查集合并之后的集合索引

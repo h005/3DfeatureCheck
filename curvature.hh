@@ -69,6 +69,9 @@ template< typename MeshT >
 double
 gauss_curvature(MeshT& _mesh, const typename MeshT::VertexHandle& _vh);
 
+template <typename T>
+int isObtuse(T &p0, T &p1, T &p2);
+
 /**
 * Mean Curvature Normal Operator
 * warning: if mean curvature < 0 _n points to the inside
@@ -163,7 +166,7 @@ void discrete_mean_curv_op( const MeshT&                        _m,
 #endif
 
     // calculate area
-    const int obt = curvature::isObtuse<const MeshT::Point>(p0,p1,p2);
+    const int obt = curvature::isObtuse<const typename MeshT::Point>(p0,p1,p2);
     if(obt == 0)
     {
       REALT gamma = acos( OpenMesh::sane_aarg((p0-p1).normalize() | (p2-p1).normalize()) );
@@ -197,7 +200,7 @@ void discrete_mean_curv_op( const MeshT&                        _m,
       }
     }
 
-    typename VectorT _tmp = ((p0-p1)*cotw);
+    VectorT _tmp = ((p0-p1)*cotw);
     if (!std::isnan(_tmp.norm()))
         _n += _tmp;
 
