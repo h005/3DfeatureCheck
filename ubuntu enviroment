@@ -1,0 +1,108 @@
+3Dfeature程序linux配置过程
+
+配置有关opengl的库
+
+	$ sudo apt-get install build-essential
+
+	$ sudo apt-get install libgl1-mesa-dev
+
+	$ sudo apt-get install libglu1-mesa-dev
+
+	$ sudo apt-get install freeglut3-dev
+
+配置 glew
+
+	$ sudo apt-get install libglew-dev
+
+库文件放在了
+
+/usr/lib/x86_64-linux-gnu/ 目录下
+
+几个重要的库文件名为
+
+libGLEW.so
+
+libGLU.so
+
+libGL.so
+
+如果实在是不确定这几个库放在了什么位置，可以用locate来确认
+
+locate libGLEW.so
+
+
+
+配置OpenMesh
+
+	git clone https://www.graphics.rwth-aachen.de:9000/OpenMesh/OpenMesh.git
+
+	参照
+
+	http://www.openmesh.org/media/Documentations/OpenMesh-Doc-Latest/a00030.html
+
+	配置OpenMesh
+
+	Unix
+
+	Compiling OpenMesh using CMake
+
+
+
+	In order to compile OpenMesh, create a directory named e.g. "build" in OpenMesh's root directory. Change to the newly created directory and type
+
+
+
+	cmake ..            ## Generates the appropriate Makefiles
+
+	make                ## Builds the project
+
+
+
+	You can choose the build type by using cmake with the flag
+
+	-DCMAKE_BUILD_TYPE=(Debug|Release)
+
+	The default is: Debug
+
+	Other flags are:
+
+	-DBUILD_APPS=OFF to disable build of applications and
+
+	-DCMAKE_INSTALL_PREFIX=<path> to specify the install path.
+
+	When calling make install cmake will install OpenMesh into this directory using the subdirectories lib/include/bin.
+
+
+
+	CMake builds both shared and static under Linux.
+
+
+
+	Everything will then be build in the Build subdirectory containing the libraries in lib and the binaries in bin.
+
+
+
+	There are some additional targets:
+
+	doc: Builds the Documentation
+
+	doc-install: Builds the Documentation and installs it
+
+也就是说在git clone下来的OpenMesh的目录中
+
+	$ mkdir build
+
+	$ cd build
+
+	$ cmake ..
+
+	$ make
+
+	$ sudo make install
+
+配置assimp
+
+	$ sudo apt-get install libassimp-dev
+
+
+
