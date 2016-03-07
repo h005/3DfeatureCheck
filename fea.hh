@@ -75,7 +75,7 @@ private:
 
     // used for contour
 //    CvMemStorage *mem_storage;
-    std::vector<std::vector<cv::Point>> contour;
+    std::vector< std::vector<cv::Point> > contour;
 
     MyMesh mesh;
 
@@ -128,30 +128,30 @@ private:
 
     void setMeanCurvature(MeanCurvature<MyMesh> &a, std::vector<bool> &isVertexVisible);
 
-    void setMeanCurvature(std::vector<MeanCurvature<MyMesh>> &a,
+    void setMeanCurvature(std::vector< MeanCurvature<MyMesh>* > &a,
                           std::vector<bool> &isVertexVisible,
-                          std::vector<std::vector<int>> &indiceArray);
+                          std::vector< std::vector<int> > &indiceArray);
 
     void setGaussianCurvature(GaussCurvature<MyMesh> &b, std::vector<bool> &isVertexVisible);
 
-    void setGaussianCurvature(std::vector<GaussCurvature<MyMesh>> &a,
+    void setGaussianCurvature(std::vector< GaussCurvature<MyMesh>* > &a,
                               std::vector<bool> &isVertexVisible,
-                              std::vector<std::vector<int>> &indiceArray);
+                              std::vector< std::vector<int> > &indiceArray);
 
     void setMeshSaliency(int t_case,
                          std::vector<GLfloat> &vertex,
                          std::vector<bool> &isVertexVisible,
-                         std::vector<MeanCurvature<MyMesh>> &a,
-                         std::vector<std::vector<int>> &indiceArray);
+                         std::vector< MeanCurvature<MyMesh> > &a,
+                         std::vector< std::vector<int> > &indiceArray);
 
-    void setMeshSaliency(std::vector<MeanCurvature<MyMesh>> &a,
+    void setMeshSaliency(std::vector< MeanCurvature<MyMesh> > &a,
                          std::vector<GLfloat> &vertex,
                          std::vector<bool> &isVertexVisible);
 
-    void setMeshSaliencyCompute(std::vector<MeanCurvature<MyMesh>> &a,
+    void setMeshSaliencyCompute(std::vector< MeanCurvature<MyMesh> > &a,
                          std::vector<GLfloat> &vertex,
                          std::vector<bool> &isVertexVisible,
-                         std::vector<std::vector<int>> &indiceArray);
+                         std::vector< std::vector<int> > &indiceArray);
 
     double setAbovePreference(double theta);
 

@@ -4,7 +4,7 @@
 #include <limits>
 
 #include "common.hh"
-#include "Curvature.hh"
+#include "curvature.hh"
 #include "colormap.hh"
 #include "abstractfeature.hh"
 

@@ -4,6 +4,8 @@
 #include <iostream>
 #include <vector>
 #include <set>
+#include <stdio.h>
+#include <string.h>
 
 class UFface
 {

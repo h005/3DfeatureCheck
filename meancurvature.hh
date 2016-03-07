@@ -2,7 +2,7 @@
 #define MEANCURVATURE_HH
 
 #include "common.hh"
-#include "Curvature.hh"
+#include "curvature.hh"
 #include "colormap.hh"
 #include "abstractfeature.hh"
 #include <QDebug>

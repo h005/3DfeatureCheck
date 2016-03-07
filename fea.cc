@@ -94,15 +94,15 @@ void Fea::setFeature(int mode)
 #else
 //     for compute
     // 3D feature
-    std::vector<MeanCurvature<MyMesh>> a;
-    std::vector<GaussCurvature<MyMesh>> b;
+    std::vector< MeanCurvature<MyMesh>* > a;
+    std::vector< GaussCurvature<MyMesh>* > b;
     if(mode  == 3 || mode  == 0)
     {
         render->setMeshSaliencyPara(exImporter);
         for(int i=0;i<render->p_vecMesh.size();i++)
         {
-            MeanCurvature<MyMesh> tmpMean(render->p_vecMesh[i]);
-            GaussCurvature<MyMesh> tmpGauss(render->p_vecMesh[i]);
+            MeanCurvature<MyMesh> *tmpMean = new MeanCurvature<MyMesh>(render->p_vecMesh[i]);
+            GaussCurvature<MyMesh> *tmpGauss = new GaussCurvature<MyMesh>(render->p_vecMesh[i]);
             a.push_back(tmpMean);
             b.push_back(tmpGauss);
         }
@@ -518,8 +518,10 @@ void Fea::setProjectArea()
 
 //    cv::flip(img,img,0);
 
-    cvSaveImage(projPath.toStdString().c_str(),&(IplImage(img)));
+    IplImage *saveImage = new IplImage(img);
+    cvSaveImage(projPath.toStdString().c_str(),saveImage);
 //    cvSaveImage(projPath.toStdString().c_str(),&(IplImage(image)));
+    delete saveImage;
 
     res /= image.cols*image.rows;
     fea3D.push_back(res);
@@ -533,7 +535,8 @@ void Fea::setProjectArea()
 
     std::cout << "foreGround path " << maskPath.toStdString() << std::endl;
 
-    cvSaveImage(maskPath.toStdString().c_str(),&(IplImage(foreGround)));
+    saveImage = new IplImage(foreGround);
+    cvSaveImage(maskPath.toStdString().c_str(),saveImage);
 
     foreGround.release();
 
@@ -840,9 +843,9 @@ void Fea::setMeanCurvature(MeanCurvature<MyMesh> &a, std::vector<bool> &isVertex
 //    qDebug()<<"fea3D size "<<fea3D.size()<<endl;
 }
 
-void Fea::setMeanCurvature(std::vector<MeanCurvature<MyMesh>> &a,
+void Fea::setMeanCurvature(std::vector< MeanCurvature<MyMesh>* > &a,
                            std::vector<bool> &isVertexVisible,
-                           std::vector<std::vector<int>> &indiceArray)
+                           std::vector< std::vector<int> > &indiceArray)
 {
     double res = 0.0;
 //    qDebug()<<"set Mean Curvature "<<a.size()<<endl;
@@ -873,7 +876,7 @@ void Fea::setMeanCurvature(std::vector<MeanCurvature<MyMesh>> &a,
         for(;it!=verIndice.end();it++)
             isVerVis.push_back(isVertexVisible[*it]);
 
-        res += a[i].getMeanCurvature(isVerVis);
+        res += a[i]->getMeanCurvature(isVerVis);
     }
 
 //    fclose(stdout);
@@ -902,9 +905,9 @@ void Fea::setGaussianCurvature(GaussCurvature<MyMesh> &mesh,
     std::cout<<"fea gaussianCurvature "<<res<<" fea3D size "<<fea3D.size()<<std::endl;
 }
 
-void Fea::setGaussianCurvature(std::vector<GaussCurvature<MyMesh>> &a,
+void Fea::setGaussianCurvature(std::vector< GaussCurvature<MyMesh>* > &a,
                                std::vector<bool> &isVertexVisible,
-                               std::vector<std::vector<int>> &indiceArray)
+                               std::vector< std::vector<int> > &indiceArray)
 {
     double res = 0.0;
 //    freopen("D:/viewpoint/kmx/kxm.txt","w",stdout);
@@ -919,7 +922,7 @@ void Fea::setGaussianCurvature(std::vector<GaussCurvature<MyMesh>> &a,
         for(;it!=verIndice.end();it++)
             isVerVis.push_back(isVertexVisible[*it]);
 //        std::cout<<"gauss ... hi "<<std::endl;
-        res += a[i].getGaussianCurvature(isVerVis);
+        res += a[i]->getGaussianCurvature(isVerVis);
 //        std::cout<<res<<std::endl;
     }
     if(fea3D[1])
@@ -930,7 +933,7 @@ void Fea::setGaussianCurvature(std::vector<GaussCurvature<MyMesh>> &a,
 
 }
 
-void Fea::setMeshSaliency(std::vector<MeanCurvature<MyMesh>> &a, std::vector<GLfloat> &vertex, std::vector<bool> &isVertexVisible)
+void Fea::setMeshSaliency(std::vector< MeanCurvature<MyMesh> > &a, std::vector<GLfloat> &vertex, std::vector<bool> &isVertexVisible)
 {
     double res = 0.0;
     double length = getDiagonalLength(vertex);
@@ -1074,8 +1077,8 @@ void Fea::setMeshSaliencyCompute(std::vector<MeanCurvature<MyMesh> > &a,
 void Fea::setMeshSaliency(int t_case,// for debug can be used to output the mesh
                           std::vector<GLfloat> &vertex,
                           std::vector<bool> &isVertexVisible,
-                          std::vector<MeanCurvature<MyMesh>> &a,
-                          std::vector<std::vector<int>> &indiceArray)
+                          std::vector< MeanCurvature<MyMesh> > &a,
+                          std::vector< std::vector<int> > &indiceArray)
 {
 
     double res = 0.0;
