@@ -50,8 +50,10 @@ void MainWindow::on_load_clicked()
     QString path = fileInfo.absoluteDir().absolutePath().append("/");
 //    qDebug() << path << endl;
     fea = new Fea(fileName,path);
+    std::cout << "fea initial done" << std::endl;
     // mode 0 means compute 2D and 3D freatuers together
     fea->setFeature(0);
+    std::cout << "set fea done" << std::endl;
 }
 
 void MainWindow::on_load2D_clicked()
@@ -88,4 +90,16 @@ void MainWindow::on_load3D_clicked()
     fea = new Fea(fileName,path);
     // mode 3  means computes 3D feature
     fea->setFeature(3);
+}
+
+void MainWindow::on_sightBall_clicked()
+{
+    // this function was used to export the matrix file on the sight ball
+    QString fileName = QFileDialog::getSaveFileName(this, tr("Save File"),
+                               ".matrixs",
+                               tr("matrixs (*.matrixs)"));
+    fea = new Fea();
+
+    fea->exportSBM(fileName);
+
 }

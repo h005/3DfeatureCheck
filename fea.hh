@@ -90,7 +90,11 @@ private:
 public:
     void showImage();
 
+    Fea();
+
     Fea(QString modelFile, QString path);
+
+    void exportSBM(QString file);
 
     void setFeature(int mode);
 
