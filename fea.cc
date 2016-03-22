@@ -9,9 +9,9 @@ Fea::Fea(QString fileName, QString path)
 {
     this->path = path;
 
-    qDebug()<<"path ... "<<path<<endl;
+//    qDebug()<<"path ... "<<path<<endl;
     // fileName
-    qDebug()<<"fileName ... "<<fileName<<endl;
+//    qDebug()<<"fileName ... "<<fileName<<endl;
     // the number of feature is FEA_NUM
     // std::vector<double> fea3D;
 
@@ -23,6 +23,8 @@ Fea::Fea(QString fileName, QString path)
         std::cerr << "Error: Cannot read mesh from "<<std::endl;
         return ;
     }
+
+    std::cout << "import mesh done ################"<< std::endl;
 
 #ifdef OUTPUT_OFF
     QString offName = fileName;
@@ -93,6 +95,7 @@ void Fea::setFeature(int mode)
 #else
 //     for compute
     // 3D feature
+    std::cout << "setMeshVector before###################" << std::endl;
     std::vector< MeanCurvature<MyMesh>* > a;
     std::vector< GaussCurvature<MyMesh>* > b;
     if(mode  == 3 || mode  == 0)
@@ -100,6 +103,8 @@ void Fea::setFeature(int mode)
         render->setMeshSaliencyPara(exImporter);
         for(int i=0;i<render->p_vecMesh.size();i++)
         {
+            if(i == 709)
+                std::cout << "for debug "<< std::endl;
             MeanCurvature<MyMesh> *tmpMean = new MeanCurvature<MyMesh>(render->p_vecMesh[i]);
             GaussCurvature<MyMesh> *tmpGauss = new GaussCurvature<MyMesh>(render->p_vecMesh[i]);
             a.push_back(tmpMean);
@@ -107,12 +112,7 @@ void Fea::setFeature(int mode)
         }
     }
 
-    // test for memory
-//    double counter = 0.0;
-//    while(1)
-//    {
-//        counter ++;
-//    }
+    std::cout << "setMeshVector done###################" << std::endl;
 
 #ifndef FOREGROUND
     // 关于PCA这里还有问题，是否要将前景物体提取出来然后再进行PCA计算？目前没有这么做
@@ -180,18 +180,25 @@ void Fea::setFeature(int mode)
             qDebug() << "setMat done" << endl;
             setMask();
             qDebug() << "setMask done" << endl;
+            // 0
             setProjectArea();
             qDebug() << "setProjectArea done" << endl;
+            // 1
             setVisSurfaceArea(render->p_vertices,render->p_VisibleFaces);
             qDebug() << "setVisSurfaceArea done" << endl;
+            // 2
             setViewpointEntropy2(render->p_verticesMvp,render->p_VisibleFaces);
             qDebug() << "setViewpointEntropy done" << endl;
+            // 3
             setSilhouetteLength();
             qDebug() << "setSilhouetteLength done" << endl;
+            // 4 5
             setSilhouetteCE();
             qDebug() << "setSilhouetteCE done" << endl;
+            // 6
             setMaxDepth(render->p_img,render->p_height*render->p_width);
             qDebug() << "setMaxDepth done" << endl;
+            // 7
             setDepthDistribute(render->p_img,render->p_height*render->p_width);
             qDebug() << "setDepthDistribute done" << endl;
 #ifdef CHECK
@@ -208,8 +215,10 @@ void Fea::setFeature(int mode)
 
             if(mode == 0 ||  mode == 3)
             {
+                // 8
                 setMeanCurvature(a,render->p_isVertexVisible,render->p_indiceArray);
                 qDebug() << "setMeanCurvature done" << endl;
+                // 9
                 setGaussianCurvature(b,render->p_isVertexVisible,render->p_indiceArray);
                 qDebug() << "setGaussianCurvature done" << endl;
             }
@@ -874,7 +883,13 @@ void Fea::setMeanCurvature(std::vector< MeanCurvature<MyMesh>* > &a,
         for(;it!=verIndice.end();it++)
             isVerVis.push_back(isVertexVisible[*it]);
 
+        if(i == 709)
+        {
+            std::cout << "for debug" << std::endl;
+        }
         res += a[i]->getMeanCurvature(isVerVis);
+//        std::cout << "debug index " << i << std::endl;
+//        Q_ASSERT(!std::isnan(res));
     }
 
 //    fclose(stdout);

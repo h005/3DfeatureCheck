@@ -38,11 +38,13 @@ void MainWindow::on_showImage_clicked()
 
 void MainWindow::on_load_clicked()
 {
-    QString fileName = QFileDialog::getOpenFileName(this,
-                      tr("Open"),".",
-                      tr("matrix Files(*.off *.dae *.obj)"));
-    if(fileName == NULL)
-        return;
+//    QString fileName = QFileDialog::getOpenFileName(this,
+//                      tr("Open"),".",
+//                      tr("matrix Files(*.off *.dae *.obj)"));
+//    if(fileName == NULL)
+//        return;
+
+    QString fileName = "/home/h005/Documents/kxm/debug/kxm.obj";
 
     ui->modelPath->setText(fileName);
 

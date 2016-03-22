@@ -29,7 +29,7 @@ public:
             for (v_it = m_mesh.vertices_begin(); v_it != v_end; v_it++) {
                 OpenMesh::VectorT<float,3> n;
                 double area;
-                if(time == 4)
+                if(time == 9)
                 {
                     printf("for debug\n");
                 }
@@ -41,6 +41,8 @@ public:
                 m_mesh.property(valuePerArea, *v_it) = n.norm() / 2.0;
                 Q_ASSERT(!std::isnan(m_mesh.property(valuePerArea, *v_it)));
                 m_mesh.property(vertexBoundingArea, *v_it) = area;
+                Q_ASSERT(!std::isnan(m_mesh.property(vertexBoundingArea, *v_it)));
+                time++;
             }
 
             // TODO:
@@ -117,8 +119,11 @@ public:
         typename MeshT::VertexIter v_it, v_end(m_mesh.vertices_end());
         for (v_it = m_mesh.vertices_begin(); v_it != v_end; v_it++,index++)
             if(isVertexVisible[index]) {
+                std::cout << "get meanCurvature debug index "<< index << std::endl;
+                std::cout << m_mesh.property(m_vPropHandle, *v_it) << " " << m_mesh.property(vertexBoundingArea, *v_it) << std::endl;
                 Q_ASSERT(!std::isnan(m_mesh.property(m_vPropHandle, *v_it)));
                 Q_ASSERT(!std::isnan(m_mesh.property(vertexBoundingArea, *v_it)));
+                Q_ASSERT(!std::isnan(m_mesh.property(m_vPropHandle, *v_it) * m_mesh.property(vertexBoundingArea, *v_it)));
                 res += m_mesh.property(m_vPropHandle, *v_it) * m_mesh.property(vertexBoundingArea, *v_it);
 
 //                qDebug()<<"mean curvature ... m_vPropHandle "<<m_mesh.property(m_vPropHandle, *v_it)<<endl;

@@ -168,7 +168,7 @@ void Render::initial()
     glBindFramebuffer(GL_FRAMEBUFFER,0);
     qDebug()<<"FramebufferName fbo...init"<<endl;
 
-    m_programID = LoadShaders("simpleShader.vert","simpleShader.frag");
+    m_programID = LoadShaders("shader/simpleShader.vert","shader/simpleShader.frag");
     GLuint vertexNormal_modelspaceID = glGetAttribLocation(m_programID, "vertexNormal_modelspace");
     GLuint vertexPosition_modelspaceID = glGetAttribLocation(m_programID,"vertexPosition_modelspace");
     m_helper.fbo_init(vertexPosition_modelspaceID,vertexNormal_modelspaceID);

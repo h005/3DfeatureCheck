@@ -157,6 +157,9 @@ int* UFface::unionFinal(std::vector<int> &indices,std::vector<int> &cs)
     for(int i=0;i<3*NUM_FACE;i++)
         indices.push_back(arrayFace[i/3][i%3]);
 
+    printf("unionFinal... num of Categories after: %d\n",cateSet.size());
+    printf("unionFinal... num of CategoriesCommonEdge after: %d\n",cateSetCommonEdge.size());
+
     return id;
 /*
     if(cateSet.size()==cateSetCommonEdge.size())
@@ -258,7 +261,6 @@ void UFface::shrink(std::vector<int> &indices)
                 indices.erase(indices.begin()+j,indices.begin()+j+3);
                 j-=3;
             }
-
 }
 
 
@@ -375,8 +377,10 @@ void UFface::checkIn(int i, int j)
     for(int i0 = 0; i0 < 3; i0++)
         for(int j0 = 0; j0 < 3 ; j0++)
         {
+            // common edge and with same order
             if(num0[i0]==num1[j0])
                 setRelation(i,j,3);
+            // common edge without same order
             else if(num0[i0]==num2[j0])
                 setRelation(i,j,2);
         }

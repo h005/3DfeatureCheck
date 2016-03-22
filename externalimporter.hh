@@ -13,6 +13,8 @@
 #include "ufface.h"
 #include <QString>
 #include "predefine.h"
+#include <iostream>
+#include <fstream>
 
 template <typename MeshT>
 class ExternalImporter
@@ -39,11 +41,49 @@ public:
 
 #ifndef CHECK
 
+//        QString debugPath = "/home/h005/Documents/kxm/debug/beforeShrink.txt";
+//        std::ofstream out;
+//        out.open(debugPath.toStdString().c_str());
+//        if(!out.is_open())
+//        {
+//            std::cout << "before open error"<< std::endl;
+//        }
+//        out << indices.size() << std::endl;
+//        for(int i=0;i<indices.size();i++)
+//        {
+//            out << indices[i] << std::endl;
+//        }
+//        out.close();
+//        std::cout << "before shrink done" << std::endl;
+//        std::cout << "indices size "<< indices.size() << std::endl;
+
+
+//        QString uffacePath = "/home/h005/Documents/kxm/debug/uffaceData.txt";
+//        indices.clear();
+//        std::ifstream in(uffacePath.toStdString().c_str());
+//        int tmpind;
+//        while(in >> tmpind)
+//            indices.push_back(tmpind);
+//        in.close();
         UFface *ufface = new UFface(indices);
 
         id = ufface->unionFinal(indices,cateSet);
         ufface->free();
-        std::cout << "union ... done "<<std::endl;
+//        debugPath = "/home/h005/Documents/kxm/debug/afterShrink.txt";
+//        out.open(debugPath.toStdString().c_str());
+//        if(!out.is_open())
+//        {
+//            std::cout << "after open error"<< std::endl;
+//        }
+//        out << indices.size() << std::endl;
+//        for(int i=0;i<indices.size();i++)
+//        {
+//            out << indices[i] << std::endl;
+//        }
+//        out.close();
+//        std::cout << "after shrink done" << std::endl;
+//        std::cout << "indices size "<< indices.size() << std::endl;
+//        std::cout << "union ... done "<<std::endl;
 #endif
         buildMesh_h005(vertices,indices,mesh);
         // output the file
@@ -114,6 +154,7 @@ public:
         qDebug()<<"setMeshVector ... "<<cateSet.size()<<endl;
         for(int i=0;i<cateSet.size();i++)
         {
+            std::cout << "debug .... ok 0"<< std::endl;
             MeshT tmpMesh;
             std::vector<typename MeshT::VertexHandle> vHandle;
             std::vector<MyMesh::VertexHandle> face_vhandles;
@@ -125,20 +166,24 @@ public:
                 indiceSet.insert(indices[indiceMesh[i][j]*3+1]);
                 indiceSet.insert(indices[indiceMesh[i][j]*3+2]);
             }
-
+            std::cout << "debug .... ok 1"<< std::endl;
             std::set<int>::iterator it = indiceSet.begin();
 
             for(;it!=indiceSet.end();it++)
                 vHandle.push_back(tmpMesh.add_vertex(vertices[*it]));
             it--;
             int max = *it;
-            int *tmpIndex = new int[max];
-            memset(tmpIndex,-1,sizeof(int)*max);
+            std::cout << "debug max "<<max<<std::endl;
+            std::cout << "debug indiceSet size "<<indiceSet.size()<< std::endl;
+            int *tmpIndex = new int[max+1];
+            memset(tmpIndex,-1,sizeof(int)*max+1);
             it = indiceSet.begin();
             int tmpCount = 0;
-            for(;it!=indiceSet.end();it++)
+            for(;it!=indiceSet.end();it++) {
+                std::cout << "debug ... indiceSet " << *it << std::endl;
                 tmpIndex[*it] = tmpCount++;
-
+               }
+            std::cout << "debug .... ok 2"<< std::endl;
             for(int j=0;j<indiceMesh[i].size();j++)
             {
                 face_vhandles.clear();
@@ -150,8 +195,11 @@ public:
                 face_vhandles.push_back(vHandle[tmpIndex[*it]]);
                 tmpMesh.add_face(face_vhandles);
             }
-
+            std::cout << "debug .... ok 3"<< std::endl;
+            std::cout << "debug .... size "<<mesh.size() << std::endl;
             mesh.push_back(tmpMesh);
+            std::cout << "debug .... ok 4"<< std::endl;
+            delete tmpIndex;
         }
 
         printf("setMeshVector....done\n");

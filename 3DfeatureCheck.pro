@@ -109,8 +109,8 @@ INCLUDEPATH += /usr/local/include
 LIBS += -lOpenMeshCore
 
 # assimp
-INCLUDEPATH += /usr/include/assimp
-LIBS += -lassimp
+INCLUDEPATH += /usr/local/include/assimp
+LIBS += -L/usr/local/lib/ -lassimp
 
 # glew
 # INCLUDEPATH +=
