@@ -33,6 +33,8 @@ private slots:
 
     void on_load3D_clicked();
 
+    void on_sightBall_clicked();
+
 private:
     Ui::MainWindow *ui;
     Fea *fea;

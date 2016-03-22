@@ -57,6 +57,13 @@
           </property>
          </widget>
         </item>
+        <item>
+         <widget class="QPushButton" name="sightBall">
+          <property name="text">
+           <string>sightBall</string>
+          </property>
+         </widget>
+        </item>
        </layout>
       </item>
       <item>

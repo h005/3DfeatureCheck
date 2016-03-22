@@ -71,8 +71,9 @@ Fea::Fea(QString fileName, QString path)
     render->resize(QSize(800,800));
     render->show();
 
-//    setFeature();
+//      setFeature();
 }
+
 
 /*
  * for some mode is so big, the memory is not enough
@@ -103,8 +104,6 @@ void Fea::setFeature(int mode)
         render->setMeshSaliencyPara(exImporter);
         for(int i=0;i<render->p_vecMesh.size();i++)
         {
-            if(i == 709)
-                std::cout << "for debug "<< std::endl;
             MeanCurvature<MyMesh> *tmpMean = new MeanCurvature<MyMesh>(render->p_vecMesh[i]);
             GaussCurvature<MyMesh> *tmpGauss = new GaussCurvature<MyMesh>(render->p_vecMesh[i]);
             a.push_back(tmpMean);
@@ -153,6 +152,7 @@ void Fea::setFeature(int mode)
             int height = 0;
 
                 // read image2D used for 3D mode to save proj and depth image
+            qDebug() << "image2D "<<fileName.at(t_case)<< endl;
                 image2D = cv::imread(fileName.at(t_case).toStdString().c_str());
             if(mode == 2 || mode  ==0)
             {
@@ -169,7 +169,7 @@ void Fea::setFeature(int mode)
 
 
 #ifdef CHECK
-            render->storeImage(path,QString::number(t_case));
+//            render->storeImage(path,QString::number(t_case));
 #else
             if(mode == 3 || mode  == 0)
                 render->storeImage(path,fileName.at(t_case),width,height);
@@ -177,7 +177,7 @@ void Fea::setFeature(int mode)
 #endif
 
             setMat(render->p_img,render->p_width,render->p_height,width,height);
-            qDebug() << "setMat done" << endl;
+            //  qDebug() << "setMat done" << endl;
             setMask();
             qDebug() << "setMask done" << endl;
             // 0
@@ -200,7 +200,7 @@ void Fea::setFeature(int mode)
             qDebug() << "setMaxDepth done" << endl;
             // 7
             setDepthDistribute(render->p_img,render->p_height*render->p_width);
-            qDebug() << "setDepthDistribute done" << endl;
+            //  qDebug() << "setDepthDistribute done" << endl;
 #ifdef CHECK
 
             setMeanCurvature(a,render->p_isVertexVisible);
@@ -217,10 +217,12 @@ void Fea::setFeature(int mode)
             {
                 // 8
                 setMeanCurvature(a,render->p_isVertexVisible,render->p_indiceArray);
+
                 qDebug() << "setMeanCurvature done" << endl;
                 // 9
+                //  qDebug() << "setMeanCurvature done" << endl;
                 setGaussianCurvature(b,render->p_isVertexVisible,render->p_indiceArray);
-                qDebug() << "setGaussianCurvature done" << endl;
+                //  qDebug() << "setGaussianCurvature done" << endl;
             }
 
 //            setMeshSaliencyCompute(a,render->p_vertices,render->p_isVertexVisible,render->p_indiceArray);
@@ -229,15 +231,15 @@ void Fea::setFeature(int mode)
                                render->m_model,
                                render->m_view);
 
-            qDebug() << "sotre Image done" << endl;
+            //  qDebug() << "sotre Image done" << endl;
 
 #endif
 
             setOutlierCount();
-            qDebug() << "sotre Image done" << endl;
+            //  qDebug() << "sotre Image done" << endl;
 //            std::cout << "outlier count done"<< std::endl;
             setBoundingBox3D();
-            qDebug() << "sotre Image done" << endl;
+            //  qDebug() << "sotre Image done" << endl;
 //            std::cout << "set Bounding box 3D "<< std::endl;
 
             /*
@@ -247,7 +249,7 @@ void Fea::setFeature(int mode)
             // 可以只计算mask对应部分的前景区域
 //            getColorDistribution();
             // 可以只计算mask对应部分的前景区域 2Dfea
-            if(mode == 2)
+            if(mode == 2 || mode == 0)
             {
                 getHueCount();
                 //            std::cout << "getHue count done" << std::endl;
@@ -263,7 +265,7 @@ void Fea::setFeature(int mode)
             }
             // 球面坐标系
             getBallCoord();
-            qDebug() << "sotre Image done" << endl;
+            //  qDebug() << "sotre Image done" << endl;
 //            std::cout << "getBall Coord done " << std::endl;
 
 #ifndef FOREGROUND
@@ -280,7 +282,7 @@ void Fea::setFeature(int mode)
             setPCA();
 
 #endif
-            if(mode == 2)
+            if(mode == 2 || mode == 0)
             {
                 // 各种不同方向的梯度叠加
                 getHog();
@@ -2660,6 +2662,11 @@ void Fea::showImage()
     render->showImage();
 }
 
+Fea::Fea()
+{
+
+}
+
 
 typedef long double LD;
 double Fea::getContourCurvature(const std::vector<cv::Point2d> &points, int target)
@@ -2738,4 +2745,48 @@ void Fea::clear()
     fea2D.clear();
 
     fea3D.clear();
+}
+
+void Fea::exportSBM(QString file)
+{
+    glm::mat4 mv;
+    glm::mat4 proj = glm::perspective(glm::pi<float>() / 3, 1.f, 0.01f, 100.f);
+    float angle_x = 2.0*glm::pi<float>()/MAX_LEN;
+    float angle_z = 2.0*glm::pi<float>()/MAX_LEN;
+    glm::mat4 m_camera = glm::lookAt(glm::vec3(0.f,0.f,3.f),
+                           glm::vec3(0.f),
+                           glm::vec3(0.f,1.f,0.f));
+    std::ofstream fout(file.toStdString().c_str());
+
+    for(int i=0;i<MAX_LEN;i++)
+    {
+        for(int j=0;j<MAX_LEN;j++)
+        {
+            float anglex = - angle_x * i;
+            float anglez = - angle_z * j;
+            glm::mat4 rotateX = glm::rotate(glm::mat4(1.f),anglex,glm::vec3(1.0,0.0,0.0));
+            glm::mat4 rotateZ = glm::rotate(glm::mat4(1.f),anglez,glm::vec3(0.0,0.0,1.0));
+            mv = rotateX * rotateZ;
+            // print out
+            fout << "kxm/img" ;
+            fout.width(4);
+            fout.fill('0');
+            fout << i*MAX_LEN + j << ".jpg"<<std::endl;
+            // mv matrix
+            for(int k1 = 0;k1 < 4;k1++)
+            {
+                for(int k2 = 0;k2 < 4;k2++)
+                    fout << mv[k2][k1] << " ";
+                fout << std::endl;
+            }
+            // proj matrix
+            for(int k1 = 0;k1 < 4;k1++)
+            {
+                for(int k2 = 0;k2 < 4;k2++)
+                    fout << proj[k2][k1] << " ";
+                fout << std::endl;
+            }
+        }
+    }
+    std::cout << "export done" << std::endl;
 }
