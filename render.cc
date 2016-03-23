@@ -30,7 +30,7 @@ Render::Render(MyMesh &in_mesh,
     // read model view and projection Matrix from .mvp file
 
     QString tmpPath = fileName;
-//    tmpPath.append(".mvp");
+    //    tmpPath.append(".mvp");
 
     FILE *fp;
     fp = freopen(tmpPath.toStdString().c_str(),"r",stdin);
@@ -139,7 +139,6 @@ void Render::initializeGL()
 
     glClearColor( 0.368, 0.368, 0.733, 1);
     initial();
-    std::cout<<"********all initial complete"<<std::endl;
 }
 
 
@@ -166,7 +165,6 @@ void Render::initial()
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, colorRenderBuffer);
 
     glBindFramebuffer(GL_FRAMEBUFFER,0);
-    qDebug()<<"FramebufferName fbo...init"<<endl;
 
     m_programID = LoadShaders("shader/simpleShader.vert","shader/simpleShader.frag");
     GLuint vertexNormal_modelspaceID = glGetAttribLocation(m_programID, "vertexNormal_modelspace");
@@ -177,7 +175,6 @@ void Render::initial()
 void Render::resizeGL(int width, int height)
 {
     std::cout << "resize " << width << " " << height << std::endl;
-    //glViewport(0,0,800,800);
 }
 
 QSize Render::sizeHint() const
@@ -226,7 +223,6 @@ bool Render::rendering(int count)
     glUniform3f(lightID, lightPos.x, lightPos.y, lightPos.z);
 
     m_helper.draw();
-    qDebug()<<" "<<count<<endl;
     doneCurrent();
     return true;
 }
@@ -261,10 +257,9 @@ void Render::showImage()
             GL_UNSIGNED_BYTE,
             img);
 
-    qDebug()<<"show fbo info...ok"<<endl;
 
     cv::Mat image = cv::Mat(viewport[3],viewport[2],CV_8UC4,img);
-    qDebug()<<"show fbo info...ok"<<endl;
+
     cv::namedWindow("test");
     imshow("test",image);
 
@@ -276,24 +271,18 @@ void Render::showImage()
     doneCurrent();
 
 }
-// fileName is absolute name
-// fileName  = path + name
+    // fileName is absolute name
+    // fileName  = path + name
 void Render::storeImage(QString path,QString fileName0,int width,int height)
 {
-    qDebug() << "storeImage width " << width << "height " << height << endl;
-//    qDebug()<<"store Image "<<path<<endl;
-//    qDebug()<<"stroe Image  "<<fileName<<endl;
     int pos = fileName0.lastIndexOf('/');
     QString fileName = fileName0.remove(0,pos+1);
-//    qDebug()<<"store Image  "<<fileName0<<endl;
 
     makeCurrent();
 
     glBindFramebuffer(GL_FRAMEBUFFER,frameBufferId);
     GLint viewport[4];
     glGetIntegerv(GL_VIEWPORT,viewport);
-
-    std::cout << viewport[0] << " " << viewport[1] << " " << viewport[2] <<  " " << viewport[3] << std::endl;
 
     GLfloat *img0 = new GLfloat[(viewport[2]-viewport[0])*(viewport[3]-viewport[1])];
     glReadBuffer(GL_BACK_LEFT);
@@ -308,8 +297,6 @@ void Render::storeImage(QString path,QString fileName0,int width,int height)
     cv::flip(depthImgFliped,depthImg,0);
     cv::resize(depthImg,depthImg,cv::Size(width,height));
     depthImg.convertTo(depthImg,CV_8UC1,255.0 / (1.0 - min),255.0 * min / (min - 1.0));
-
-    qDebug() << "storeImage depth " << endl;
 
     GLubyte *img =
             new GLubyte[(viewport[2] - viewport[0])
@@ -329,31 +316,27 @@ void Render::storeImage(QString path,QString fileName0,int width,int height)
     cv::cvtColor(rgbImg,rgbImg,CV_RGBA2BGR);
     rgbImg.convertTo(rgbImg,CV_8UC3);
 
-    qDebug() << "storeImage RGB " << endl;
     // fileName  = path + name
-//    int len = path.length();
+    // int len = path.length();
     QString outputDepthFile = fileName;
     outputDepthFile.append(".jpg");
     QString outputDepth = path;
-//    outputDepthFile.remove(0,len);
+
     outputDepth.append("depth/");
     outputDepth.append(outputDepthFile);
-//    std::cout<< outputDepth.toStdString() << std::endl;
-//    std::cout<<depthImg.type()<<std::endl;
     // imwrite has a bug maybe need recompile
     // ref http://stackoverflow.com/questions/6923296/opencv-imwrite-2-2-causes-exception-with-message-opencv-error-unspecified-erro
-//      cv::imwrite(outputDepth.toStdString(),depthImg);
+    //      cv::imwrite(outputDepth.toStdString(),depthImg);
     IplImage *saveImage = new IplImage(depthImg);
     cvSaveImage(outputDepth.toStdString().c_str(),saveImage);
     delete saveImage;
     QString outputRgbFile = fileName;
     outputRgbFile.append(".jpg");
     QString outputRgb = path;
-//    outputRgbFile.remove(0,len);
+    //    outputRgbFile.remove(0,len);
     outputRgb.append("rgb/");
     outputRgb.append(outputRgbFile);
-//    std::cout<< outputRgb.toStdString() << std::endl;
-//      cv::imwrite(outputRgb.toStdString(),rgbImg);
+    //      cv::imwrite(outputRgb.toStdString(),rgbImg);
     saveImage = new IplImage(rgbImg);
     cvSaveImage(outputRgb.toStdString().c_str(),saveImage);
 
@@ -374,22 +357,15 @@ double Render::getArea(std::vector<GLuint> &indices,int p)
     glm::vec3 pb = glm::vec3(p_vertices[indices[p+1]*3],p_vertices[indices[p+1]*3+1],p_vertices[indices[p+1]*3+2]);
     glm::vec3 pc = glm::vec3(p_vertices[indices[p+2]*3],p_vertices[indices[p+2]*3+1],p_vertices[indices[p+2]*3+2]);
 
-//    qDebug()<<"pca vec pa "<<pa[0]<<" "<<pa[1]<<" "<<pa[2]<<endl;
-//    qDebug()<<"pca vec pb "<<pb[0]<<" "<<pb[1]<<" "<<pb[2]<<endl;
-//    qDebug()<<"pca vec pc "<<pc[0]<<" "<<pc[1]<<" "<<pc[2]<<endl;
-
     glm::vec3 BC = pc - pb;
     double a = glm::l2Norm(BC);
-//    qDebug()<<"pca vec pc-pb "<<BC[0]<<" "<<BC[1]<<" "<<BC[2]<<endl;
-//    qDebug()<<"pca area a "<<a<<endl;
+
     glm::vec3 CA = pa - pc;
     double b = glm::l2Norm(CA);
-//    qDebug()<<"pca vec pa-pc "<<CA[0]<<" "<<CA[1]<<" "<<CA[2]<<endl;
-//    qDebug()<<"pca area b "<<b<<endl;
+
     glm::vec3 BA = pa - pb;
     double c = glm::l2Norm(BA);
-//    qDebug()<<"pca vec pa-pb "<<BA[0]<<" "<<BA[1]<<" "<<BA[2]<<endl;
-//    qDebug()<<"pca area c "<<c<<endl;
+
     if(glm::l2Norm(glm::cross(BA,BC)) < 1e-2)
         return 0;
     double s = (a + b + c) / 2.0;

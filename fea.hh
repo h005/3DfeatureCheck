@@ -87,6 +87,10 @@ private:
 
     std::vector<double> fea2D;
 
+    std::vector<std::string> fea3DName;
+
+    std::vector<std::string> fea2DName;
+
 public:
     void showImage();
 

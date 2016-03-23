@@ -12,8 +12,6 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
     fea = NULL;
-//    ui->loadModel->setShortcut(Qt::Key_L);
-//    ui->bMatrixPath->setShortcut(Qt::Key_M);
     ui->load->setShortcut(Qt::Key_L);
     ui->process->setShortcut(Qt::Key_P);
     ui->showImage->setShortcut(Qt::Key_S);
@@ -27,8 +25,9 @@ MainWindow::~MainWindow()
 
 void MainWindow::on_process_clicked()
 {
-//    fea->setFeature();
+
 }
+
 
 
 void MainWindow::on_showImage_clicked()
@@ -50,12 +49,10 @@ void MainWindow::on_load_clicked()
 
     QFileInfo fileInfo(fileName);
     QString path = fileInfo.absoluteDir().absolutePath().append("/");
-//    qDebug() << path << endl;
+
     fea = new Fea(fileName,path);
-    std::cout << "fea initial done" << std::endl;
     // mode 0 means compute 2D and 3D freatuers together
     fea->setFeature(0);
-    std::cout << "set fea done" << std::endl;
 }
 
 void MainWindow::on_load2D_clicked()
@@ -88,7 +85,7 @@ void MainWindow::on_load3D_clicked()
 
     QFileInfo fileInfo(fileName);
     QString path = fileInfo.absoluteDir().absolutePath().append("/");
-//    qDebug() << path << endl;
+
     fea = new Fea(fileName,path);
     // mode 3  means computes 3D feature
     fea->setFeature(3);

@@ -21,10 +21,6 @@ public:
 private slots:
     void on_process_clicked();
 
-//    void on_loadModel_clicked();
-
-//    void on_bMatrixPath_clicked();
-
     void on_showImage_clicked();
 
     void on_load_clicked();
