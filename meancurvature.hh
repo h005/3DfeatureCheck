@@ -29,10 +29,6 @@ public:
             for (v_it = m_mesh.vertices_begin(); v_it != v_end; v_it++) {
                 OpenMesh::VectorT<float,3> n;
                 double area;
-                if(time == 9)
-                {
-                    printf("for debug\n");
-                }
                 curvature::discrete_mean_curv_op<MeshT>(m_mesh, *v_it, n, area);
 
 //                printf("meanCurvature....ok...%d\n",time++);

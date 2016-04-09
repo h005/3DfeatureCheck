@@ -103,7 +103,7 @@ void Fea::setFeature(int mode)
         }
     }
 
-
+    std::cout << "case : " << t_case << std::endl;
 #ifndef FOREGROUND
     // 关于PCA这里还有问题，是否要将前景物体提取出来然后再进行PCA计算？目前没有这么做
     computePCA();
@@ -154,6 +154,8 @@ void Fea::setFeature(int mode)
 #ifdef CHECK
 //            render->storeImage(path,QString::number(t_case));
 #else
+            // store rgb and depth img
+            // need a folder named depth and rgb
             if(mode == 3 || mode  == 0)
                 render->storeImage(path,fileName.at(t_case),width,height);
 #endif
@@ -230,8 +232,6 @@ void Fea::setFeature(int mode)
 
 #ifndef FOREGROUND
 
-            getRuleOfThird();
-
             getLightingFeature();
 
             // 不计算
@@ -244,6 +244,7 @@ void Fea::setFeature(int mode)
 #endif
             if(mode == 2 || mode == 0)
             {
+                getRuleOfThird();
                 // 各种不同方向的梯度叠加
                 getHog();
 
@@ -263,13 +264,19 @@ void Fea::setFeature(int mode)
             image2D32f3c.release();
         }
 
-        // break;
+        printFeaName();
+
+//        break;
 
         printOut(mode);
 
         clear();
 
+        qDebug() << "fea cases : "<< t_case << endl;
+
     }
+
+    qDebug() << "done" << endl;
 
 }
 
@@ -297,10 +304,12 @@ void Fea::setMMPara(QString mmFile)
 
     output2D = output;
     output3D = output;
+    outputFeaName = output;
     pos = output.lastIndexOf('.');
     output.replace(pos,7,label);
     output2D.replace(pos,7,file2D);
     output3D.replace(pos,7,file3D);
+    outputFeaName.replace(pos,7,QString(".fname"));
 
 
     if(!freopen(mmPath.toStdString().c_str(),"r",stdin))
@@ -2576,6 +2585,19 @@ void Fea::printOut(int mode)
 
     fclose(stdout);
     image.release();
+}
+
+void Fea::printFeaName(int mode)
+{
+    freopen(outputFeaName.toStdString().c_str(),"a+",stdout);
+
+    for(int i=0;i<fea3DName.size();i++)
+        std::cout << fea3DName[i] << std::endl;
+
+    for(int j=0;j<fea2DName.size();j++)
+        std::cout << fea2DName[j] << std::endl;
+
+    fclose(stdout);
 }
 
 void Fea::computeModel(glm::mat4 &m_view_tmp,glm::mat4 &m_model_tmp)

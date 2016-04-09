@@ -154,7 +154,7 @@ public:
         qDebug()<<"setMeshVector ... "<<cateSet.size()<<endl;
         for(int i=0;i<cateSet.size();i++)
         {
-            std::cout << "debug .... ok 0"<< std::endl;
+//            std::cout << "debug .... ok 0"<< std::endl;
             MeshT tmpMesh;
             std::vector<typename MeshT::VertexHandle> vHandle;
             std::vector<MyMesh::VertexHandle> face_vhandles;
@@ -166,24 +166,24 @@ public:
                 indiceSet.insert(indices[indiceMesh[i][j]*3+1]);
                 indiceSet.insert(indices[indiceMesh[i][j]*3+2]);
             }
-            std::cout << "debug .... ok 1"<< std::endl;
+//            std::cout << "debug .... ok 1"<< std::endl;
             std::set<int>::iterator it = indiceSet.begin();
 
             for(;it!=indiceSet.end();it++)
                 vHandle.push_back(tmpMesh.add_vertex(vertices[*it]));
             it--;
             int max = *it;
-            std::cout << "debug max "<<max<<std::endl;
-            std::cout << "debug indiceSet size "<<indiceSet.size()<< std::endl;
+//            std::cout << "debug max "<<max<<std::endl;
+//            std::cout << "debug indiceSet size "<<indiceSet.size()<< std::endl;
             int *tmpIndex = new int[max+1];
             memset(tmpIndex,-1,sizeof(int)*max+1);
             it = indiceSet.begin();
             int tmpCount = 0;
             for(;it!=indiceSet.end();it++) {
-                std::cout << "debug ... indiceSet " << *it << std::endl;
+//                std::cout << "debug ... indiceSet " << *it << std::endl;
                 tmpIndex[*it] = tmpCount++;
                }
-            std::cout << "debug .... ok 2"<< std::endl;
+//            std::cout << "debug .... ok 2"<< std::endl;
             for(int j=0;j<indiceMesh[i].size();j++)
             {
                 face_vhandles.clear();
@@ -195,10 +195,10 @@ public:
                 face_vhandles.push_back(vHandle[tmpIndex[*it]]);
                 tmpMesh.add_face(face_vhandles);
             }
-            std::cout << "debug .... ok 3"<< std::endl;
-            std::cout << "debug .... size "<<mesh.size() << std::endl;
+//            std::cout << "debug .... ok 3"<< std::endl;
+//            std::cout << "debug .... size "<<mesh.size() << std::endl;
             mesh.push_back(tmpMesh);
-            std::cout << "debug .... ok 4"<< std::endl;
+//            std::cout << "debug .... ok 4"<< std::endl;
             delete tmpIndex;
         }
 

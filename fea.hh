@@ -37,6 +37,7 @@ private:
 
     QString path;
     QString output;
+    QString outputFeaName;
     QString output2D;
     QString output3D;
     // path for .matrix
@@ -243,6 +244,8 @@ private:
     void print(QString p_path);
 
     void printOut(int mode);
+
+    void printFeaName(int mode = 0);
 
     void computeModel(glm::mat4 &m_view_tmp,glm::mat4 &m_model_tmp);
 
