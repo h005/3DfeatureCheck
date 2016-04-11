@@ -102,7 +102,7 @@ gauss_curvature(MeshT& _mesh, const typename MeshT::VertexHandle& _vh) {
   typename MeshT::CVOHIter voh_it( _mesh.cvoh_iter(_vh));
   typename MeshT::CVOHIter n_voh_it = voh_it;
 
-  if ( ! voh_it->is_valid() )
+  if ( ! voh_it.is_valid() || !voh_it->is_valid() )
      return 0.0;
 
   // move to next
@@ -132,7 +132,7 @@ void discrete_mean_curv_op( const MeshT&                        _m,
   typename MeshT::ConstVertexOHalfedgeIter voh_it = _m.cvoh_iter(_vh);
 
 //  printf("for debug... 1\n");
-   if ( ! voh_it->is_valid() )
+  if ( ! voh_it.is_valid() || !voh_it->is_valid() )
      return;
 
   for(; voh_it.is_valid(); ++voh_it)

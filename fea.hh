@@ -8,7 +8,7 @@
 #include <GL/glew.h>
 #include "common.hh"
 #include "render.hh"
-#include "externalimporter.hh"
+#include "externalimporter.h"
 #include <iostream>
 #include "meancurvature.hh"
 #include "gausscurvature.hh"

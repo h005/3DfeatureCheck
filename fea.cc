@@ -15,7 +15,7 @@ Fea::Fea(QString fileName, QString path)
     // read in model
     exImporter = new ExternalImporter<MyMesh>();
 
-    if(!exImporter->read_mesh(mesh,fileName.toStdString().c_str()))
+    if(!exImporter->read_mesh(mesh,fileName.toStdString().c_str(), true))
     {
         std::cerr << "Error: Cannot read mesh from "<<std::endl;
         return ;

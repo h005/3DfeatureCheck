@@ -95,7 +95,7 @@ void Render::setMVP(glm::mat4 &model, glm::mat4 &view, glm::mat4 &proj)
 
 void Render::setMeshSaliencyPara(ExternalImporter<MyMesh> *exImporter)
 {
-    exImporter->setMeshVector(p_vecMesh,p_indiceArray);
+//    exImporter->setMeshVector(p_vecMesh,p_indiceArray);
 }
 
 Render::~Render()

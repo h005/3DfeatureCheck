@@ -10,7 +10,7 @@
 #include <QOpenGLBuffer>
 #include <glm/glm.hpp>
 #include "common.hh"
-#include "externalimporter.hh"
+#include "externalimporter.h"
 #include <QString>
 
 QT_FORWARD_DECLARE_CLASS(QOpenGLShaderProgram)
