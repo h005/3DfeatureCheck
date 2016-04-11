@@ -27,7 +27,7 @@ public:
      * @return 是否读取成功
      * @see OpenMesh::IO::read_mesh
      */
-    static bool read_mesh(MeshT &mesh, const char *path, bool autoScaleAndShift=false)
+    static bool read_mesh(MeshT &mesh, char *path, bool autoScaleAndShift=false)
     {
         Assimp::Importer importer;
         const aiScene *scene = importer.ReadFile(path, aiProcessPreset_TargetRealtime_Quality);
@@ -44,16 +44,14 @@ public:
         // 此时文件读取完毕，需要将Assimp中的数据结构转换为OpenMesh中的数据结构
         // aiScene呈现树形结构，递归转换每个节点
         int count = 0;
-        std::map<std::pair<typename MeshT::VertexHandle, typename MeshT::VertexHandle>, typename MeshT::FaceHandle> halfEdgeLink; // 用于过滤非法的面
-        recursive_create(scene, scene->mRootNode, initTransform, mesh, count, halfEdgeLink);
+        recursive_create(scene, scene->mRootNode, initTransform, mesh, count);
 
         std::cout << "Assimp Importer: " << count << " Meshes Loaded." << std::endl;
         return true;
     }
 
 private:
-    static void recursive_create(const aiScene *sc, const aiNode* nd, const glm::mat4 &inheritedTransformation, MeshT &openMesh, int &count,
-                                 std::map<std::pair<typename MeshT::VertexHandle, typename MeshT::VertexHandle>, typename MeshT::FaceHandle> &halfEdgeLink)
+    static void recursive_create(const aiScene *sc, const aiNode* nd, const glm::mat4 &inheritedTransformation, MeshT &openMesh, int &count)
     {
         assert(nd && sc);
         unsigned int n = 0;
@@ -95,50 +93,23 @@ private:
                         fHandle[1] = vHandle[mesh->mFaces[i].mIndices[1]];
                         fHandle[2] = vHandle[mesh->mFaces[i].mIndices[2]];
 
-
-                        // complex edge修正算法
-                        if (halfEdgeLink.count(std::make_pair(fHandle[0], fHandle[1]))
-                                || halfEdgeLink.count(std::make_pair(fHandle[1], fHandle[2]))
-                                || halfEdgeLink.count(std::make_pair(fHandle[2], fHandle[0]))) {
-                            // 如果半边已经存在，则反序
+                        typename MeshT::FaceHandle fh = openMesh.add_face(fHandle);
+                        if (!fh.is_valid()) {
                             fHandle[2] = vHandle[mesh->mFaces[i].mIndices[0]];
                             fHandle[1] = vHandle[mesh->mFaces[i].mIndices[1]];
                             fHandle[0] = vHandle[mesh->mFaces[i].mIndices[2]];
+                            if (!openMesh.add_face(fHandle).is_valid())
+                                std::cout << "drop" << std::endl;
+                            else
+                                std::cout << "reversed" << std::endl;
                         }
-                        if (halfEdgeLink.count(std::make_pair(fHandle[0], fHandle[1]))
-                                || halfEdgeLink.count(std::make_pair(fHandle[1], fHandle[2]))
-                                || halfEdgeLink.count(std::make_pair(fHandle[2], fHandle[0]))) {
-                            // 反序之后还是冲突，则忽略该边
-                            std::cout << "Drop face: " << fHandle[0] << " " << fHandle[1] << " " << fHandle[2] << std::endl;
-                        } else {
-                            typename MeshT::FaceHandle fh = openMesh.add_face(fHandle);
-
-                            // 占有该半边
-                            {
-                                auto key = std::make_pair(fHandle[0], fHandle[1]);
-                                assert(halfEdgeLink.count(key) == 0);
-                                halfEdgeLink[key] = fh;
-                            }
-                            {
-                                auto key = std::make_pair(fHandle[1], fHandle[2]);
-                                assert(halfEdgeLink.count(key) == 0);
-                                halfEdgeLink[key] = fh;
-                            }
-                            {
-                                auto key = std::make_pair(fHandle[2], fHandle[0]);
-                                assert(halfEdgeLink.count(key) == 0);
-                                halfEdgeLink[key] = fh;
-                            }
-                        }
-
-
                     }
                 }
             }
         }
         // create all children
         for (n = 0; n < nd->mNumChildren; ++n)
-            recursive_create(sc, nd->mChildren[n], absoluteTransformation, openMesh, count, halfEdgeLink);
+            recursive_create(sc, nd->mChildren[n], absoluteTransformation, openMesh, count);
     }
 
     static std::pair<GLfloat, glm::mat4> recommandScaleAndShift(const aiScene *sc)
