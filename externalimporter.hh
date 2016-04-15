@@ -15,6 +15,7 @@
 #include "predefine.h"
 #include <iostream>
 #include <fstream>
+#include "reverseface.h"
 
 template <typename MeshT>
 class ExternalImporter
@@ -65,25 +66,15 @@ public:
 //        while(in >> tmpind)
 //            indices.push_back(tmpind);
 //        in.close();
-        UFface *ufface = new UFface(indices);
 
-        id = ufface->unionFinal(indices,cateSet);
-        ufface->free();
-//        debugPath = "/home/h005/Documents/kxm/debug/afterShrink.txt";
-//        out.open(debugPath.toStdString().c_str());
-//        if(!out.is_open())
-//        {
-//            std::cout << "after open error"<< std::endl;
-//        }
-//        out << indices.size() << std::endl;
-//        for(int i=0;i<indices.size();i++)
-//        {
-//            out << indices[i] << std::endl;
-//        }
-//        out.close();
-//        std::cout << "after shrink done" << std::endl;
-//        std::cout << "indices size "<< indices.size() << std::endl;
-//        std::cout << "union ... done "<<std::endl;
+
+//            UFface *ufface = new UFface(indices);
+
+//            id = ufface->unionFinal(indices,cateSet);
+//            ufface->free();
+
+        ReverseFace *reverse = new ReverseFace(indices);
+        id = reverse->reverseFace(indices,cateSet,cate);
 #endif
         buildMesh_h005(vertices,indices,mesh);
         // output the file
@@ -250,7 +241,17 @@ private:
                         fHandle[0] = vHandle[mesh->mFaces[i].mIndices[0]];
                         fHandle[1] = vHandle[mesh->mFaces[i].mIndices[1]];
                         fHandle[2] = vHandle[mesh->mFaces[i].mIndices[2]];
-                        openMesh.add_face(fHandle);
+                        typename MeshT::FaceHandle fh = openMesh.add_face(fHandle);
+                        if(!fh.isvalid())
+                        {
+                            fHandle[2] = vHandle[mesh->mFaces[i].mIndices[0]];
+                            fHandle[1] = vHandle[mesh->mFaces[i].mIndices[1]];
+                            fHandle[0] = vHandle[mesh->mFaces[i].mIndices[2]];
+                            if(!openMesh.add_face(fHandle).is_valid())
+                                std::cout << "drop" << std::endl;
+                            else
+                                std::cout << "reversed" << std::endl;
+                        }
                     }
                     else
                         std::cout<<"mesh face..."<< i <<std::endl;
@@ -286,6 +287,17 @@ private:
             face_vhandles.push_back(vHandle[indices[i+2]]);
 //            printf("buildMesh_h005 ... %d %d %d %d\n",i,indices[i],indices[i+1],indices[i+2]);
             mesh.add_face(face_vhandles);
+//            typename MeshT::FaceHandle fh = mesh.add_face(face_vhandles);
+//            if(!fh.is_valid())
+//            {
+//                face_vhandles[2] = vHandle[indices[i]];
+//                face_vhandles[1] = vHandle[indices[i+1]];
+//                face_vhandles[0] = vHandle[indices[i+2]];
+//                if(!mesh.add_face(face_vhandles).is_valid())
+//                    std::cout << "drop" << std::endl;
+//                else
+//                    std::cout << "reversed" << std::endl;
+//            }
         }
     }
 
@@ -372,12 +384,21 @@ private:
 
         for(int i=0;i<len;i++)
         {
-            for(int j=0;j<length;j++)
-            {
-                if(find(id,j) ==  cateSet[i])
-                    indiceMesh[i].push_back(j);
-            }
+            std::set<int>::iterator it = cate[i].begin();
+            for(;it!=cate[i].end();it++)
+                indiceMesh[i].push_back(*it);
         }
+
+
+        // ufface code
+//        for(int i=0;i<len;i++)
+//        {
+//            for(int j=0;j<length;j++)
+//            {
+//                if(find(id,j) ==  cateSet[i])
+//                    indiceMesh[i].push_back(j);
+//            }
+//        }
 
     }
 
@@ -398,7 +419,10 @@ private:
     // 并查集合并之后的结果
     int *id;
     // 并查集合并之后的集合索引
+    // 面片绕序整理之后的类别
     std::vector<int> cateSet;
+    // 面片绕序整理之后每个类别所对应的面片ID
+    std::vector< std::set<int> > cate;
     // 模型文件中的点
     std::vector<typename MeshT::Point> vertices;
     // 面的索引

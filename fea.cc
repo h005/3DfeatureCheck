@@ -1898,10 +1898,10 @@ void Fea::get2DTheta()
         cosTheta = glm::length(glm::dot(axis_y,x_3d)) / glm::length(axis_y) / glm::length(x_3d);
         theta = cosTheta;
         // y_axis y_3d
-        cosTheta = glm::length(glm::dot(axis_y,x_3d)) / glm::length(axis_y) / glm::length(x_3d);
+        cosTheta = glm::length(glm::dot(axis_y,y_3d)) / glm::length(axis_y) / glm::length(y_3d);
         theta = theta < cosTheta ? theta : cosTheta;
         // y_axis z_3d
-        cosTheta = glm::length(glm::dot(axis_y,x_3d)) / glm::length(axis_y) / glm::length(x_3d);
+        cosTheta = glm::length(glm::dot(axis_y,z_3d)) / glm::length(axis_y) / glm::length(z_3d);
         theta = theta < cosTheta ? theta : cosTheta;
         theta = acos(theta);
         fea2D.push_back(theta);
@@ -1910,10 +1910,10 @@ void Fea::get2DTheta()
         cosTheta = glm::length(glm::dot(axis_x,x_3d)) / glm::length(axis_x) / glm::length(x_3d);
         theta = cosTheta;
         // x_axis y_3d
-        cosTheta = glm::length(glm::dot(axis_x,x_3d)) / glm::length(axis_x) / glm::length(x_3d);
+        cosTheta = glm::length(glm::dot(axis_x,y_3d)) / glm::length(axis_x) / glm::length(y_3d);
         theta = theta < cosTheta ? theta : cosTheta;
         // x_axis z_3d
-        cosTheta = glm::length(glm::dot(axis_x,x_3d)) / glm::length(axis_x) / glm::length(x_3d);
+        cosTheta = glm::length(glm::dot(axis_x,z_3d)) / glm::length(axis_x) / glm::length(z_3d);
         theta = theta < cosTheta ? theta : cosTheta;
         theta = acos(theta);
         fea2D.push_back(theta);

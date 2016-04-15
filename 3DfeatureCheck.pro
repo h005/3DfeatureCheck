@@ -21,7 +21,8 @@ SOURCES += main.cpp\
     render.cc \
     shader.cc \
     trackball.cc \
-    ufface.cpp
+    ufface.cpp \
+    reverseface.cpp
 
 HEADERS  += mainwindow.h \
     abstractfeature.hh \
@@ -37,7 +38,8 @@ HEADERS  += mainwindow.h \
     shader.hh \
     trackball.hh \
     ufface.h \
-    predefine.h
+    predefine.h \
+    reverseface.h
 
 FORMS    += mainwindow.ui
 
