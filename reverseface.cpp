@@ -12,6 +12,13 @@ ReverseFace::ReverseFace(std::vector<int> &indices)
     shrink(indices);
     std::cout << "shrinkd done..." << std::endl;
 
+//    freopen("/home/h005/Documents/vpDataSet/bigben/imgs/model/bigben.rev","w",stdout);
+
+//    for(int i=0;i<indices.size();i+=3)
+//        printf("%d %d %d\n",indices[i],indices[i+1],indices[i+2]);
+
+//    fclose(stdout);
+
     NUM_FACE = indices.size() / 3;
 
     sz = new int[NUM_FACE];
@@ -139,6 +146,9 @@ void ReverseFace::setRelation(std::vector<int> &indices)
         pairs.push_back(std::make_pair<int,int>(tmpArray[0],tmpArray[2]));
         pairs.push_back(std::make_pair<int,int>(tmpArray[1],tmpArray[2]));
 
+        // attention 大本钟模型，存在一条边被三个定点共用的情况！
+        // 解决方案: 直接删除最后一个共用边的三角形
+        int flag = 0;
         for(int j=0;j<3;j++)
         {
             std::map< std::pair<int,int>, int>::iterator it = edges.find(pairs[j]);
@@ -146,21 +156,41 @@ void ReverseFace::setRelation(std::vector<int> &indices)
             {
                 it->second++;
                 if(it->second == 3)
+                {
                     std::cout << "debug pairs "<< pairs[j].first << " " << pairs[j].second << std::endl;
-                Q_ASSERT(it->second < 3);
+                    flag = 1;
+                }
+//                Q_ASSERT(it->second < 3);
             }
             else
                 edges.insert(std::make_pair<std::pair<int,int>,int>(pairs[j],1));
-
-            it = adjTable.find(pairs[j]);
-            if(it != adjTable.end())
+        }
+        if(flag)
+        {
+            for(int j=0;j<3;j++)
             {
-                adjt[it->second].push_back(i);
-                adjt[i].push_back(it->second);
-                adjTable.erase(it);
+                std::map< std::pair<int,int>, int>::iterator it = edges.find(pairs[j]);
+                if( it->second == 1)
+                    edges.erase(it);
+                else
+                    it->second--;
+
             }
-            else
-                adjTable.insert( std::make_pair< std::pair<int,int>, int>(pairs[j],i));
+        }
+        else
+        {
+            for(int j=0;j<3;j++)
+            {
+                std::map< std::pair<int,int>, int>::iterator it = adjTable.find(pairs[j]);
+                if(it != adjTable.end())
+                {
+                    adjt[it->second].push_back(i);
+                    adjt[i].push_back(it->second);
+                    adjTable.erase(it);
+                }
+                else
+                    adjTable.insert( std::make_pair< std::pair<int,int>, int>(pairs[j],i));
+            }
         }
     }
 
