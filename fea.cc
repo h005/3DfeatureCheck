@@ -137,6 +137,7 @@ void Fea::setFeature(int mode)
 
             // read image2D used for 3D model to save proj and depth image
             image2D = cv::imread(fileName.at(t_case).toStdString().c_str());
+            std::cout << fileName.at(t_case).toStdString() << std::endl;
             if(mode == 2 || mode  ==0)
             {
                 cv::cvtColor(image2D,gray,CV_BGR2GRAY);
@@ -263,10 +264,9 @@ void Fea::setFeature(int mode)
 
             image2D32f3c.release();
         }
+//        break;
 
         printFeaName();
-
-//        break;
 
         printOut(mode);
 
@@ -295,12 +295,9 @@ void Fea::setMMPara(QString mmFile)
     pos = label.lastIndexOf('/');
     label = label.remove(0,pos+1);
 
-    file2D = label;
-    file3D = label;
-
-    label = label.append(QString(".fea"));
-    file2D = file2D.append(QString(".2df"));
-    file3D = file3D.append(QString(".3df"));
+    file2D = ".2df";
+    file3D = ".3df";
+    label = ".fea";
 
     output2D = output;
     output3D = output;
@@ -310,7 +307,6 @@ void Fea::setMMPara(QString mmFile)
     output2D.replace(pos,7,file2D);
     output3D.replace(pos,7,file3D);
     outputFeaName.replace(pos,7,QString(".fname"));
-
 
     if(!freopen(mmPath.toStdString().c_str(),"r",stdin))
     {
