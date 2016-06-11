@@ -12,6 +12,7 @@
 #include "common.hh"
 #include "externalimporter.hh"
 #include <QString>
+#include <opencv.hpp>
 
 QT_FORWARD_DECLARE_CLASS(QOpenGLShaderProgram)
 
@@ -29,6 +30,8 @@ public:
     void setMVP(glm::mat4 &model,glm::mat4 &view,glm::mat4 &proj);
 
     void setParameters();
+
+    void setAreaAllFaces();
 
     void setMeshSaliencyPara(ExternalImporter<MyMesh> *exImporter);
 
@@ -67,6 +70,8 @@ protected:
 public:
     float *p_img;
     int p_width,p_height;
+    // area of all faces
+    double areaAllFaces;
     std::vector<GLfloat> p_vertices;
     std::vector<bool> p_isVertexVisible;
     std::vector<GLuint> p_VisibleFaces;
@@ -107,6 +112,8 @@ private:
     GLuint frameBufferId;
     GLuint depthRenderBuffer;
     GLuint colorRenderBuffer;
+
+    double getArea3D(CvPoint3D64f *a, CvPoint3D64f *b, CvPoint3D64f *c);
 
 };
 

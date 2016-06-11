@@ -16,7 +16,7 @@
 #define NumHistDepth 20000
 #define NumHistViewEntropy 15
 #define PI 3.1415926
-#define MAX_LEN 32
+#define MAX_LEN 16
 #define NUM_Distribution 512
 
 #define GLCM_DIS 3
@@ -117,7 +117,7 @@ private:
 
     void setProjectArea();
 
-    void setVisSurfaceArea(std::vector<GLfloat> &vertex, std::vector<GLuint> &face);
+    void setVisSurfaceArea(std::vector<GLfloat> &vertex, std::vector<GLuint> &face, double totalArea);
 
     void setViewpointEntropy2(std::vector<GLfloat> &vertex, std::vector<GLuint> &face);
 
@@ -168,6 +168,8 @@ private:
 
     void setBoundingBox3D();
 
+    void setBoundingBox3DAbs();
+
     /*  2D feature */
     // fill fea2D 0~4095
     void getColorDistribution();
@@ -196,6 +198,8 @@ private:
     void computePCA();
     // 3D bounding box 2D x y axis theta
     void get2DTheta();
+    // 3D bounding box 2D x y axis theta
+    void get2DThetaAbs();
     // color variance
     void getColorEntropyVariance();
     // ball coordinate

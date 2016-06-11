@@ -12,7 +12,6 @@
 #include "trackball.hh"
 #include "gausscurvature.hh"
 #include "meancurvature.hh"
-#include <opencv.hpp>
 #include <assert.h>
 
 Render::Render(MyMesh &in_mesh,
@@ -263,8 +262,6 @@ void Render::showImage()
     cv::namedWindow("test");
     imshow("test",image);
 
-
-
     glBindFramebuffer(GL_FRAMEBUFFER,0);
 
 
@@ -505,6 +502,35 @@ void Render::setParameters()
 
     doneCurrent();
 
+}
+
+void Render::setAreaAllFaces()
+{
+    std::vector<GLuint> indices;
+    p_vertices.clear();
+
+    m_helper.getVerticesAndFaces_AddedByZwz(p_vertices,indices);
+    areaAllFaces = 0.0;
+
+    for(int i=0; i< indices.size();i++)
+    {
+        CvPoint3D64f p1 = cvPoint3D64f(p_vertices[3*indices[i]],p_vertices[3*indices[i]+1],p_vertices[3*indices[i]+2]);
+        CvPoint3D64f p2 = cvPoint3D64f(p_vertices[3*indices[i+1]],p_vertices[3*indices[i+1]+1],p_vertices[3*indices[i+1]+2]);
+        CvPoint3D64f p3 = cvPoint3D64f(p_vertices[3*indices[i+2]],p_vertices[3*indices[i+2]+1],p_vertices[3*indices[i+2]+2]);
+        areaAllFaces += getArea3D(&p1,&p2,&p3);
+    }
+}
+
+double Render::getArea3D(CvPoint3D64f *a, CvPoint3D64f *b, CvPoint3D64f *c)
+{
+    CvPoint3D64f ab = cvPoint3D64f(b->x - a->x, b->y - a->y, b->z - a->z);
+    CvPoint3D64f ac = cvPoint3D64f(c->x - a->x, c->y - a->y, c->z - a->z);
+    double area = (ab.y*ac.z - ac.y*ab.z)*(ab.y*ac.z - ac.y*ab.z)
+             + (ac.x*ab.z - ab.x*ac.z)*(ac.x*ab.z - ab.x*ac.z)
+            + (ab.x*ac.y - ac.x*ab.y)*(ab.x*ac.y - ac.x*ab.y);
+    area = sqrt(area);
+    area /= 2.0;
+    return area;
 }
 
 void Render::clear()

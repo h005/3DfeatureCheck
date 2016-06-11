@@ -102,7 +102,8 @@ void Fea::setFeature(int mode)
             b.push_back(tmpGauss);
         }
     }
-
+    render->setAreaAllFaces();
+    std::cout << "AreaAllFaces " << render->areaAllFaces << std::endl;
     std::cout << "case : " << t_case << std::endl;
 #ifndef FOREGROUND
     // 关于PCA这里还有问题，是否要将前景物体提取出来然后再进行PCA计算？目前没有这么做
@@ -137,7 +138,8 @@ void Fea::setFeature(int mode)
 
             // read image2D used for 3D model to save proj and depth image
             image2D = cv::imread(fileName.at(t_case).toStdString().c_str());
-            std::cout << fileName.at(t_case).toStdString() << std::endl;
+//            std::cout << fileName.at(t_case).toStdString() << std::endl;
+//            qDebug() << fileName.at(t_case) << endl;
             if(mode == 2 || mode  ==0)
             {
                 cv::cvtColor(image2D,gray,CV_BGR2GRAY);
@@ -167,7 +169,7 @@ void Fea::setFeature(int mode)
             // 0
             setProjectArea();
             // 1
-            setVisSurfaceArea(render->p_vertices,render->p_VisibleFaces);
+            setVisSurfaceArea(render->p_vertices,render->p_VisibleFaces,render->areaAllFaces);
             // 2
             setViewpointEntropy2(render->p_verticesMvp,render->p_VisibleFaces);
             // 3
@@ -250,6 +252,8 @@ void Fea::setFeature(int mode)
                 getHog();
 
                 get2DTheta();
+
+//                get2DThetaAbs();
 
                 getColorEntropyVariance();
 
@@ -497,7 +501,7 @@ void Fea::setProjectArea()
 }
 
 void Fea::setVisSurfaceArea(std::vector<GLfloat> &vertex,
-                             std::vector<GLuint> &face)
+                             std::vector<GLuint> &face, double totalArea)
 {
     double res = 0.0;
     for(int i=0 ; i<face.size() ; i+=3)
@@ -519,6 +523,8 @@ void Fea::setVisSurfaceArea(std::vector<GLfloat> &vertex,
         CvPoint3D64f p3 = cvPoint3D64f(vertex[3*face[i+2]],vertex[3*face[i+2]+1],vertex[3*face[i+2]+2]);
         res += getArea3D(&p1,&p2,&p3);
     }
+    Q_ASSERT(totalArea);
+    res = res / totalArea;
 
     fea3D.push_back(res);
     fea3DName.push_back("visSurfaceArea");
@@ -1183,7 +1189,11 @@ void Fea::setAbovePreference(glm::mat4 &model2,
 
         double cosThetaz = dotz / sqrt(norm_mz) / sqrt(norm_lookAxis);
         double cosThetay = doty / sqrt(norm_my) / sqrt(norm_lookAxis);
+        // added for absolute value
+        cosThetay = abs(cosThetay);
         double cosThetax = dotx / sqrt(norm_mx) / sqrt(norm_lookAxis);
+        // added for absolute value
+        cosThetax = abs(cosThetax);
 
 //        qDebug() << cosThetax << " "
 //                 << cosThetay << " "
@@ -1224,7 +1234,11 @@ void Fea::setOutlierCount()
     fea3DName.push_back("outlierCount");
     std::cout << "outlier count "<< res <<" fea3D size "<<fea3D.size();
 }
-
+///
+/// \brief Fea::setBoundingBox3D
+///
+/// bounding box中每一个渲染之后的边都会和现在的坐标轴有三个夹角
+///
 void Fea::setBoundingBox3D()
 {
     double dotval = 0.0;
@@ -1287,6 +1301,89 @@ void Fea::setBoundingBox3D()
     // p_model_z y
     dotval = glm::dot(render->p_model_z,axisy);
     cosTheta = dotval / (glm::length(render->p_model_z) * glm::length(axisy));
+    theta = acos(cosTheta);
+    fea3D.push_back(theta);
+    fea3DName.push_back("boundingBox");
+//    std::cout << "z y" << std::endl;
+    // p_model_z z
+    dotval = glm::dot(render->p_model_z,axisz);
+    cosTheta = dotval / (glm::length(render->p_model_z) * glm::length(axisz));
+    theta = acos(cosTheta);
+    fea3D.push_back(theta);
+    fea3DName.push_back("boundingBox");
+//    std::cout << "z z" << std::endl;
+    std::cout <<"bounding box done "<<" fea3D size "<<fea3D.size()<<std::endl;
+}
+
+void Fea::setBoundingBox3DAbs()
+{
+    double dotval = 0.0;
+    double cosTheta = 0.0;
+    double theta = 0.0;
+    glm::vec4 axisx = glm::vec4(1,0,0,0);
+    glm::vec4 axisy = glm::vec4(0,1,0,0);
+    glm::vec4 axisz = glm::vec4(0,0,1,0);
+
+    std::cout << "bounding box 3d "<<std::endl;
+    // p_model_x x
+    dotval = glm::dot(render->p_model_x,axisx);
+    cosTheta = dotval / (glm::length(render->p_model_x) * glm::length(axisx));
+    cosTheta = abs(cosTheta);
+    theta = acos(cosTheta);
+    fea3D.push_back(theta);
+    fea3DName.push_back("boundingBox");
+//    std::cout << "x x" << std::endl;
+    // p_model_x y
+    dotval = glm::dot(render->p_model_x,axisy);
+    cosTheta = dotval / (glm::length(render->p_model_x) * glm::length(axisy));
+    cosTheta = abs(cosTheta);
+    theta = acos(cosTheta);
+    fea3D.push_back(theta);
+    fea3DName.push_back("boundingBox");
+    //    std::cout << "x y" << std::endl;
+    // p_model_x z
+    dotval = glm::dot(render->p_model_x,axisz);
+    cosTheta = dotval / (glm::length(render->p_model_x) * glm::length(axisz));
+    theta = acos(cosTheta);
+    fea3D.push_back(theta);
+    fea3DName.push_back("boundingBox");
+//    std::cout << "x z" << std::endl;
+    // p_model_y x
+    dotval = glm::dot(render->p_model_y,axisx);
+    cosTheta = dotval / (glm::length(render->p_model_y) * glm::length(axisx));
+    cosTheta = abs(cosTheta);
+    theta = acos(cosTheta);
+    fea3D.push_back(theta);
+    fea3DName.push_back("boundingBox");
+//    std::cout << "y x" << std::endl;
+    // p_model_y y
+    dotval = glm::dot(render->p_model_y,axisy);
+    cosTheta = dotval / (glm::length(render->p_model_y) * glm::length(axisy));
+    cosTheta = abs(cosTheta);
+    theta = acos(cosTheta);
+    fea3D.push_back(theta);
+    fea3DName.push_back("boundingBox");
+//    std::cout << "y y" << std::endl;
+    // p_model_y z
+    dotval = glm::dot(render->p_model_y,axisz);
+    cosTheta = dotval / (glm::length(render->p_model_y) * glm::length(axisz));
+    cosTheta = abs(cosTheta);
+    theta = acos(cosTheta);
+    fea3D.push_back(theta);
+    fea3DName.push_back("boundingBox");
+//    std::cout << "y z" << std::endl;
+    // p_model_z x
+    dotval = glm::dot(render->p_model_z,axisx);
+    cosTheta = dotval / (glm::length(render->p_model_z) * glm::length(axisx));
+    cosTheta = abs(cosTheta);
+    theta = acos(cosTheta);
+    fea3D.push_back(theta);
+    fea3DName.push_back("boundingBox");
+//    std::cout << "z x" << std::endl;
+    // p_model_z y
+    dotval = glm::dot(render->p_model_z,axisy);
+    cosTheta = dotval / (glm::length(render->p_model_z) * glm::length(axisy));
+    cosTheta = abs(cosTheta);
     theta = acos(cosTheta);
     fea3D.push_back(theta);
     fea3DName.push_back("boundingBox");
@@ -1859,7 +1956,13 @@ void Fea::computePCA()
     pcaOriginal.release();
 
 }
-
+///
+/// \brief Fea::get2DTheta
+/// 该函数共计算5个分量
+/// 前两个计算的是投影之后的坐标轴与现在坐标轴（1,0,0）和（0,1,0）
+/// 之间的最小夹角
+/// 后三个是三个坐标轴投影之后亮亮之间的夹角
+///
 void Fea::get2DTheta()
 {
     // bocaGyy 2b
@@ -1925,18 +2028,163 @@ void Fea::get2DTheta()
     cosTheta = 0.0;
     theta = 0.0;
     // x_3d y_3d
-    cosTheta = glm::length(glm::dot(x_3d,y_3d)) / glm::length(x_3d) / glm::length(y_3d);
-    theta = acos(cosTheta);
+    if(glm::length(x_3d) ==0 || glm::length(y_3d)==0)
+        theta = 0;
+    else
+    {
+        cosTheta = glm::length(glm::dot(x_3d,y_3d)) / glm::length(x_3d) / glm::length(y_3d);
+        if(cosTheta > 1.0)
+            theta = 0;
+        else
+            theta = acos(cosTheta);
+    }
     fea2D.push_back(theta);
     fea2DName.push_back("2DTheta");
     // x_3d z_3d
-    cosTheta = glm::length(glm::dot(x_3d,z_3d)) / glm::length(x_3d) / glm::length(z_3d);
-    theta = acos(cosTheta);
+    if(glm::length(x_3d) == 0 || glm::length(z_3d) == 0)
+        theta = 0;
+    else
+    {
+        cosTheta = glm::length(glm::dot(x_3d,z_3d)) / glm::length(x_3d) / glm::length(z_3d);
+        if(cosTheta > 1.0)
+            theta = 0;
+        else
+            theta = acos(cosTheta);
+    }
     fea2D.push_back(theta);
     fea2DName.push_back("2DTheta");
     // y_3d z_3d
-    cosTheta = glm::length(glm::dot(y_3d,z_3d)) /  glm::length(y_3d) / glm::length(z_3d);
-    theta = acos(cosTheta);
+    if(glm::length(y_3d)==0 || glm::length(z_3d) ==0 )
+        theta = 0;
+    else
+    {
+        cosTheta = glm::length(glm::dot(y_3d,z_3d)) /  glm::length(y_3d) / glm::length(z_3d);
+        if(cosTheta > 1.0)
+            theta = 0;
+        else
+            theta = acos(cosTheta);
+    }
+    fea2D.push_back(theta);
+    fea2DName.push_back("2DTheta");
+    std::cout << "2DTheta done "<<" fea2D size "<<fea2D.size()<< std::endl;
+}
+///
+/// \brief Fea::get2DThetaAbs
+/// 该函数共计算5个分量
+/// 前两个计算的是投影之后的坐标轴与现在坐标轴（1,0,0）和（0,1,0）
+/// 之间的最小夹角 (absoute value without the difference of positive direction)
+/// 后三个是三个坐标轴投影之后亮亮之间的夹角(absoute value without the difference of positive direction)
+///
+void Fea::get2DThetaAbs()
+{
+    // bocaGyy 2b
+    glm::vec3 axis_x = glm::vec3(1,0,0);
+    glm::vec3 axis_y = glm::vec3(0,1,0);
+    // 可能会出现零向量的问题，目前先当结果为2*pi来处理
+
+    // p_model_x,p_model_y,p_model_z  transaction by MV without P
+    // so we need multiply P matrix
+    glm::vec4 mvp_model_x = m_projectionList[t_case] * render->p_model_x;
+    glm::vec4 mvp_model_y = m_projectionList[t_case] * render->p_model_y;
+    glm::vec4 mvp_model_z = m_projectionList[t_case] * render->p_model_z;
+    glm::vec3 x_3d = glm::vec3(mvp_model_x[0],mvp_model_x[1],0);
+    glm::vec3 y_3d = glm::vec3(mvp_model_y[0],mvp_model_y[1],0);
+    glm::vec3 z_3d = glm::vec3(mvp_model_z[0],mvp_model_z[1],0);
+    double theta = 0.0;
+    double cosTheta = 0.0;
+    // 12 13
+    // compute minium theta between axis and the perspective vector
+    if((x_3d.x == 0 && x_3d.y == 0) ||
+            (y_3d.x == 0 && y_3d.y == 0) ||
+            (z_3d.x == 0 && z_3d.y == 0))
+    {
+        fea2D.push_back( 2 * PI );
+        fea2DName.push_back("2DTheta");
+        fea2D.push_back( 2 * PI );
+        fea2DName.push_back("2DTheta");
+    }
+    else{
+
+        // y_axis x_3d
+        cosTheta = glm::dot(axis_y,x_3d) / glm::length(axis_y) / glm::length(x_3d);
+        cosTheta = abs(cosTheta);
+        theta = cosTheta;
+        // y_axis y_3d
+        cosTheta = glm::dot(axis_y,y_3d) / glm::length(axis_y) / glm::length(y_3d);
+        cosTheta = abs(cosTheta);
+        theta = theta < cosTheta ? theta : cosTheta;
+        // y_axis z_3d
+        cosTheta = glm::dot(axis_y,z_3d) / glm::length(axis_y) / glm::length(z_3d);
+        cosTheta = abs(cosTheta);
+        theta = theta < cosTheta ? theta : cosTheta;
+        theta = acos(theta);
+        fea2D.push_back(theta);
+        fea2DName.push_back("2DTheta");
+        // x_axis x_3d
+        cosTheta = glm::dot(axis_x,x_3d) / glm::length(axis_x) / glm::length(x_3d);
+        cosTheta = abs(cosTheta);
+        theta = cosTheta;
+        // x_axis y_3d
+        cosTheta = glm::dot(axis_x,y_3d) / glm::length(axis_x) / glm::length(y_3d);
+        cosTheta = abs(cosTheta);
+        theta = theta < cosTheta ? theta : cosTheta;
+        // x_axis z_3d
+        cosTheta = glm::dot(axis_x,z_3d) / glm::length(axis_x) / glm::length(z_3d);
+        cosTheta = abs(cosTheta);
+        theta = theta < cosTheta ? theta : cosTheta;
+        theta = acos(theta);
+        fea2D.push_back(theta);
+        fea2DName.push_back("2DTheta");
+    }
+
+    //    double cosTheta = 0.0;
+    //    double theta = 0.0;
+
+    // thetas between three axis
+
+    // 14 15 16
+    cosTheta = 0.0;
+    theta = 0.0;
+    // x_3d y_3d
+    if(glm::length(x_3d) ==0 || glm::length(y_3d)==0)
+        theta = 0;
+    else
+    {
+        cosTheta = glm::dot(x_3d,y_3d) / glm::length(x_3d) / glm::length(y_3d);
+        cosTheta = abs(cosTheta);
+        if(cosTheta > 1.0)
+            theta = 0;
+        else
+            theta = acos(cosTheta);
+    }
+    fea2D.push_back(theta);
+    fea2DName.push_back("2DTheta");
+    // x_3d z_3d
+    if(glm::length(x_3d) == 0 || glm::length(z_3d) == 0)
+        theta = 0;
+    else
+    {
+        cosTheta = glm::dot(x_3d,z_3d) / glm::length(x_3d) / glm::length(z_3d);
+        cosTheta = abs(cosTheta);
+        if(cosTheta > 1.0)
+            theta = 0;
+        else
+            theta = acos(cosTheta);
+    }
+    fea2D.push_back(theta);
+    fea2DName.push_back("2DTheta");
+    // y_3d z_3d
+    if(glm::length(y_3d)==0 || glm::length(z_3d) ==0 )
+        theta = 0;
+    else
+    {
+        cosTheta = glm::dot(y_3d,z_3d) /  glm::length(y_3d) / glm::length(z_3d);
+        cosTheta = abs(cosTheta);
+        if(cosTheta > 1.0)
+            theta = 0;
+        else
+            theta = acos(cosTheta);
+    }
     fea2D.push_back(theta);
     fea2DName.push_back("2DTheta");
     std::cout << "2DTheta done "<<" fea2D size "<<fea2D.size()<< std::endl;
@@ -2052,10 +2300,10 @@ void Fea::getColorEntropyVariance()
             entropy += hist[i] * log2(hist[i]);
     entropy = -entropy;
 
-    // variance
-    double variance = 0.0;
-    for(int i=0;i<NUM_Distribution;i++)
-        variance += hist[i] * (i - mean) * (i - mean);
+//    // variance
+//    double variance = 0.0;
+//    for(int i=0;i<NUM_Distribution;i++)
+//        variance += hist[i] * (i - mean) * (i - mean);
 
     // dirstribution as depth distribution
     double dis = 0.0;
@@ -2066,8 +2314,8 @@ void Fea::getColorEntropyVariance()
     // 17 18 19
     fea2D.push_back(entropy);
     fea2DName.push_back("EntropyVariance");
-    fea2D.push_back(variance);
-    fea2DName.push_back("EntropyVariance");
+//    fea2D.push_back(variance);
+//    fea2DName.push_back("EntropyVariance");
     fea2D.push_back(dis);
     fea2DName.push_back("EntropyVariance");
     std::cout << "color Entropy variance done "<<" fea2D size "<<fea2D.size()<< std::endl;
@@ -2087,8 +2335,12 @@ void Fea::getBallCoord()
     camera = glm::inverse(mv) * camera;
     camera[3] = 0.0;
 //    double r = glm::length(camera);
-    double theta = PI + atan(sqrt(camera[0] * camera[0] + camera[1] * camera[1]) / camera[2]);
-    double fani = atan(camera[1] / camera[0]);
+    double theta = PI + atan(sqrt(camera[0] * camera[0] + camera[1] * camera[1]) / camera[2]); 
+    double fani;
+    if(camera[0] == 0)
+        fani = 0;
+    else
+    fani = atan(camera[1] / camera[0]);
 //    std::cout << "ball coord" << std::endl;
 //    std::cout << theta << " " << fani << std::endl;
     fea3D.push_back(theta);
@@ -2741,29 +2993,84 @@ void Fea::clear()
 
 void Fea::exportSBM(QString file)
 {
-    glm::mat4 mv;
-    glm::mat4 proj = glm::perspective(glm::pi<float>() / 3, 1.f, 0.01f, 100.f);
-    float angle_x = 2.0*glm::pi<float>()/MAX_LEN;
-    float angle_z = 2.0*glm::pi<float>()/MAX_LEN;
-    glm::mat4 m_camera = glm::lookAt(glm::vec3(0.f,0.f,3.f),
-                           glm::vec3(0.f),
-                           glm::vec3(0.f,1.f,0.f));
-    std::ofstream fout(file.toStdString().c_str());
+    int MAX_X_LEN = 16;
+    int MAX_Y_LEN = 64;
 
-    for(int i=0;i<MAX_LEN;i++)
+    glm::mat4 mv;
+    // villa5 model
+//        glm::mat4 proj = glm::perspective(glm::pi<float>() / 3, 4.0f / 3.0f, 5.0f, 80.f);
+    // villa4 model
+//    glm::mat4 proj = glm::perspective(glm::pi<float>() / 3, 4.0f / 3.0f, 400.0f, 1200.f);
+    // villa3 model
+//    glm::mat4 proj = glm::perspective(glm::pi<float>() / 3, 4.0f / 3.0f, 1250.0f, 8000.f);
+    // villa2 model
+//    glm::mat4 proj = glm::perspective(glm::pi<float>() / 3, 4.0f / 3.0f, 5000.0f, 25000.f);
+    // villa model
+//    glm::mat4 proj = glm::perspective(glm::pi<float>() / 3, 4.0f / 3.0f, 1000.0f, 2000.f);
+//    float angle_x = 2.0*glm::pi<float>()/MAX_LEN;
+//    villa6 model
+    glm::mat4 proj = glm::perspective(glm::pi<float>() / 3, 4.0f / 3.0f, 4000.0f, 20000.f);
+//    float angle_x = glm::pi<float>() / 12.0 / MAX_LEN;
+    // villa7
+//    float angle_x = glm::pi<float>() / 36.0 / MAX_X_LEN;
+    // villa7_1
+    float angle_x = glm::pi<float>() / 2.0 / MAX_X_LEN;
+    float angle_z = 2.0*glm::pi<float>()/MAX_Y_LEN;
+//    float angle_z = glm::pi<float>() / MAX_LEN;
+    // zb Model parameters
+//    glm::mat4 m_camera = glm::lookAt(glm::vec3(0.f,0.f,80.f),
+//                           glm::vec3(0.f,5.0f,0.0f),
+//                           glm::vec3(0.f,1.f,0.f));
+    // villa2 Model
+//    glm::mat4 m_camera = glm::lookAt(glm::vec3(0.f,1500.f,18000.f),
+//                           glm::vec3(0.f,3000.0f,0.0f),
+//                           glm::vec3(0.f,1.f,0.f));
+    // villa Model
+//    glm::mat4 m_camera = glm::lookAt(glm::vec3(0.f,0.f,1500.f),
+//                           glm::vec3(0.f,200.0f,0.0f),
+//                           glm::vec3(0.f,1.f,0.f));
+
+        // villa3 Model
+//        glm::mat4 m_camera = glm::lookAt(glm::vec3(0.f,800.f,6000.f),
+//                               glm::vec3(0.f,500.0f,0.0f),
+//                               glm::vec3(0.f,1.f,0.f));
+
+//     villa4 Model
+//    glm::mat4 m_camera = glm::lookAt(glm::vec3(0.f,200.f,800.f),
+//                           glm::vec3(0.f,200.0f,0.0f),
+//                           glm::vec3(0.f,1.f,0.f));
+
+// villa5 Model
+//    glm::mat4 m_camera = glm::lookAt(glm::vec3(0.f,5.f,30.f),
+//                           glm::vec3(0.f,5.0f,0.0f),
+//                           glm::vec3(0.f,1.f,0.f));
+
+// villa6 Model
+        glm::mat4 m_camera = glm::lookAt(glm::vec3(0.f,-800.f,11000.f),
+                               glm::vec3(0.f,0.0f,0.0f),
+                               glm::vec3(0.f,1.f,0.f));
+
+
+    std::ofstream fout(file.toStdString().c_str());
+    int ind = 0;
+    for(int i=0;i<MAX_X_LEN;i++)
     {
-        for(int j=0;j<MAX_LEN;j++)
+        for(int j=0;j<MAX_Y_LEN;j++)
         {
-            float anglex = - angle_x * i;
-            float anglez = - angle_z * j;
+            // rotate with x axis
+            float anglex = angle_x * i;
+            // rotate with y axis
+            float anglez = angle_z * j - glm::pi<float>() / 2.0;
             glm::mat4 rotateX = glm::rotate(glm::mat4(1.f),anglex,glm::vec3(1.0,0.0,0.0));
-            glm::mat4 rotateZ = glm::rotate(glm::mat4(1.f),anglez,glm::vec3(0.0,0.0,1.0));
-            mv = rotateX * rotateZ;
+            glm::mat4 rotateZ = glm::rotate(glm::mat4(1.f),anglez,glm::vec3(0.0,1.0,0.0));
+            mv = m_camera * rotateX * rotateZ;
             // print out
-            fout << "kxm/img" ;
+            fout << "img" ;
             fout.width(4);
             fout.fill('0');
-            fout << i*MAX_LEN + j << ".jpg"<<std::endl;
+//            fout << i*MAX_LEN + j << ".jpg"<<std::endl;
+            fout << ind++ << ".jpg" << std::endl;
+
             // mv matrix
             for(int k1 = 0;k1 < 4;k1++)
             {
@@ -2780,5 +3087,5 @@ void Fea::exportSBM(QString file)
             }
         }
     }
-    std::cout << "export done" << std::endl;
+    std::cout <<MAX_Y_LEN<<" export done" << std::endl;
 }

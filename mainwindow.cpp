@@ -94,9 +94,12 @@ void MainWindow::on_load3D_clicked()
 void MainWindow::on_sightBall_clicked()
 {
     // this function was used to export the matrix file on the sight ball
-    QString fileName = QFileDialog::getSaveFileName(this, tr("Save File"),
-                               ".matrixs",
-                               tr("matrixs (*.matrixs)"));
+//    QString fileName = QFileDialog::getSaveFileName(this, tr("Save File"),
+//                               ".matrix",
+//                               tr("matrix (*.matrix)"));
+
+    QString fileName = "/home/h005/Documents/vpDataSet/villa7_1/model/villa.matrix";
+
     fea = new Fea();
 
     fea->exportSBM(fileName);
