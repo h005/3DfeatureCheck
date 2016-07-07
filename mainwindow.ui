@@ -64,6 +64,13 @@
           </property>
          </widget>
         </item>
+        <item>
+         <widget class="QPushButton" name="vpSample">
+          <property name="text">
+           <string>vp Sample</string>
+          </property>
+         </widget>
+        </item>
        </layout>
       </item>
       <item>

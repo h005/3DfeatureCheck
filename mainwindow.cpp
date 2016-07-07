@@ -2,6 +2,7 @@
 #include "ui_mainwindow.h"
 
 #include "fea.hh"
+#include <QSettings>
 
 #include <QFileDialog>
 #include <QFileInfo>
@@ -104,4 +105,32 @@ void MainWindow::on_sightBall_clicked()
 
     fea->exportSBM(fileName);
 
+}
+
+void MainWindow::on_vpSample_clicked()
+{
+    QFileInfo fileInfo("/media/h005/083c1e3b-c763-4087-a08c-204937a2f57b/h005/Documents/vpDataSet/videoCut1/vpSample/configSample.ini");
+    if(!fileInfo.exists())
+    {
+        std::cout << "error: file does not exist" << std::endl;
+        return;
+    }
+
+    QDir baseDir(fileInfo.absoluteDir());
+    QSettings settings(fileInfo.absoluteFilePath(),QSettings::IniFormat);
+    // 读取模型路径
+    QString v_modelPath = QDir::cleanPath(QDir(baseDir).filePath(settings.value("model/path").toString()));
+    // matrix file路径
+    QString v_matrixPath = QDir::cleanPath(QDir(baseDir).filePath(settings.value("model/matrix").toString()));
+    // sampleIndex
+    int sampleIndex = settings.value("model/sampleIndex").toInt();
+    int numSamples = 50; // maximum num of sample points
+    QString v_outputFile = QDir::cleanPath(QDir(baseDir).filePath(settings.value("model/output").toString()));
+
+    QFileInfo modelFileInfo(v_modelPath);
+    QString path = modelFileInfo.absoluteDir().absolutePath().append("/");
+
+    fea = new Fea(v_modelPath, path);
+
+    fea->viewpointSample(v_matrixPath,sampleIndex,numSamples,v_outputFile);
 }

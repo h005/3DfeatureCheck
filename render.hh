@@ -88,6 +88,9 @@ public:
     glm::vec4 p_model_y;
     glm::vec4 p_model_z;
 
+    float p_xmax,p_xmin;
+    float p_ymax,p_ymin;
+    float p_zmax,p_zmin;
 
 protected:
     glm::mat4 getModelViewMatrix();

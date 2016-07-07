@@ -6,6 +6,7 @@
 #include <QStringList>
 #include <opencv.hpp>
 #include <GL/glew.h>
+#include <QFileInfo>
 #include "common.hh"
 #include "render.hh"
 #include "externalimporter.hh"
@@ -100,6 +101,8 @@ public:
     Fea(QString modelFile, QString path);
 
     void exportSBM(QString file);
+
+    void viewpointSample(QString v_matrixPath, int sampleIndex, int numSamples, QString output);
 
     void setFeature(int mode);
 
@@ -263,6 +266,10 @@ private:
     //    glcmMatrix means the glcm matrix
     //    glcm stores the result
     void setGLCMfeatures(double *glcm,int index,double glcmMatrix[][GLCM_CLASS]);
+
+    void deComposeMV(std::vector<glm::vec3> &eye,
+                     std::vector<glm::vec3> &center,
+                     std::vector<glm::vec3> &up);
 
     void clear();
 

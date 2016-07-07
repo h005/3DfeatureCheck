@@ -31,6 +31,8 @@ private slots:
 
     void on_sightBall_clicked();
 
+    void on_vpSample_clicked();
+
 private:
     Ui::MainWindow *ui;
     Fea *fea;

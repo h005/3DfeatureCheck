@@ -474,6 +474,13 @@ void Render::setParameters()
         visibleVertexCount += isVisible ? 1 : 0;
     }
 
+    p_xmin = xmin;
+    p_xmax = xmax;
+    p_ymin = ymin;
+    p_ymax = ymax;
+    p_zmin = zmin;
+    p_zmax = zmax;
+
     p_model_x = glm::vec4(xmax - xmin,0,0,0);
     p_model_y = glm::vec4(0,ymax - ymin,0,0);
     p_model_z = glm::vec4(0,0,zmax - zmin,0);

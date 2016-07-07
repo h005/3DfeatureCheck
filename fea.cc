@@ -2,6 +2,7 @@
 #include "meancurvature.hh"
 #include "gausscurvature.hh"
 #include <QtDebug>
+#include <QSettings>
 #include "predefine.h"
 
 
@@ -139,7 +140,7 @@ void Fea::setFeature(int mode)
             // read image2D used for 3D model to save proj and depth image
             image2D = cv::imread(fileName.at(t_case).toStdString().c_str());
 //            std::cout << fileName.at(t_case).toStdString() << std::endl;
-//            qDebug() << fileName.at(t_case) << endl;
+            qDebug() << fileName.at(t_case) << endl;
             if(mode == 2 || mode  ==0)
             {
                 cv::cvtColor(image2D,gray,CV_BGR2GRAY);
@@ -2972,6 +2973,23 @@ void Fea::setGLCMfeatures(double *glcm, int index, double glcmMatrix[][GLCM_CLAS
         }
 }
 
+void Fea::deComposeMV(std::vector<glm::vec3> &v_eye, std::vector<glm::vec3> &v_center, std::vector<glm::vec3> &v_up)
+{
+    for(int i=0;i<m_modelList.size();i++)
+    {
+        glm::vec3 t = glm::vec3(m_modelList[i][3]);
+        glm::mat3 R = glm::mat3(m_modelList[i]);
+
+        glm::vec3 eye = - glm::transpose(R) * t;
+        glm::vec3 center = glm::normalize(glm::transpose(R) * glm::vec3(0.f,0.f,-1.f)) + eye;
+        glm::vec3 up = glm::normalize(glm::transpose(R) * glm::vec3(0.f,1.f,0.f));
+
+        v_eye.push_back(eye);
+        v_center.push_back(center);
+        v_up.push_back(up);
+    }
+}
+
 void Fea::clear()
 {
     image.release();
@@ -3088,4 +3106,160 @@ void Fea::exportSBM(QString file)
         }
     }
     std::cout <<MAX_Y_LEN<<" export done" << std::endl;
+}
+
+///
+/// \brief Fea::viewpointSample
+///     this function was created to determine camera parameters to generate some sample viewpoints
+///     glm::lookAt function determines by camera position, camera towards and camera upwards direction
+///
+///     camera upwards direction was fixed to 0,1,0
+///     what we should determine is camera position and camera towards.
+///     to simplify this problem, we solve this problem in ballcoordinate.
+///
+///     As we get several frames from video sequence and get their model view matrix
+///     by decompose model view matrix we can get their camera's position.
+///     by this way, I take their average distance to object as the extimated distance.
+///
+///     by adjust the distance and the rotate angle to smaple some viewpoints.
+///
+/// \param fileInfo contains config file path
+///
+void Fea::viewpointSample(QString v_matrixPath,int sampleIndex,int numSamples,QString output)
+{
+    // read in matrixFile
+    setMvpPara(v_matrixPath);
+    std::vector<glm::vec3> v_eye;
+    std::vector<glm::vec3> v_center;
+    std::vector<glm::vec3> v_up;v_matrixPath;
+    deComposeMV(v_eye,v_center,v_up);
+
+    glm::vec3 meanCenter(0.f,0.f,0.f);
+    glm::vec3 meanEye(0.f,0.f,0.f);
+    for(int i=0;i<v_center.size();i++)
+    {
+        meanCenter.x += v_center[i].x;
+        meanCenter.y += v_center[i].y;
+        meanCenter.z += v_center[i].z;
+
+        meanEye.x += v_eye[i].x;
+        meanEye.y += v_eye[i].y;
+        meanEye.z += v_eye[i].z;
+    }
+
+    meanCenter.x /= v_center.size();
+    meanCenter.y /= v_center.size();
+    meanCenter.z /= v_center.size();
+
+    meanEye.x /= v_center.size();
+    meanEye.y /= v_center.size();
+    meanEye.z /= v_center.size();
+
+    // 参考距离，在这个距离的基础上进行变换
+    float distance = glm::length(meanEye);
+    std::cout << "mean distance "<< distance << std::endl;
+
+    glm::mat4 v_model(1.0), v_view(1.0);
+    v_view = glm::lookAt(glm::vec3(0,-distance,0),
+                         glm::vec3(0,0,0),
+                         glm::vec3(0,0,1));
+    // 设置渲染参数MVP matrix
+    glm::mat4 proj = m_projectionList[0];
+    render->setMVP(v_model,v_view,proj);
+    // 渲染
+    render->rendering(0);
+    // 设置渲染之后的参数
+    render->setParameters();
+    int width = 0;
+    int height  = 0;
+    // 参考图像，用来确定图像的长宽
+    image2D = cv::imread(fileName.at(0).toStdString().c_str());
+    width = image2D.cols;
+    height = image2D.rows;
+
+    int count  = 10000;
+    render->storeImage(path,QString("img").append(QString::number(count)).append(".jpg"),width,height);
+    setMat(render->p_img,render->p_width,render->p_height,width,height);
+    // setMask 是为了让setProjectArea的时候可以保存下来mask图像
+//    setMask();
+//    setProjectArea();
+    setOutlierCount();
+
+    const float X_LEN = 15.f;
+    const float Z_LEN = 64.f;
+    float angle_x = glm::pi<float>() / 8.0 / X_LEN;
+    float angle_z = glm::pi<float>() / 2.0 / Z_LEN;
+
+
+    float xcenter = (render->p_xmin + render->p_xmax) / 2.0;
+    float ycenter = (render->p_ymin + render->p_ymax) / 2.0;
+    float zcenter = (render->p_zmin + render->p_zmax) / 2.0;
+    // reset again
+    v_view = glm::lookAt(glm::vec3(0,-distance,0),
+                         glm::vec3(xcenter,ycenter,zcenter),
+                         glm::vec3(0,0,1));
+
+    std::ofstream fout(output.toStdString().c_str());
+    glm::mat4 mv;
+
+    // without visit different distance
+    for(int i=0;i<X_LEN;i++)
+    {
+        for(int j=0;j<Z_LEN;j++)
+        {
+            // rotate with x axis
+            float anglex = angle_x * i;
+            // rotate with z axis
+            float anglez = angle_z * j - glm::pi<float>() / 4.0;
+            glm::mat4 rotateX = glm::rotate(glm::mat4(1.f),anglex,glm::vec3(1.0,0.0,0.0));
+            glm::mat4 rotateZ = glm::rotate(glm::mat4(1.f),anglez,glm::vec3(0.0,0.0,1.0));
+            mv = v_view *rotateX * rotateZ;
+            fout << "img";
+            fout.width(8);
+            fout.fill('0');
+            fout << count++ << ".jpg" << std::endl;
+
+            // mv matrix
+            for(int k1 = 0;k1 < 4;k1++)
+            {
+                for(int k2 = 0;k2 < 4;k2++)
+                    fout << mv[k2][k1] << " ";
+                fout << std::endl;
+            }
+            // proj matrix
+            for(int k1 = 0;k1 < 4;k1++)
+            {
+                for(int k2 = 0;k2 < 4;k2++)
+                    fout << proj[k2][k1] << " ";
+                fout << std::endl;
+            }
+        }
+    }
+
+    std::cout << "export done" << std::endl;
+
+//    while(sampleIndex < numSamples)
+//    {
+//        // project Area > 0.9 && rule of Thirds ....
+//        // generate Model View matrix
+//        v_model = glm::lookAt(meanEye,
+//                              meanCenter,
+//                              glm::vec3(0.f,0.f,1.f));
+
+//        render->setMVP(v_model,v_view,m_projectionList[0]);
+//        render->rendering(count++);
+//        render->setParameters();
+//        render->storeImage(path,QString("img").append(QString::number(count)).append(".jpg"),width,height);
+//        setMat(render->p_img,render->p_width,render->p_height,width,height);
+
+////        setMask();
+////        setProjectArea();
+//        setOutlierCount();
+//        std::cout << fea3D.back() << std::endl;
+//        if(fea3D.back() > 0.8)
+//        {
+//            sampleIndex++;
+//        }
+//    }
+
 }
