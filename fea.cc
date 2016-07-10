@@ -404,7 +404,15 @@ void Fea::setMask()
 {
     image.copyTo(mask);
 }
-
+///
+/// \brief Fea::setMat
+/// \param img
+/// \param width
+/// \param height
+/// \param dstWidth
+/// \param dstHeight
+/// image 存储灰度图像，其中255是背景区域
+///
 void Fea::setMat(float *img, int width, int height,int dstWidth,int dstHeight)
 {
 //    image.release();
@@ -418,7 +426,6 @@ void Fea::setMat(float *img, int width, int height,int dstWidth,int dstHeight)
     cv::resize(image,image,cv::Size(dstWidth,dstHeight));
     // release memory
     image0.release();
-
 }
 
 void Fea::setProjectArea()
@@ -2191,6 +2198,8 @@ void Fea::get2DThetaAbs()
     std::cout << "2DTheta done "<<" fea2D size "<<fea2D.size()<< std::endl;
 }
 
+
+
 void Fea::roundingBox(cv::Mat &boxImage)
 {
     int up,bottom,left,right;
@@ -2349,6 +2358,69 @@ void Fea::getBallCoord()
     fea3D.push_back(fani);
     fea3DName.push_back("ballCoord");
     std::cout << "ballCoord done "<<" fea3D size "<<fea3D.size()<< std::endl;
+}
+
+///
+/// \brief Fea::roundingBox2D  bounding box of 2D image after rendering
+/// \param up, up boundary
+/// \param bottom, bottom boundary
+/// \param left, left boundary
+/// \param right, right boundary
+///
+void Fea::roundingBox2D(int &up, int &bottom, int &left, int &right)
+{
+    up = bottom = left = right = 0;
+    int sum = 0;
+    int back = image.cols * 230;
+    // up
+    for(int i=0;i<image.rows;i++)
+    {
+        sum  = 0;
+        for(int j=0;j<image.cols;j++)
+            sum += image.at<uchar>(i,j);
+        if(sum <= back)
+        {
+            up = i;
+            break;
+        }
+    }
+    // bottom
+    for(int i=image.rows-1 ; i>=0 ; i--)
+    {
+        sum = 0;
+        for(int j=0;j<image.cols;j++)
+            sum += image.at<uchar>(i,j);
+        if(sum <= back)
+        {
+            bottom = i + 1;
+            break;
+        }
+    }
+    // left
+    back = image.rows*230;
+    for(int i=0;i<image.cols;i++)
+    {
+        sum = 0;
+        for(int j=0;j<image.rows;j++)
+            sum += image.at<uchar>(j,i);
+        if(sum <= back)
+        {
+            left = i;
+            break;
+        }
+    }
+    // right
+    for(int i=image.cols-1;i>=0;i--)
+    {
+        sum = 0;
+        for(int j=0;j<image.rows;j++)
+            sum += image.at<uchar>(j,i);
+        if(sum <= back)
+        {
+            right = i + 1;
+            break;
+        }
+    }
 }
 
 double Fea::getMeshSaliencyLocalMax(double *nearDis, int len, std::vector<double> meshSaliency)
@@ -3158,6 +3230,7 @@ void Fea::viewpointSample(QString v_matrixPath,int sampleIndex,int numSamples,QS
     // 参考距离，在这个距离的基础上进行变换
     float distance = glm::length(meanEye);
     std::cout << "mean distance "<< distance << std::endl;
+    float distanceStep = distance * 0.1;
 
     glm::mat4 v_model(1.0), v_view(1.0);
     v_view = glm::lookAt(glm::vec3(0,-distance,0),
@@ -3178,24 +3251,114 @@ void Fea::viewpointSample(QString v_matrixPath,int sampleIndex,int numSamples,QS
     height = image2D.rows;
 
     int count  = 10000;
-    render->storeImage(path,QString("img").append(QString::number(count)).append(".jpg"),width,height);
+//    render->storeImage(path,QString("img").append(QString::number(count)).append(".jpg"),width,height);
     setMat(render->p_img,render->p_width,render->p_height,width,height);
     // setMask 是为了让setProjectArea的时候可以保存下来mask图像
 //    setMask();
 //    setProjectArea();
-    setOutlierCount();
+//    setOutlierCount();
+    int bottom,up,left,right;
+    roundingBox2D(up,bottom,left,right);
+    std::cout << "bottom up left right "<< bottom << " " << up << " " << left << " " << right << std::endl;
+//    cv::namedWindow("test");
+//    cv::imshow("test",image);
+//    cv::waitKey(0);
+    float acceptRate = 0.2;
+    float accRate = (bottom - up)*(right - left) / (float)(width * height);
+    float tmpDistance = distance;
+
+    // adjust center
+    float xcenter = (render->p_xmin + render->p_xmax) / 2.0;
+    float ycenter = (render->p_ymin + render->p_ymax) / 2.0;
+    float zcenter = (render->p_zmin + render->p_zmax) / 2.0;
+    float zcenterStep = (render->p_zmax - render->p_zmin) / 100;
+    float xcenterStep = (render->p_xmax - render->p_zmin) / 100;
+    // 图像bounding box上下边界和左右边界距图像边界的距离差与图像长或宽之比
+    float accCenterRate = 0.1;
+    float accWidthCenterRate = 0.0;
+    float accHeightCenterRate = 0.0;
+    while(1)
+    {
+        v_view = glm::lookAt(glm::vec3(0,-tmpDistance,0),
+                             glm::vec3(xcenter,ycenter,zcenter),
+                             glm::vec3(0,0,1));
+        render->setMVP(v_model,v_view,proj);
+        // 渲染
+        render->rendering(0);
+        // 设置渲染之后的参数
+        render->setParameters();
+        setMat(render->p_img,render->p_width,render->p_height,width,height);
+        roundingBox2D(up,bottom,left,right);
+        accWidthCenterRate = std::abs(left - width + right) / (float)width;
+        accHeightCenterRate = std::abs(height - bottom - up) / (float)height;
+        std::cout << "bottom up left right "<< bottom << " " << up << " " << left << " " << right << std::endl;
+        std::cout << "accWidth Rate "<<accWidthCenterRate << " accHeight Rate " << accHeightCenterRate << std::endl;
+
+
+//        cv::imshow("test",image);
+//        cv::waitKey(0);
+        image.release();
+        mask.release();
+        image2D.release();
+        gray.release();
+        if(accWidthCenterRate < accCenterRate && accHeightCenterRate < accCenterRate)
+            break;
+        if(accHeightCenterRate >= accCenterRate)
+        {
+            if(up < (height - bottom))
+            {
+                zcenter += zcenterStep;
+            }
+            else
+            {
+                zcenter -= zcenterStep;
+            }
+        }
+        if(accWidthCenterRate < accCenterRate)
+        {
+            if(left < (width - right))
+            {
+                xcenter -= xcenterStep;
+            }
+            else
+            {
+                xcenter += xcenterStep;
+            }
+        }
+    }
+
+    // adjust size
+    while(accRate < acceptRate)
+    {
+        tmpDistance -= distanceStep;
+        v_view = glm::lookAt(glm::vec3(0,-tmpDistance,0),
+                             glm::vec3(xcenter,ycenter,zcenter),
+                             glm::vec3(0,0,1));
+        render->setMVP(v_model,v_view,proj);
+        // 渲染
+        render->rendering(0);
+        // 设置渲染之后的参数
+        render->setParameters();
+        setMat(render->p_img,render->p_width,render->p_height,width,height);
+        roundingBox2D(up,bottom,left,right);
+        accRate = (bottom - up)*(right - left) / (float)(width * height);
+        std::cout << "accRate " << accRate << std::endl;
+        std::cout << "bottom up left right "<< bottom << " " << up << " " << left << " " << right << std::endl;
+//        cv::imshow("test",image);
+//        cv::waitKey(0);
+        image.release();
+        mask.release();
+        image2D.release();
+        gray.release();
+    }
 
     const float X_LEN = 15.f;
     const float Z_LEN = 64.f;
     float angle_x = glm::pi<float>() / 8.0 / X_LEN;
     float angle_z = glm::pi<float>() / 2.0 / Z_LEN;
 
-
-    float xcenter = (render->p_xmin + render->p_xmax) / 2.0;
-    float ycenter = (render->p_ymin + render->p_ymax) / 2.0;
-    float zcenter = (render->p_zmin + render->p_zmax) / 2.0;
     // reset again
-    v_view = glm::lookAt(glm::vec3(0,-distance,0),
+    v_view = glm::lookAt(glm::vec3(0,-tmpDistance,0),
                          glm::vec3(xcenter,ycenter,zcenter),
                          glm::vec3(0,0,1));
 

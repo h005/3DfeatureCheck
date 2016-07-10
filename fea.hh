@@ -208,7 +208,7 @@ private:
     // ball coordinate
     void getBallCoord();
 
-
+    void roundingBox2D(int &up,int &bottom,int &left,int &right);
 
     // rounding box used for HOG foreground
     void roundingBox(cv::Mat &boxImage);
