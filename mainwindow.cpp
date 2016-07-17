@@ -1,6 +1,7 @@
 ﻿#include "mainwindow.h"
 #include "ui_mainwindow.h"
 
+#include "spheregenerator.h"
 #include "fea.hh"
 #include <QSettings>
 
@@ -139,4 +140,25 @@ void MainWindow::on_vpSample_clicked()
     fea = new Fea(v_modelPath, path);
 
     fea->viewpointSample(v_matrixPath,sampleIndex,numSamples,v_outputFile);
+}
+///
+/// \brief MainWindow::on_sphereGen_clicked
+/// generate sphere object with texture
+///
+void MainWindow::on_sphereGen_clicked()
+{
+        QString fileName = QFileDialog::getOpenFileName(this,
+                          tr("Open"),".",
+                          tr("config Files(*.ini)"));
+
+        QFileInfo fileInfo(fileName);
+        if(!fileInfo.exists())
+        {
+            std::cout << "error: file does not exist" << std::endl;
+            return;
+        }
+
+        SphereGenerator *sGen = new SphereGenerator(fileName);
+        sGen->genObj();
+        qDebug()<< "generate done" << endl;
 }

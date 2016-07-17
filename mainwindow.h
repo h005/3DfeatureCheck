@@ -33,6 +33,8 @@ private slots:
 
     void on_vpSample_clicked();
 
+    void on_sphereGen_clicked();
+
 private:
     Ui::MainWindow *ui;
     Fea *fea;

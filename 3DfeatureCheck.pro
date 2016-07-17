@@ -22,7 +22,8 @@ SOURCES += main.cpp\
     shader.cc \
     trackball.cc \
     ufface.cpp \
-    reverseface.cpp
+    reverseface.cpp \
+    spheregenerator.cpp
 
 HEADERS  += mainwindow.h \
     abstractfeature.hh \
@@ -39,7 +40,8 @@ HEADERS  += mainwindow.h \
     trackball.hh \
     ufface.h \
     predefine.h \
-    reverseface.h
+    reverseface.h \
+    spheregenerator.h
 
 FORMS    += mainwindow.ui
 

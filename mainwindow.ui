@@ -71,6 +71,13 @@
           </property>
          </widget>
         </item>
+        <item>
+         <widget class="QPushButton" name="sphereGen">
+          <property name="text">
+           <string>sphere Gen</string>
+          </property>
+         </widget>
+        </item>
        </layout>
       </item>
       <item>
