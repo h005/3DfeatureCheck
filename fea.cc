@@ -288,30 +288,48 @@ void Fea::setFeature(int mode)
 void Fea::setMMPara(QString mmFile)
 {
     this->mmPath = mmFile;
-
-    output = mmFile;
-
-    int pos = 0;
-
-    QString label;
-    QString file2D,file3D;
-    pos = path.lastIndexOf('/');
-    label = path.left(pos);
-    pos = label.lastIndexOf('/');
-    label = label.remove(0,pos+1);
-
-    file2D = ".2df";
-    file3D = ".3df";
-    label = ".fea";
-
+    // mmFile = /home/h005/Documents/vpDataSet/test/model/cctv.mm
+    QFileInfo outputFile(mmFile);
+    // output = /home/h005/Documents/vpDataSet/test/model
+    output = outputFile.absolutePath();
+    QFileInfo tmpOutputFile(output);
+    // output = /home/h005/Documents/vpDataSet/test
+    output = tmpOutputFile.absolutePath();
+    output.append("/vpFea/");
+    QString baseName = outputFile.baseName();
+    output.append(baseName);
     output2D = output;
     output3D = output;
     outputFeaName = output;
-    pos = output.lastIndexOf('.');
-    output.replace(pos,7,label);
-    output2D.replace(pos,7,file2D);
-    output3D.replace(pos,7,file3D);
-    outputFeaName.replace(pos,7,QString(".fname"));
+    output2D.append(".2df");
+    output3D.append(".3df");
+    output.append(".fea");
+    outputFeaName.append(".fname");
+
+
+//    output = mmFile;
+
+//    int pos = 0;
+
+//    QString label;
+//    QString file2D,file3D;
+//    pos = path.lastIndexOf('/');
+//    label = path.left(pos);
+//    pos = label.lastIndexOf('/');
+//    label = label.remove(0,pos+1);
+
+//    file2D = ".2df";
+//    file3D = ".3df";
+//    label = ".fea";
+
+//    output2D = output;
+//    output3D = output;
+//    outputFeaName = output;
+//    pos = output.lastIndexOf('.');
+//    output.replace(pos,7,label);
+//    output2D.replace(pos,7,file2D);
+//    output3D.replace(pos,7,file3D);
+//    outputFeaName.replace(pos,7,QString(".fname"));
 
     if(!freopen(mmPath.toStdString().c_str(),"r",stdin))
     {
@@ -2741,16 +2759,27 @@ void Fea::setMvpPara(QString matrixFile)
     this->matrixPath = matrixFile;
     qDebug()<<matrixFile<<endl;
     freopen(matrixPath.toStdString().c_str(),"r",stdin);
-    QString tmp;
+    QString tmp = QDir::cleanPath(path);
+    QFileInfo imgPathHelper(tmp);
     char tmpss[200];
     float tmpNum;
+    QString imgPath = imgPathHelper.absolutePath();
+    imgPath.append("/imgs/");
+
     while(scanf("%s",tmpss)!=EOF)
     {
-        QString tmpPath = path;
-        tmp = QDir::cleanPath(tmpPath);
-        int pos = tmp.lastIndexOf('/');
-        tmp = tmp.left(pos+1);
-        tmp = QDir::cleanPath(tmp.append(QString(tmpss)));
+//        QString tmpPath = path;
+//        tmp = QDir::cleanPath(tmpPath);
+
+//        int pos = tmp.lastIndexOf('/');
+//        tmp = tmp.left(pos+1);
+//        tmp = QDir::cleanPath(tmp.append(QString(tmpss)));
+        QString ssHelper(tmpss);
+        QFileInfo imgFile(ssHelper);
+        imgFile.absoluteDir();
+        QString filename = imgFile.fileName();
+        tmp = imgPath;
+        tmp.append(filename);
 
         fileName.push_back(tmp);
 
@@ -3178,251 +3207,4 @@ void Fea::exportSBM(QString file)
         }
     }
     std::cout <<MAX_Y_LEN<<" export done" << std::endl;
-}
-
-///
-/// \brief Fea::viewpointSample
-///     this function was created to determine camera parameters to generate some sample viewpoints
-///     glm::lookAt function determines by camera position, camera towards and camera upwards direction
-///
-///     camera upwards direction was fixed to 0,1,0
-///     what we should determine is camera position and camera towards.
-///     to simplify this problem, we solve this problem in ballcoordinate.
-///
-///     As we get several frames from video sequence and get their model view matrix
-///     by decompose model view matrix we can get their camera's position.
-///     by this way, I take their average distance to object as the extimated distance.
-///
-///     by adjust the distance and the rotate angle to smaple some viewpoints.
-///
-/// \param fileInfo contains config file path
-///
-void Fea::viewpointSample(QString v_matrixPath,int sampleIndex,int numSamples,QString output)
-{
-    // read in matrixFile
-    setMvpPara(v_matrixPath);
-    std::vector<glm::vec3> v_eye;
-    std::vector<glm::vec3> v_center;
-    std::vector<glm::vec3> v_up;v_matrixPath;
-    deComposeMV(v_eye,v_center,v_up);
-
-    glm::vec3 meanCenter(0.f,0.f,0.f);
-    glm::vec3 meanEye(0.f,0.f,0.f);
-    for(int i=0;i<v_center.size();i++)
-    {
-        meanCenter.x += v_center[i].x;
-        meanCenter.y += v_center[i].y;
-        meanCenter.z += v_center[i].z;
-
-        meanEye.x += v_eye[i].x;
-        meanEye.y += v_eye[i].y;
-        meanEye.z += v_eye[i].z;
-    }
-
-    meanCenter.x /= v_center.size();
-    meanCenter.y /= v_center.size();
-    meanCenter.z /= v_center.size();
-
-    meanEye.x /= v_center.size();
-    meanEye.y /= v_center.size();
-    meanEye.z /= v_center.size();
-
-    // 参考距离，在这个距离的基础上进行变换
-    float distance = glm::length(meanEye);
-    std::cout << "mean distance "<< distance << std::endl;
-    float distanceStep = distance * 0.1;
-
-    glm::mat4 v_model(1.0), v_view(1.0);
-    v_view = glm::lookAt(glm::vec3(0,-distance,0),
-                         glm::vec3(0,0,0),
-                         glm::vec3(0,0,1));
-    // 设置渲染参数MVP matrix
-    glm::mat4 proj = m_projectionList[0];
-    render->setMVP(v_model,v_view,proj);
-    // 渲染
-    render->rendering(0);
-    // 设置渲染之后的参数
-    render->setParameters();
-    int width = 0;
-    int height  = 0;
-    // 参考图像，用来确定图像的长宽
-    image2D = cv::imread(fileName.at(0).toStdString().c_str());
-    width = image2D.cols;
-    height = image2D.rows;
-
-    int count  = 10000;
-//    render->storeImage(path,QString("img").append(QString::number(count)).append(".jpg"),width,height);
-    setMat(render->p_img,render->p_width,render->p_height,width,height);
-    // setMask 是为了让setProjectArea的时候可以保存下来mask图像
-//    setMask();
-//    setProjectArea();
-//    setOutlierCount();
-    int bottom,up,left,right;
-    roundingBox2D(up,bottom,left,right);
-    std::cout << "bottom up left right "<< bottom << " " << up << " " << left << " " << right << std::endl;
-//    cv::namedWindow("test");
-//    cv::imshow("test",image);
-//    cv::waitKey(0);
-    float acceptRate = 0.2;
-    float accRate = (bottom - up)*(right - left) / (float)(width * height);
-    float tmpDistance = distance;
-
-    // adjust center
-    float xcenter = (render->p_xmin + render->p_xmax) / 2.0;
-    float ycenter = (render->p_ymin + render->p_ymax) / 2.0;
-    float zcenter = (render->p_zmin + render->p_zmax) / 2.0;
-    float zcenterStep = (render->p_zmax - render->p_zmin) / 100;
-    float xcenterStep = (render->p_xmax - render->p_zmin) / 100;
-    // 图像bounding box上下边界和左右边界距图像边界的距离差与图像长或宽之比
-    float accCenterRate = 0.1;
-    float accWidthCenterRate = 0.0;
-    float accHeightCenterRate = 0.0;
-    while(1)
-    {
-        v_view = glm::lookAt(glm::vec3(0,-tmpDistance,0),
-                             glm::vec3(xcenter,ycenter,zcenter),
-                             glm::vec3(0,0,1));
-        render->setMVP(v_model,v_view,proj);
-        // 渲染
-        render->rendering(0);
-        // 设置渲染之后的参数
-        render->setParameters();
-        setMat(render->p_img,render->p_width,render->p_height,width,height);
-        roundingBox2D(up,bottom,left,right);
-        accWidthCenterRate = std::abs(left - width + right) / (float)width;
-        accHeightCenterRate = std::abs(height - bottom - up) / (float)height;
-        std::cout << "bottom up left right "<< bottom << " " << up << " " << left << " " << right << std::endl;
-        std::cout << "accWidth Rate "<<accWidthCenterRate << " accHeight Rate " << accHeightCenterRate << std::endl;
-
-
-//        cv::imshow("test",image);
-//        cv::waitKey(0);
-        image.release();
-        mask.release();
-        image2D.release();
-        gray.release();
-        if(accWidthCenterRate < accCenterRate && accHeightCenterRate < accCenterRate)
-            break;
-        if(accHeightCenterRate >= accCenterRate)
-        {
-            if(up < (height - bottom))
-            {
-                zcenter += zcenterStep;
-            }
-            else
-            {
-                zcenter -= zcenterStep;
-            }
-        }
-        if(accWidthCenterRate < accCenterRate)
-        {
-            if(left < (width - right))
-            {
-                xcenter -= xcenterStep;
-            }
-            else
-            {
-                xcenter += xcenterStep;
-            }
-        }
-    }
-
-    // adjust size
-    while(accRate < acceptRate)
-    {
-        tmpDistance -= distanceStep;
-        v_view = glm::lookAt(glm::vec3(0,-tmpDistance,0),
-                             glm::vec3(xcenter,ycenter,zcenter),
-                             glm::vec3(0,0,1));
-        render->setMVP(v_model,v_view,proj);
-        // 渲染
-        render->rendering(0);
-        // 设置渲染之后的参数
-        render->setParameters();
-        setMat(render->p_img,render->p_width,render->p_height,width,height);
-        roundingBox2D(up,bottom,left,right);
-        accRate = (bottom - up)*(right - left) / (float)(width * height);
-        std::cout << "accRate " << accRate << std::endl;
-        std::cout << "bottom up left right "<< bottom << " " << up << " " << left << " " << right << std::endl;
-//        cv::imshow("test",image);
-//        cv::waitKey(0);
-        image.release();
-        mask.release();
-        image2D.release();
-        gray.release();
-    }
-
-    const float X_LEN = 15.f;
-    const float Z_LEN = 64.f;
-    float angle_x = glm::pi<float>() / 8.0 / X_LEN;
-    float angle_z = glm::pi<float>() / 2.0 / Z_LEN;
-
-    // reset again
-    v_view = glm::lookAt(glm::vec3(0,-tmpDistance,0),
-                         glm::vec3(xcenter,ycenter,zcenter),
-                         glm::vec3(0,0,1));
-
-    std::ofstream fout(output.toStdString().c_str());
-    glm::mat4 mv;
-
-    // without visit different distance
-    for(int i=0;i<X_LEN;i++)
-    {
-        for(int j=0;j<Z_LEN;j++)
-        {
-            // rotate with x axis
-            float anglex = angle_x * i;
-            // rotate with z axis
-            float anglez = angle_z * j - glm::pi<float>() / 4.0;
-            glm::mat4 rotateX = glm::rotate(glm::mat4(1.f),anglex,glm::vec3(1.0,0.0,0.0));
-            glm::mat4 rotateZ = glm::rotate(glm::mat4(1.f),anglez,glm::vec3(0.0,0.0,1.0));
-            mv = v_view *rotateX * rotateZ;
-            fout << "img";
-            fout.width(8);
-            fout.fill('0');
-            fout << count++ << ".jpg" << std::endl;
-
-            // mv matrix
-            for(int k1 = 0;k1 < 4;k1++)
-            {
-                for(int k2 = 0;k2 < 4;k2++)
-                    fout << mv[k2][k1] << " ";
-                fout << std::endl;
-            }
-            // proj matrix
-            for(int k1 = 0;k1 < 4;k1++)
-            {
-                for(int k2 = 0;k2 < 4;k2++)
-                    fout << proj[k2][k1] << " ";
-                fout << std::endl;
-            }
-        }
-    }
-
-    std::cout << "export done" << std::endl;
-
-//    while(sampleIndex < numSamples)
-//    {
-//        // project Area > 0.9 && rule of Thirds ....
-//        // generate Model View matrix
-//        v_model = glm::lookAt(meanEye,
-//                              meanCenter,
-//                              glm::vec3(0.f,0.f,1.f));
-
-//        render->setMVP(v_model,v_view,m_projectionList[0]);
-//        render->rendering(count++);
-//        render->setParameters();
-//        render->storeImage(path,QString("img").append(QString::number(count)).append(".jpg"),width,height);
-//        setMat(render->p_img,render->p_width,render->p_height,width,height);
-
-////        setMask();
-////        setProjectArea();
-//        setOutlierCount();
-//        std::cout << fea3D.back() << std::endl;
-//        if(fea3D.back() > 0.8)
-//        {
-//            sampleIndex++;
-//        }
-//    }
-
 }

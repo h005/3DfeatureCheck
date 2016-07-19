@@ -23,7 +23,8 @@ SOURCES += main.cpp\
     trackball.cc \
     ufface.cpp \
     reverseface.cpp \
-    spheregenerator.cpp
+    spheregenerator.cpp \
+    vpsample.cpp
 
 HEADERS  += mainwindow.h \
     abstractfeature.hh \

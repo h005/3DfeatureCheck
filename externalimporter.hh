@@ -347,9 +347,10 @@ private:
                 // 一个face代表一个面（暂时只考虑三角形，其余类型pass），其存储着各个顶点的索引
                 // 可以根据索引到mesh->mVertices[]中找到对应顶点的数据(x, y, z)
                 // 不能只考虑三角形，这样会导致面片的不连续，从而出错
-                for(uint32_t i = 0; i < mesh->mNumFaces; ++i)
+                for(int i = 0; i < (int)mesh->mNumFaces; ++i) // 要改成int，并强制类型转换，不然会越界
                 {
-                    for(uint32_t j = 0; j < mesh->mFaces[i].mNumIndices - 2; j++)
+//                    std::cout << "mesh  faces num "<< mesh->mFaces[i].mNumIndices << std::endl;
+                    for(int j = 0; j < (int)mesh->mFaces[i].mNumIndices - 2; j++) // 要改成int，并强制类型转换，不然会越界
                     {
                         indices.push_back(base + mesh->mFaces[i].mIndices[0]);
                         indices.push_back(base + mesh->mFaces[i].mIndices[j+1]);

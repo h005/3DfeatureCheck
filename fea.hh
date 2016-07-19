@@ -36,7 +36,22 @@ private:
     int t_case;
     int bound;
 
+    /* model path, including matrix file, mm file and model file
+    also used to generate stored image path
+
+    such as ~/Documents/vpDataSet/kxm/model/
+
+    depth image
+    ~/Documents/vpDataSet/kxm/model/depth/
+    rgb image
+    ~/Documents/vpDataSet/kxm/model/rgb/
+    proj image
+    ~/Documents/vpDataSet/kxm/model/proj/
+    mask image
+    ~/Documents/vpDataSet/kxm/model/mask/
+    */
     QString path;
+    // output both 2d and 3d fea
     QString output;
     QString outputFeaName;
     QString output2D;
@@ -102,7 +117,7 @@ public:
 
     void exportSBM(QString file);
 
-    void viewpointSample(QString v_matrixPath, int sampleIndex, int numSamples, QString output);
+    void viewpointSample(QString v_matrixPath, int sampleIndex, int numSamples, QString output, QString configPath);
 
     void setFeature(int mode);
 
@@ -273,6 +288,19 @@ private:
 
     void clear();
 
+    // 通过调整相机与模型坐标系的距离，来使整个建筑物都落入视口范围内
+    void vpSampleWholeArchitecture();
+    // 通过调整相机与模型坐标系原点的距离，使建筑物包围盒所占面积达到整个图像的一定比例
+    void vpSampleArchitectureSize();
+    // 通过调整相机的朝向使得建筑物居中
+    void vpSampleArchitectureCenter();
+    // 准备一下需要的参数，比如平均的相机距离，相机的朝向等
+    void vpSamplePrepare(QString v_matrixPath,
+                         float &distance,
+                         float &distanceStep,
+                         int &width,
+                         int &height);
 };
+
 
 #endif // FEA_H

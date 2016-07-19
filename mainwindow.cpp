@@ -115,7 +115,8 @@ void MainWindow::on_vpSample_clicked()
 //                      tr("Open"),".",
 //                      tr("config Files(*.ini)"));
 //    QFileInfo fileInfo(fileName);
-    QFileInfo fileInfo("/media/h005/083c1e3b-c763-4087-a08c-204937a2f57b/h005/Documents/vpDataSet/videoCut3/vpSample/configSample.ini");
+    QString fileName = "/home/h005/Documents/vpDataSet/nju/vpSample/configSample.ini";
+    QFileInfo fileInfo(fileName);
 //    if(!fileInfo.exists())
 //    {
 //        std::cout << "error: file does not exist" << std::endl;
@@ -137,9 +138,10 @@ void MainWindow::on_vpSample_clicked()
     QString path = modelFileInfo.absoluteDir().absolutePath().append("/");
 
     std::cout << v_modelPath.toStdString() << std::endl;
+    std::cout << path.toStdString() << std::endl;
     fea = new Fea(v_modelPath, path);
-
-    fea->viewpointSample(v_matrixPath,sampleIndex,numSamples,v_outputFile);
+    std::cout << "load done" << std::endl;
+    fea->viewpointSample(v_matrixPath,sampleIndex,numSamples,v_outputFile,fileInfo.absolutePath());
 }
 ///
 /// \brief MainWindow::on_sphereGen_clicked
