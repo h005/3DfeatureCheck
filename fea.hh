@@ -300,6 +300,9 @@ private:
                          float &distanceStep,
                          int &width,
                          int &height);
+
+    float floatAbs(float num);
+
 };
 
 

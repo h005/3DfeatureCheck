@@ -21,7 +21,7 @@ void SphereGenerator::genObj()
     sZ = settings.value("sample/numZ").toInt();
     sMatrixFile = QDir::cleanPath(QDir(baseDir).filePath(settings.value("sample/matrixfile").toString()));
     sTexture = QDir::cleanPath(QDir(baseDir).filePath(settings.value("sample/texture").toString()));
-    sObj = QDir::cleanPath(QDir(baseDir).filePath(settings.value("sample/obj").toString()));
+    sObj = QDir::cleanPath(QDir(baseDir).filePath(settings.value("sample/outputobj").toString()));
 
     // initialize
     projList.clear();

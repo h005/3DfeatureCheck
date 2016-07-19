@@ -252,9 +252,9 @@ void Fea::setFeature(int mode)
                 // 各种不同方向的梯度叠加
                 getHog();
 
-                get2DTheta();
+//                get2DTheta();
 
-//                get2DThetaAbs();
+                get2DThetaAbs();
 
                 getColorEntropyVariance();
 
@@ -306,31 +306,6 @@ void Fea::setMMPara(QString mmFile)
     output.append(".fea");
     outputFeaName.append(".fname");
 
-
-//    output = mmFile;
-
-//    int pos = 0;
-
-//    QString label;
-//    QString file2D,file3D;
-//    pos = path.lastIndexOf('/');
-//    label = path.left(pos);
-//    pos = label.lastIndexOf('/');
-//    label = label.remove(0,pos+1);
-
-//    file2D = ".2df";
-//    file3D = ".3df";
-//    label = ".fea";
-
-//    output2D = output;
-//    output3D = output;
-//    outputFeaName = output;
-//    pos = output.lastIndexOf('.');
-//    output.replace(pos,7,label);
-//    output2D.replace(pos,7,file2D);
-//    output3D.replace(pos,7,file3D);
-//    outputFeaName.replace(pos,7,QString(".fname"));
-
     if(!freopen(mmPath.toStdString().c_str(),"r",stdin))
     {
         t_case = 0;
@@ -366,17 +341,18 @@ void Fea::setMMPara(QString mmFile)
 
     m_projection = glm::perspective(glm::pi<float>() / 2, 1.f, 0.1f, 100.f);
 #else
-    // for compute there is one matirx is abv matrix
+    /* for compute there is one matirx is abv matrix
     // and the last two para is from to
-
+    // 该矩阵是对任何给定的一个模型，经过调整使其模型的Z轴与OpenGL坐标系下的Z轴重合之后所经历过的变换，只有旋转，没有平移和缩放
     // rearrange the model needless to read the parameters
 
-//    float tmp;
-//    for(int i=0;i<16;i++)
-//    {
-//        scanf("%f",&tmp);
-//        m_abv[i/4][i%4] = tmp;
-//    }
+    //    float tmp;
+    //    for(int i=0;i<16;i++)
+    //    {
+    //        scanf("%f",&tmp);
+    //        m_abv[i/4][i%4] = tmp;
+    //    }
+    */
     m_abv = glm::mat4(1.f);
     scanf("%d",&t_case);
 #endif
@@ -744,11 +720,11 @@ void Fea::setSilhouetteCE()
             }
             else
             {
-                res0 += abs(curvab);
+                res0 += floatAbs(curvab);
                 res1 += curvab*curvab;
             }
 
-    //        qDebug()<<"curvature a"<<curva<<" "<<abs(curvab)<< " "<<abs(curvab) - abs(curva)<<endl;
+    //        qDebug()<<"curvature a"<<curva<<" "<<floatAbs(curvab)<< " "<<floatAbs(curvab) - floatAbs(curva)<<endl;
         }
     }
 
@@ -956,7 +932,7 @@ void Fea::setMeshSaliency(std::vector< MeanCurvature<MyMesh> > &a, std::vector<G
             setNearDisMeshSaliency(vertex,i,length,sigma[j],nearDis);
             gaussWeightedVal1 = getGaussWeightedVal(meanCurvature[i/3],nearDis,vertex.size()/3,sigma[j]);
             gaussWeightedVal2 = getGaussWeightedVal(meanCurvature[i/3],nearDis,vertex.size()/3,sigma[j]*2.0);
-            meshSaliencyMiddle[j].push_back(abs(gaussWeightedVal1 - gaussWeightedVal2));
+            meshSaliencyMiddle[j].push_back(floatAbs(gaussWeightedVal1 - gaussWeightedVal2));
         }
         double max = meshSaliencyMiddle[j][0];
         double min = meshSaliencyMiddle[j][0];
@@ -1032,7 +1008,7 @@ void Fea::setMeshSaliencyCompute(std::vector<MeanCurvature<MyMesh> > &a,
             setNearDisMeshSaliency(vertex,i,length,sigma[j],nearDis);
             gaussWeightedVal1 = getGaussWeightedVal(meanCurvature[i/3],nearDis,vertex.size()/3,sigma[j]);
             gaussWeightedVal2 = getGaussWeightedVal(meanCurvature[i/3],nearDis,vertex.size()/3,sigma[j]*2.0);
-            meshSaliencyMiddle[j].push_back(abs(gaussWeightedVal1 - gaussWeightedVal2));
+            meshSaliencyMiddle[j].push_back(floatAbs(gaussWeightedVal1 - gaussWeightedVal2));
         }
         double max = meshSaliencyMiddle[j][0];
         double min = meshSaliencyMiddle[j][0];
@@ -1118,7 +1094,7 @@ void Fea::setMeshSaliency(int t_case,// for debug can be used to output the mesh
             setNearDisMeshSaliency(vertex,i,length,sigma[j],nearDis);
             gaussWeightedVal1 = getGaussWeightedVal(meanCurvature[i/3],nearDis,vertex.size()/3,sigma[j]);
             gaussWeightedVal2 = getGaussWeightedVal(meanCurvature[i/3],nearDis,vertex.size()/3,sigma[j]*2.0);
-            meshSaliencyMiddle[j].push_back(abs(gaussWeightedVal1 - gaussWeightedVal2));
+            meshSaliencyMiddle[j].push_back(floatAbs(gaussWeightedVal1 - gaussWeightedVal2));
         }
         double max = meshSaliencyMiddle[j][0];
         double min = meshSaliencyMiddle[j][0];
@@ -1171,21 +1147,6 @@ void Fea::setAbovePreference(glm::mat4 &model2,
                              glm::mat4 &view)
 {
 
-//    int pos = filename.lastIndexOf('.');
-//    filename.replace(pos,6,".mm");
-//    filename.append(QString(".mm"));
-//    FILE *fp = freopen(filename.toStdString().c_str(),"r",stdin);
-//    if(fp)
-//    {
-//        glm::mat4 model2;
-//        double tmp;
-//        for(int i=0;i<4;i++)
-//            for(int j=0;j<4;j++)
-//            {
-//                scanf("%lf",&tmp);
-//                model2[i][j] = tmp;
-//            }
-//        model2 = glm::transpose(model2);
         glm::vec4 z = glm::vec4(0.0,0.0,1.0,0.0);
 
         glm::vec4 x = glm::vec4(1.0,0.0,0.0,0.0);
@@ -1216,27 +1177,27 @@ void Fea::setAbovePreference(glm::mat4 &model2,
         double cosThetaz = dotz / sqrt(norm_mz) / sqrt(norm_lookAxis);
         double cosThetay = doty / sqrt(norm_my) / sqrt(norm_lookAxis);
         // added for absolute value
-        cosThetay = abs(cosThetay);
+        cosThetay = floatAbs(cosThetay);
         double cosThetax = dotx / sqrt(norm_mx) / sqrt(norm_lookAxis);
         // added for absolute value
-        cosThetax = abs(cosThetax);
+        cosThetax = floatAbs(cosThetax);
 
 //        qDebug() << cosThetax << " "
 //                 << cosThetay << " "
 //                 << cosThetaz << endl;
 
         double thetaz = acos(cosThetaz);
-        double thetay = acos(cosThetay);
-        double thetax = acos(cosThetax);
+//        double thetay = acos(cosThetay);
+//        double thetax = acos(cosThetax);
 
         double resz = setAbovePreference(thetaz);
-        double resx = setAbovePreference(thetax);
-        double resy = setAbovePreference(thetay);
+//        double resx = setAbovePreference(thetax);
+//        double resy = setAbovePreference(thetay);
 
-        fea3D.push_back(resx);
-        fea3DName.push_back("abovePreference");
-        fea3D.push_back(resy);
-        fea3DName.push_back("abovePreference");
+//        fea3D.push_back(resx);
+//        fea3DName.push_back("abovePreference");
+//        fea3D.push_back(resy);
+//        fea3DName.push_back("abovePreference");
         fea3D.push_back(resz);
         fea3DName.push_back("abovePreference");
 
@@ -1354,7 +1315,7 @@ void Fea::setBoundingBox3DAbs()
     // p_model_x x
     dotval = glm::dot(render->p_model_x,axisx);
     cosTheta = dotval / (glm::length(render->p_model_x) * glm::length(axisx));
-    cosTheta = abs(cosTheta);
+    cosTheta = floatAbs(cosTheta);
     theta = acos(cosTheta);
     fea3D.push_back(theta);
     fea3DName.push_back("boundingBox");
@@ -1362,7 +1323,7 @@ void Fea::setBoundingBox3DAbs()
     // p_model_x y
     dotval = glm::dot(render->p_model_x,axisy);
     cosTheta = dotval / (glm::length(render->p_model_x) * glm::length(axisy));
-    cosTheta = abs(cosTheta);
+    cosTheta = floatAbs(cosTheta);
     theta = acos(cosTheta);
     fea3D.push_back(theta);
     fea3DName.push_back("boundingBox");
@@ -1377,7 +1338,7 @@ void Fea::setBoundingBox3DAbs()
     // p_model_y x
     dotval = glm::dot(render->p_model_y,axisx);
     cosTheta = dotval / (glm::length(render->p_model_y) * glm::length(axisx));
-    cosTheta = abs(cosTheta);
+    cosTheta = floatAbs(cosTheta);
     theta = acos(cosTheta);
     fea3D.push_back(theta);
     fea3DName.push_back("boundingBox");
@@ -1385,7 +1346,7 @@ void Fea::setBoundingBox3DAbs()
     // p_model_y y
     dotval = glm::dot(render->p_model_y,axisy);
     cosTheta = dotval / (glm::length(render->p_model_y) * glm::length(axisy));
-    cosTheta = abs(cosTheta);
+    cosTheta = floatAbs(cosTheta);
     theta = acos(cosTheta);
     fea3D.push_back(theta);
     fea3DName.push_back("boundingBox");
@@ -1393,7 +1354,7 @@ void Fea::setBoundingBox3DAbs()
     // p_model_y z
     dotval = glm::dot(render->p_model_y,axisz);
     cosTheta = dotval / (glm::length(render->p_model_y) * glm::length(axisz));
-    cosTheta = abs(cosTheta);
+    cosTheta = floatAbs(cosTheta);
     theta = acos(cosTheta);
     fea3D.push_back(theta);
     fea3DName.push_back("boundingBox");
@@ -1401,7 +1362,7 @@ void Fea::setBoundingBox3DAbs()
     // p_model_z x
     dotval = glm::dot(render->p_model_z,axisx);
     cosTheta = dotval / (glm::length(render->p_model_z) * glm::length(axisx));
-    cosTheta = abs(cosTheta);
+    cosTheta = floatAbs(cosTheta);
     theta = acos(cosTheta);
     fea3D.push_back(theta);
     fea3DName.push_back("boundingBox");
@@ -1409,7 +1370,7 @@ void Fea::setBoundingBox3DAbs()
     // p_model_z y
     dotval = glm::dot(render->p_model_z,axisy);
     cosTheta = dotval / (glm::length(render->p_model_z) * glm::length(axisy));
-    cosTheta = abs(cosTheta);
+    cosTheta = floatAbs(cosTheta);
     theta = acos(cosTheta);
     fea3D.push_back(theta);
     fea3DName.push_back("boundingBox");
@@ -1753,7 +1714,7 @@ void Fea::getLightingFeature()
             else
                 bb += tmp.at<uchar>(i,j);
 
-    fl = abs(log(bs/bb));
+    fl = floatAbs(log(bs/bb));
 
     fea2D.push_back(fl);
     fea2DName.push_back("lighting");
@@ -1864,7 +1825,7 @@ void Fea::setSaliency()
         for(int j=0;j<gray.cols;j++)
         {
             for(int k=0;k<256;k++)
-                salient[i][j] += abs(hist[k] - hist[(int)gray.at<uchar>(i,j)]);
+                salient[i][j] += floatAbs(hist[k] - hist[(int)gray.at<uchar>(i,j)]);
             max = max >salient[i][j]?max:salient[i][j];
             min = min<salient[i][j]?min:salient[i][j];
         }
@@ -1987,11 +1948,11 @@ void Fea::computePCA()
 /// 该函数共计算5个分量
 /// 前两个计算的是投影之后的坐标轴与现在坐标轴（1,0,0）和（0,1,0）
 /// 之间的最小夹角
-/// 后三个是三个坐标轴投影之后亮亮之间的夹角
+/// 后三个是三个坐标轴投影之后两两之间的夹角
 ///
 void Fea::get2DTheta()
 {
-    // bocaGyy 2b
+    // Gyy 2b
     glm::vec3 axis_x = glm::vec3(1,0,0);
     glm::vec3 axis_y = glm::vec3(0,1,0);
     // 可能会出现零向量的问题，目前先当结果为2*pi来处理
@@ -2133,30 +2094,30 @@ void Fea::get2DThetaAbs()
 
         // y_axis x_3d
         cosTheta = glm::dot(axis_y,x_3d) / glm::length(axis_y) / glm::length(x_3d);
-        cosTheta = abs(cosTheta);
+        cosTheta = floatAbs(cosTheta);
         theta = cosTheta;
         // y_axis y_3d
         cosTheta = glm::dot(axis_y,y_3d) / glm::length(axis_y) / glm::length(y_3d);
-        cosTheta = abs(cosTheta);
+        cosTheta = floatAbs(cosTheta);
         theta = theta < cosTheta ? theta : cosTheta;
         // y_axis z_3d
         cosTheta = glm::dot(axis_y,z_3d) / glm::length(axis_y) / glm::length(z_3d);
-        cosTheta = abs(cosTheta);
+        cosTheta = floatAbs(cosTheta);
         theta = theta < cosTheta ? theta : cosTheta;
         theta = acos(theta);
         fea2D.push_back(theta);
         fea2DName.push_back("2DTheta");
         // x_axis x_3d
         cosTheta = glm::dot(axis_x,x_3d) / glm::length(axis_x) / glm::length(x_3d);
-        cosTheta = abs(cosTheta);
+        cosTheta = floatAbs(cosTheta);
         theta = cosTheta;
         // x_axis y_3d
         cosTheta = glm::dot(axis_x,y_3d) / glm::length(axis_x) / glm::length(y_3d);
-        cosTheta = abs(cosTheta);
+        cosTheta = floatAbs(cosTheta);
         theta = theta < cosTheta ? theta : cosTheta;
         // x_axis z_3d
         cosTheta = glm::dot(axis_x,z_3d) / glm::length(axis_x) / glm::length(z_3d);
-        cosTheta = abs(cosTheta);
+        cosTheta = floatAbs(cosTheta);
         theta = theta < cosTheta ? theta : cosTheta;
         theta = acos(theta);
         fea2D.push_back(theta);
@@ -2177,7 +2138,7 @@ void Fea::get2DThetaAbs()
     else
     {
         cosTheta = glm::dot(x_3d,y_3d) / glm::length(x_3d) / glm::length(y_3d);
-        cosTheta = abs(cosTheta);
+        cosTheta = floatAbs(cosTheta);
         if(cosTheta > 1.0)
             theta = 0;
         else
@@ -2191,7 +2152,7 @@ void Fea::get2DThetaAbs()
     else
     {
         cosTheta = glm::dot(x_3d,z_3d) / glm::length(x_3d) / glm::length(z_3d);
-        cosTheta = abs(cosTheta);
+        cosTheta = floatAbs(cosTheta);
         if(cosTheta > 1.0)
             theta = 0;
         else
@@ -2205,7 +2166,7 @@ void Fea::get2DThetaAbs()
     else
     {
         cosTheta = glm::dot(y_3d,z_3d) /  glm::length(y_3d) / glm::length(z_3d);
-        cosTheta = abs(cosTheta);
+        cosTheta = floatAbs(cosTheta);
         if(cosTheta > 1.0)
             theta = 0;
         else
@@ -2373,6 +2334,7 @@ void Fea::getBallCoord()
 //    std::cout << theta << " " << fani << std::endl;
     fea3D.push_back(theta);
     fea3DName.push_back("ballCoord");
+    fani = floatAbs(fani);
     fea3D.push_back(fani);
     fea3DName.push_back("ballCoord");
     std::cout << "ballCoord done "<<" fea3D size "<<fea3D.size()<< std::endl;
@@ -3207,4 +3169,9 @@ void Fea::exportSBM(QString file)
         }
     }
     std::cout <<MAX_Y_LEN<<" export done" << std::endl;
+}
+
+float Fea::floatAbs(float num)
+{
+    return num < 0 ? -num : num;
 }
