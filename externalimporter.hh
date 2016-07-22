@@ -145,6 +145,7 @@ public:
         qDebug()<<"setMeshVector ... "<<cateSet.size()<<endl;
         for(int i=0;i<cateSet.size();i++)
         {
+            std::cout << "cateSet "<<i<<"/"<< cateSet.size() << std::endl;
 //            std::cout << "debug .... ok 0"<< std::endl;
             MeshT tmpMesh;
             std::vector<typename MeshT::VertexHandle> vHandle;

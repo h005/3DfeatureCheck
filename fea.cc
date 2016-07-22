@@ -212,7 +212,7 @@ void Fea::setFeature(int mode)
 
             setOutlierCount();
 
-            setBoundingBox3D();
+            setBoundingBox3DAbs();
 
             /*
               add 2D fea function here
@@ -269,13 +269,14 @@ void Fea::setFeature(int mode)
 
             image2D32f3c.release();
         }
-//        break;
 
         printFeaName();
 
         printOut(mode);
 
         clear();
+
+//        break;
 
         qDebug() << "fea cases : "<< t_case << endl;
 
@@ -416,6 +417,8 @@ void Fea::setMat(float *img, int width, int height,int dstWidth,int dstHeight)
 
     cv::Mat image0 = cv::Mat(width,height,CV_32FC1,img);
     image0.convertTo(image,CV_8UC1,255.0/(1.0 - min),255.0 * min / (min - 1.0));
+    // 二值化
+    cv::threshold(image, image, 240, 255, CV_THRESH_BINARY);
     cv::flip(image,image,0);
     cv::resize(image,image,cv::Size(dstWidth,dstHeight));
     // release memory
@@ -424,8 +427,16 @@ void Fea::setMat(float *img, int width, int height,int dstWidth,int dstHeight)
 
 void Fea::setProjectArea()
 {
-    // 二值化
-    cv::threshold(image, image, 250, 255, CV_THRESH_BINARY);
+//    cv::namedWindow("image");
+//    cv::imshow("image",image);
+//    cv::waitKey(0);
+
+//    IplImage *saveImageDebug = new IplImage(image);
+//    cvSaveImage("/home/h005/Documents/vpDataSet/njuSample/model/640.jpg",saveImageDebug);
+
+//    cv::namedWindow("image2");
+//    cv::imshow("image2",image);
+//    cv::waitKey(0);
 
     double res = 0.0;
     cv::Mat img = cv::Mat(image.rows,image.cols,CV_8UC1);
@@ -495,7 +506,9 @@ void Fea::setProjectArea()
 
     saveImage = new IplImage(foreGround);
     cvSaveImage(maskPath.toStdString().c_str(),saveImage);
-
+//    cv::namedWindow("test");
+//    cv::imshow("test",foreGround);
+//    cv::waitKey(0);
     foreGround.release();
 
     img.release();
@@ -1331,6 +1344,7 @@ void Fea::setBoundingBox3DAbs()
     // p_model_x z
     dotval = glm::dot(render->p_model_x,axisz);
     cosTheta = dotval / (glm::length(render->p_model_x) * glm::length(axisz));
+    cosTheta = floatAbs(cosTheta);
     theta = acos(cosTheta);
     fea3D.push_back(theta);
     fea3DName.push_back("boundingBox");
@@ -1455,6 +1469,12 @@ void Fea::getHueCount()
 //    image2D.convertTo(tmp,CV_32FC3,1/255.0);
 
 //    cv::cvtColor(tmp,tmp,CV_BGR2HSV);
+
+//      IplImage *saveImageDebug = new IplImage(mask);
+//      cvSaveImage("/home/h005/Documents/vpDataSet/njuSample/model/640mask.jpg",saveImageDebug);
+
+//      saveImageDebug = new IplImage(tmp);
+//      cvSaveImage("/home/h005/Documents/vpDataSet/njuSample/model/640color.jpg",saveImageDebug);
 
     double valueRange[2] = {0.15,0.95};
 
@@ -2903,11 +2923,11 @@ void Fea::printFeaName(int mode)
 {
     freopen(outputFeaName.toStdString().c_str(),"a+",stdout);
 
-    for(int i=0;i<fea3DName.size();i++)
-        std::cout << fea3DName[i] << std::endl;
-
     for(int j=0;j<fea2DName.size();j++)
         std::cout << fea2DName[j] << std::endl;
+
+    for(int i=0;i<fea3DName.size();i++)
+        std::cout << fea3DName[i] << std::endl;
 
     fclose(stdout);
 }
