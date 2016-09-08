@@ -519,7 +519,7 @@ void Render::setAreaAllFaces()
     m_helper.getVerticesAndFaces_AddedByZwz(p_vertices,indices);
     areaAllFaces = 0.0;
 
-    for(int i=0; i< indices.size();i++)
+    for(int i=0; i< indices.size()-2;i++)
     {
         CvPoint3D64f p1 = cvPoint3D64f(p_vertices[3*indices[i]],p_vertices[3*indices[i]+1],p_vertices[3*indices[i]+2]);
         CvPoint3D64f p2 = cvPoint3D64f(p_vertices[3*indices[i+1]],p_vertices[3*indices[i+1]+1],p_vertices[3*indices[i+1]+2]);

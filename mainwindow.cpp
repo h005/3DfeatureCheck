@@ -111,11 +111,10 @@ void MainWindow::on_sightBall_clicked()
 void MainWindow::on_vpSample_clicked()
 {
 
-//    QString fileName = QFileDialog::getOpenFileName(this,
-//                      tr("Open"),".",
-//                      tr("config Files(*.ini)"));
-//    QFileInfo fileInfo(fileName);
-    QString fileName = "/home/h005/Documents/vpDataSet/nju/vpSample/configSample.ini";
+    QString fileName = QFileDialog::getOpenFileName(this,
+                      tr("Open"),".",
+                      tr("config Files(*.ini)"));
+//    QString fileName = "/home/h005/Documents/vpDataSet/njuGuLou/vpSample/configSample.ini";
     QFileInfo fileInfo(fileName);
 //    if(!fileInfo.exists())
 //    {

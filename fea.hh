@@ -54,6 +54,8 @@ private:
     // output both 2d and 3d fea
     QString output;
     QString outputFeaName;
+    QString output2dFeaName;
+    QString output3dFeaName;
     QString output2D;
     QString output3D;
     // path for .matrix
@@ -220,6 +222,9 @@ private:
     void get2DThetaAbs();
     // color variance
     void getColorEntropyVariance();
+    // color info including (RGB vlaue mean, HSV values (C1 in HSV space),  Hue histogram (5 bins and entropy) and Satuation)
+    // ref Geometric Context from a Single Image ICCV 2005
+    void getColorInfo();
     // ball coordinate
     void getBallCoord();
 

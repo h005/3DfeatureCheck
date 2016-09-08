@@ -78,7 +78,7 @@ Fea::Fea(QString fileName, QString path)
  */
 void Fea::setFeature(int mode)
 {
-
+    int fileNameOutputFlag = 0;
 #ifdef CHECK
     glm::mat4 m_model_tmp;
 
@@ -225,7 +225,7 @@ void Fea::setFeature(int mode)
             {
                 getHueCount();
                 // 不计算
-                getBlur();
+//                getBlur();
                 // 可以只计算mask对应部分的前景区域
                 getContrast(); // 直方图中占98%区域的宽度
                 // 可以只计算mask对应部分的前景区域
@@ -234,18 +234,18 @@ void Fea::setFeature(int mode)
             // 球面坐标系
             getBallCoord();
 
-#ifndef FOREGROUND
+//#ifndef FOREGROUND
 
-            getLightingFeature();
+//            getLightingFeature();
 
-            // 不计算
-            setGLCM();
+//            // 不计算
+//            setGLCM();
 
-            setSaliency();
+//            setSaliency();
 
-            setPCA();
+//            setPCA();
 
-#endif
+//#endif
             if(mode == 2 || mode == 0)
             {
                 getRuleOfThird();
@@ -258,7 +258,10 @@ void Fea::setFeature(int mode)
 
                 getColorEntropyVariance();
 
+                getColorInfo();
+
             }
+
             image2D.release();
 
             image.release();
@@ -269,14 +272,18 @@ void Fea::setFeature(int mode)
 
             image2D32f3c.release();
         }
-
-        printFeaName();
+//        break;
+        if(!fileNameOutputFlag)
+        {
+            printFeaName();
+            fileNameOutputFlag = !fileNameOutputFlag;
+        }
 
         printOut(mode);
 
         clear();
 
-//        break;
+
 
         qDebug() << "fea cases : "<< t_case << endl;
 
@@ -302,10 +309,14 @@ void Fea::setMMPara(QString mmFile)
     output2D = output;
     output3D = output;
     outputFeaName = output;
+    output2dFeaName = output;
+    output3dFeaName = output;
     output2D.append(".2df");
     output3D.append(".3df");
     output.append(".fea");
     outputFeaName.append(".fname");
+    output2dFeaName.append(".2dfname");
+    output3dFeaName.append(".3dfname");
 
     if(!freopen(mmPath.toStdString().c_str(),"r",stdin))
     {
@@ -2081,6 +2092,7 @@ void Fea::get2DTheta()
 /// 前两个计算的是投影之后的坐标轴与现在坐标轴（1,0,0）和（0,1,0）
 /// 之间的最小夹角 (absoute value without the difference of positive direction)
 /// 后三个是三个坐标轴投影之后亮亮之间的夹角(absoute value without the difference of positive direction)
+/// 我想了一下，还是感觉这个特征应该是属于3D特征的
 ///
 void Fea::get2DThetaAbs()
 {
@@ -2277,7 +2289,6 @@ void Fea::roundingBox(cv::Mat &boxImage)
 
 void Fea::getColorEntropyVariance()
 {
-#ifdef FOREGROUND
     double *hist = new double[NUM_Distribution];
     memset(hist,0,sizeof(double)*NUM_Distribution);
     double count = 0.0;
@@ -2285,6 +2296,7 @@ void Fea::getColorEntropyVariance()
 
     for(int i=0;i<image2D.rows;i++)
         for(int j=0;j<image2D.cols;j++)
+#ifdef FOREGROUND
             if(mask.at<uchar>(i,j) != 255)
             {
                 index = image2D.at<cv::Vec3b>(i,j)[0]>>5;
@@ -2293,6 +2305,15 @@ void Fea::getColorEntropyVariance()
                 hist[index]++;
                 count ++;
             }
+#else
+        {
+            index = image2D.at<cv::Vec3b>(i,j)[0]>>5;
+            index = (image2D.at<cv::Vec3b>(i,j)[1]>>5) + (index * 8);
+            index = (image2D.at<cv::Vec3b>(i,j)[2]>>5) + (index * 8);
+            hist[index]++;
+            count ++;
+        }
+#endif
     double mean = 0.0;
     // normalize
     for(int i=0;i<NUM_Distribution;i++)
@@ -2331,9 +2352,121 @@ void Fea::getColorEntropyVariance()
 //    for(int i=0;i<NUM_Distribution;i++)
 //        fea2D.push_back(hist[i]);
     delete []hist;
-#else
+}
+///
+/// \brief Fea::getColorInfo
+/// this function was created to compute another color info
+/// such as RGB values mean
+/// HSV vlaues C1 in HSV space
+/// Hue, histogram (5 bins) and entropy
+/// Saturation, histogram (3 bins) and entropy
+///
+void Fea::getColorInfo()
+{
+    // rgb mean
+    double bgrMean[3] = {0,0,0};
+    for(int i=0;i<image2D.rows;i++)
+        for(int j=0;j<image2D.cols;j++)
+        {
+            bgrMean[0] += (double)image2D.at<cv::Vec3b>(i,j)[0];
+            bgrMean[1] += (double)image2D.at<cv::Vec3b>(i,j)[1];
+            bgrMean[2] += (double)image2D.at<cv::Vec3b>(i,j)[2];
+        }
+    double num = (double)(image2D.rows * image2D.cols);
+    for(int i=0;i<2;i++)
+        bgrMean[i] /= num;
 
-#endif
+    fea2D.push_back(bgrMean[0]);;
+    fea2D.push_back(bgrMean[1]);
+    fea2D.push_back(bgrMean[2]);
+
+    fea2DName.push_back("color blue mean");
+    fea2DName.push_back("color green mean");
+    fea2DName.push_back("color red mean");
+
+    // compute hsv featues
+    cv::Mat imagehsv;
+    cv::cvtColor(image2D,imagehsv,CV_BGR2HSV);
+
+    //    compute Hue histogram
+    int hbins = 5;
+    int histSize[] = {hbins};
+
+    float hranges[] = {0,180};
+
+    const float* ranges[] = {hranges};
+    cv::MatND hist;
+    int channels[] = {0};
+
+    cv::calcHist(&imagehsv,
+                 1,
+                 channels,
+                 cv::Mat(),
+                 hist,
+                 1,
+                 histSize,
+                 ranges,
+                 true,
+                 false);
+
+//    qDebug() << "hHist " << endl;
+    for(int h=0;h<hbins;h++)
+    {
+//        qDebug() << hist.at<float>(h) << endl;
+        hist.at<float>(h) /= num;
+        fea2D.push_back(hist.at<float>(h));
+        fea2DName.push_back("HueHist");
+    }
+
+    double entropy = 0.0;
+    for(int i=0;i<hbins;i++)
+        if(hist.at<float>(i))
+            entropy += hist.at<float>(i) * log2(hist.at<float>(i));
+    entropy = -entropy;
+    fea2D.push_back(entropy);
+    fea2DName.push_back("HueEntropy");
+
+//    qDebug() << entropy << endl;
+
+    int sbins = 3;
+    int sHistSize[] = {sbins};
+
+    float sranges[] = {0,256};
+
+    const float *Sranges[] = {sranges};
+
+    cv::MatND shist;
+    channels[0] = 1;
+
+    cv::calcHist(&imagehsv,
+                 1,
+                 channels,
+                 cv::Mat(),
+                 shist,
+                 1,
+                 sHistSize,
+                 Sranges,
+                 true,
+                 false);
+
+//    qDebug() << "Saturation" << endl;
+
+    for(int h =0 ;h<sbins;h++)
+    {
+//        qDebug() << shist.at<float>(h) << endl;
+        shist.at<float>(h) /= num;
+        fea2D.push_back(shist.at<float>(h));
+        fea2DName.push_back("SaturationHist");
+    }
+
+    entropy = 0.0;
+    for(int i=0;i<sbins;i++)
+        if(shist.at<float>(i))
+            entropy += shist.at<float>(i) * log2(shist.at<float>(i));
+    entropy = -entropy;
+    fea2D.push_back(entropy);
+    fea2DName.push_back("SaturationEntropy");
+//    qDebug() << entropy << endl;
 }
 
 void Fea::getBallCoord()
@@ -2930,6 +3063,17 @@ void Fea::printFeaName(int mode)
         std::cout << fea3DName[i] << std::endl;
 
     fclose(stdout);
+
+    freopen(output2dFeaName.toStdString().c_str(),"a+",stdout);
+    for(int j=0;j<fea2DName.size();j++)
+        std::cout << fea2DName[j] << std::endl;
+    fclose(stdout);
+
+    freopen(output3dFeaName.toStdString().c_str(),"a+",stdout);
+    for(int j=0;j<fea3DName.size();j++)
+        std::cout << fea3DName[j] << std::endl;
+    fclose(stdout);
+
 }
 
 void Fea::computeModel(glm::mat4 &m_view_tmp,glm::mat4 &m_model_tmp)
@@ -3090,6 +3234,10 @@ void Fea::clear()
     fea2D.clear();
 
     fea3D.clear();
+
+    fea2DName.clear();
+
+    fea3DName.clear();
 }
 
 void Fea::exportSBM(QString file)
