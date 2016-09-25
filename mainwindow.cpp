@@ -8,6 +8,8 @@
 #include <QFileDialog>
 #include <QFileInfo>
 
+#include <stdio.h>
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
@@ -17,6 +19,46 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->load->setShortcut(Qt::Key_L);
     ui->process->setShortcut(Qt::Key_P);
     ui->showImage->setShortcut(Qt::Key_S);
+
+    char paraIn[50];
+    scanf("%s",paraIn);
+    QString file = "/home/h005/Documents/vpDataSet/";
+    QString fileName = file.append(QString(paraIn));
+    fileName.append("/model/");
+    fileName.append(QString(paraIn));
+    fileName = fileName.append(".obj");
+    QFileInfo info(fileName);
+
+    if(!strcmp(paraIn,"select"))
+    {
+
+    }
+    else
+    {
+        while(!info.exists())
+        {
+            if(strcmp(paraIn,"exit")==0)
+                return;
+            std::cout << "model path error: model " << fileName.toStdString() << " doesn't exists "<< std::endl;
+            scanf("%s",paraIn);
+            file = "/home/h005/Documents/vpDataSet/";
+            fileName = file.append(QString(paraIn));
+            fileName.append("/model/");
+            fileName.append(QString(paraIn));
+            fileName = fileName.append(".obj");
+            info.setFile(fileName);
+        }
+
+        ui->modelPath->setText(fileName);
+
+        QFileInfo fileInfo(fileName);
+        QString path = fileInfo.absoluteDir().absolutePath().append("/");
+
+        fea = new Fea(fileName,path);
+        // mode 0 means compute 2D and 3D freatuers together
+        fea->setFeature(0);
+    }
+
 }
 
 MainWindow::~MainWindow()
@@ -100,7 +142,7 @@ void MainWindow::on_sightBall_clicked()
 //                               ".matrix",
 //                               tr("matrix (*.matrix)"));
 
-    QString fileName = "/home/h005/Documents/vpDataSet/villa7_1/model/villa.matrix";
+    QString fileName = "/home/h005/Documents/vpDataSet/villa7s/model/villa7s.matrix";
 
     fea = new Fea();
 

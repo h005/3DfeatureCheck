@@ -97,6 +97,9 @@ void Fea::setFeature(int mode)
         render->setMeshSaliencyPara(exImporter);
         for(int i=0;i<render->p_vecMesh.size();i++)
         {
+//            qDebug() << "mean curvature index " << i << endl;
+            if(i == 217)
+                qDebug() << "debug..." << endl;
             MeanCurvature<MyMesh> *tmpMean = new MeanCurvature<MyMesh>(render->p_vecMesh[i]);
             GaussCurvature<MyMesh> *tmpGauss = new GaussCurvature<MyMesh>(render->p_vecMesh[i]);
             a.push_back(tmpMean);
@@ -108,7 +111,7 @@ void Fea::setFeature(int mode)
     std::cout << "case : " << t_case << std::endl;
 #ifndef FOREGROUND
     // 关于PCA这里还有问题，是否要将前景物体提取出来然后再进行PCA计算？目前没有这么做
-    computePCA();
+//    computePCA();
 #endif
 
 #endif // without CHECK
@@ -3243,7 +3246,7 @@ void Fea::clear()
 void Fea::exportSBM(QString file)
 {
     int MAX_X_LEN = 16;
-    int MAX_Y_LEN = 64;
+    int MAX_Z_LEN = 64;
 
     glm::mat4 mv;
     // villa5 model
@@ -3263,8 +3266,8 @@ void Fea::exportSBM(QString file)
     // villa7
 //    float angle_x = glm::pi<float>() / 36.0 / MAX_X_LEN;
     // villa7_1
-    float angle_x = glm::pi<float>() / 2.0 / MAX_X_LEN;
-    float angle_z = 2.0*glm::pi<float>()/MAX_Y_LEN;
+    float angle_x = glm::pi<float>() / 8.0 / MAX_X_LEN;
+    float angle_z = 2.0 * glm::pi<float>() / MAX_Z_LEN;
 //    float angle_z = glm::pi<float>() / MAX_LEN;
     // zb Model parameters
 //    glm::mat4 m_camera = glm::lookAt(glm::vec3(0.f,0.f,80.f),
@@ -3295,23 +3298,23 @@ void Fea::exportSBM(QString file)
 //                           glm::vec3(0.f,1.f,0.f));
 
 // villa6 Model
-        glm::mat4 m_camera = glm::lookAt(glm::vec3(0.f,-800.f,11000.f),
+        glm::mat4 m_camera = glm::lookAt(glm::vec3(0.f,-11000.f,-800.f),
                                glm::vec3(0.f,0.0f,0.0f),
-                               glm::vec3(0.f,1.f,0.f));
+                               glm::vec3(0.f,0.f,1.f));
 
 
     std::ofstream fout(file.toStdString().c_str());
     int ind = 0;
     for(int i=0;i<MAX_X_LEN;i++)
     {
-        for(int j=0;j<MAX_Y_LEN;j++)
+        for(int j=0;j<MAX_Z_LEN;j++)
         {
             // rotate with x axis
             float anglex = angle_x * i;
-            // rotate with y axis
+            // rotate with z axis
             float anglez = angle_z * j - glm::pi<float>() / 2.0;
             glm::mat4 rotateX = glm::rotate(glm::mat4(1.f),anglex,glm::vec3(1.0,0.0,0.0));
-            glm::mat4 rotateZ = glm::rotate(glm::mat4(1.f),anglez,glm::vec3(0.0,1.0,0.0));
+            glm::mat4 rotateZ = glm::rotate(glm::mat4(1.f),anglez,glm::vec3(0.0,0.0,1.0));
             mv = m_camera * rotateX * rotateZ;
             // print out
             fout << "img" ;
@@ -3336,7 +3339,7 @@ void Fea::exportSBM(QString file)
             }
         }
     }
-    std::cout <<MAX_Y_LEN<<" export done" << std::endl;
+    std::cout <<MAX_Z_LEN<<" export done" << std::endl;
 }
 
 float Fea::floatAbs(float num)

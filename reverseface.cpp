@@ -20,6 +20,8 @@ ReverseFace::ReverseFace(std::vector<int> &indices)
 //    fclose(stdout);
 
     NUM_FACE = indices.size() / 3;
+    // 删除边出现多余三次的面
+    setRelation(indices);
 
     sz = new int[NUM_FACE];
     memset(sz,0,sizeof(int) * NUM_FACE);
@@ -36,7 +38,7 @@ ReverseFace::~ReverseFace()
 
 int *ReverseFace::reverseFace(std::vector<int> &indices, std::vector<int> &cs, std::vector<std::set<int> > &cate)
 {
-    setRelation(indices);
+
 
 //    reverse(indices);
     // set cateSet and id
@@ -87,6 +89,7 @@ void ReverseFace::shrink(std::vector<int> &indices)
         {
             indices.erase(indices.begin()+i*3,indices.begin() + i*3+3);
             i--;
+            NUM_FACE = indices.size() / 3;
             continue;
         }
         indSet.insert(ss);
@@ -146,8 +149,8 @@ void ReverseFace::setRelation(std::vector<int> &indices)
         pairs.push_back(std::make_pair<int,int>(tmpArray[0],tmpArray[2]));
         pairs.push_back(std::make_pair<int,int>(tmpArray[1],tmpArray[2]));
 
-        // attention 大本钟模型，存在一条边被三个定点共用的情况！
-        // 解决方案: 直接删除最后一个共用边的三角形
+        // attention 大本钟模型，存在一条边被多个三角形共用的情况！
+        // 解决方案: 直接删除后面共用边的三角形
         int flag = 0;
         for(int j=0;j<3;j++)
         {
@@ -174,8 +177,11 @@ void ReverseFace::setRelation(std::vector<int> &indices)
                     edges.erase(it);
                 else
                     it->second--;
-
             }
+            indices.erase(indices.begin() + i * 3, indices.begin() + i * 3 + 3);
+            i--;
+            NUM_FACE--;
+
         }
         else
         {

@@ -64,7 +64,8 @@ void SphereGenerator::output()
     float uStep = 1.0 / (float)(sX-1);
     float vStep = 1.0 / (float)(sZ-1);
 
-    float u = 1.0f,v = 1.0f;
+//    float u = 1.0f,v = 1.0f;
+    float u = 0.f, v = 1.0f;
     for(int i=0;i<sX;i++)
     {
         v = 1.0f;
@@ -75,16 +76,16 @@ void SphereGenerator::output()
             if( v < 0.f)
                 v = 0.f;
         }
-        u -= uStep;
-        if(u < 0.f)
-            u = 0.f;
+        u += uStep;
+        if(u > 1.f)
+            u = 1.f;
     }
 
     out << "# "<< centerList.size() << " texture coords" << std::endl;
 
     out << "g " << "Sphere 001"<< std::endl;
 
-    out << "usemtl " << keyWords.toStdString() << std::endl;
+//    out << "usemtl " << keyWords.toStdString() << std::endl;
 
     out << "s 1" << std::endl;
 

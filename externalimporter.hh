@@ -75,8 +75,11 @@ public:
 
         ReverseFace *reverse = new ReverseFace(indices);
         id = reverse->reverseFace(indices,cateSet,cate);
+
+        qDebug() << "indices size " << indices.size() << endl;
 #endif
         buildMesh_h005(vertices,indices,mesh);
+        qDebug() << "build mesh ok ........................................................................................." << endl;
         // output the file
 //        outputMesh(mesh,"E:/ViewPoint/kxm/201511231826/kxm");
 
@@ -145,6 +148,8 @@ public:
         qDebug()<<"setMeshVector ... "<<cateSet.size()<<endl;
         for(int i=0;i<cateSet.size();i++)
         {
+            if(i == 2)
+                std::cout << "debug" << std::endl;
             std::cout << "cateSet "<<i<<"/"<< cateSet.size() << std::endl;
 //            std::cout << "debug .... ok 0"<< std::endl;
             MeshT tmpMesh;
@@ -178,6 +183,9 @@ public:
 //            std::cout << "debug .... ok 2"<< std::endl;
             for(int j=0;j<indiceMesh[i].size();j++)
             {
+//                std::cout << "index " << j << std::endl;
+//                if(j == 5)
+//                    std::cout << "debug" << std::endl;
                 face_vhandles.clear();
                 it = indiceSet.find(indices[indiceMesh[i][j]*3]);
                 face_vhandles.push_back(vHandle[tmpIndex[*it]]);
@@ -189,7 +197,10 @@ public:
             }
 //            std::cout << "debug .... ok 3"<< std::endl;
 //            std::cout << "debug .... size "<<mesh.size() << std::endl;
+
+            std::cout << "debug...  mesh num vertices " << tmpMesh.n_vertices () << std::endl;
             mesh.push_back(tmpMesh);
+
 //            std::cout << "debug .... ok 4"<< std::endl;
             delete tmpIndex;
         }
@@ -281,7 +292,7 @@ private:
         std::cout<<"buildMesh_h005...indices size "<<indices.size()<<std::endl;
         for(int i=0;i<indices.size();i+=3)
         {
-//            printf("buildMesh_h005 face %d %d %d\n",indices[i],indices[i+1],indices[i+2]);
+            printf("buildMesh_h005 face %d %d %d %d\n",i,indices[i],indices[i+1],indices[i+2]);
             face_vhandles.clear();
             face_vhandles.push_back(vHandle[indices[i]]);
             face_vhandles.push_back(vHandle[indices[i+1]]);
