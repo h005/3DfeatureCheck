@@ -211,11 +211,15 @@ void Fea::setFeature(int mode)
                                render->m_model,
                                render->m_view);
 
+            setTiltAngle(render->m_model);
+
 #endif
 
             setOutlierCount();
 
             setBoundingBox3DAbs();
+
+
 
             /*
               add 2D fea function here
@@ -378,7 +382,8 @@ void Fea::setMMPara(QString mmFile)
 
 Fea::~Fea()
 {
-
+    delete render;
+    delete exImporter;
 }
 
 void Fea::readMask()
@@ -684,6 +689,8 @@ void Fea::setSilhouetteLength()
         }
     else
         res = 0.0;
+    // scale
+    res = res / image.cols / image.rows;
 
     fea3D.push_back(res);
     fea3DName.push_back("silhouetteLength");
@@ -1411,6 +1418,37 @@ void Fea::setBoundingBox3DAbs()
     fea3DName.push_back("boundingBox");
 //    std::cout << "z z" << std::endl;
     std::cout <<"bounding box done "<<" fea3D size "<<fea3D.size()<<std::endl;
+}
+
+///
+/// \brief Fea::setTiltAngle
+/// this function was created to compute tilt angle between camera up direction and model Z axis
+/// \param modelView
+/// modelView parameter was used to decompose camera pos, look at pos, and up Direction
+///
+void Fea::setTiltAngle(glm::mat4 &modelView)
+{
+    glm::vec3 t = glm::vec3(modelView[3]);
+    glm::mat3 R = glm::mat3(modelView);
+
+    glm::vec3 eye = -glm::transpose(R) * t;
+    glm::vec3 center = glm::normalize(glm::transpose(R) * glm::vec3(0.f, 0.f, -1.f)) + eye;
+    glm::vec3 up = glm::normalize(glm::transpose(R) * glm::vec3(0.f, 1.f, 0.f));
+
+    // ignore the tilt in y direction, so set the y value as 0
+    up[1] = 0.f;
+
+    glm::vec3 z_angles(0.f,0.f,1.f);
+    // cos theta
+    double angle;
+    if(glm::length(z_angles) == 0 || glm::length(up) == 0)
+        angle = -1;
+    else
+        angle = glm::dot(z_angles,up) / glm::length(z_angles) / glm::length(up);
+
+    fea3DName.push_back("ztitleAngle");
+    fea3D.push_back(angle);
+
 }
 
 void Fea::getColorDistribution()
@@ -2376,7 +2414,7 @@ void Fea::getColorInfo()
             bgrMean[2] += (double)image2D.at<cv::Vec3b>(i,j)[2];
         }
     double num = (double)(image2D.rows * image2D.cols);
-    for(int i=0;i<2;i++)
+    for(int i=0;i<3;i++)
         bgrMean[i] /= num;
 
     fea2D.push_back(bgrMean[0]);;
@@ -3060,21 +3098,33 @@ void Fea::printFeaName(int mode)
     freopen(outputFeaName.toStdString().c_str(),"a+",stdout);
 
     for(int j=0;j<fea2DName.size();j++)
-        std::cout << fea2DName[j] << std::endl;
+    {
+//        std::cout << fea2DName[j] << std::endl;
+        printf("%s\n",fea2DName[j].c_str());
+    }
 
     for(int i=0;i<fea3DName.size();i++)
-        std::cout << fea3DName[i] << std::endl;
+    {
+        //        std::cout << fea3DName[i] << std::endl;
+        printf("%s\n",fea3DName[i].c_str());
+    }
 
     fclose(stdout);
 
     freopen(output2dFeaName.toStdString().c_str(),"a+",stdout);
     for(int j=0;j<fea2DName.size();j++)
-        std::cout << fea2DName[j] << std::endl;
+    {
+//        std::cout << fea2DName[j] << std::endl;
+        printf("%s\n",fea2DName[j].c_str());
+    }
     fclose(stdout);
 
     freopen(output3dFeaName.toStdString().c_str(),"a+",stdout);
     for(int j=0;j<fea3DName.size();j++)
-        std::cout << fea3DName[j] << std::endl;
+    {
+//        std::cout << fea3DName[j] << std::endl;
+        printf("%s\n",fea3DName[j].c_str());
+    }
     fclose(stdout);
 
 }

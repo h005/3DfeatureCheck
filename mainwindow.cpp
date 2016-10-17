@@ -7,6 +7,7 @@
 
 #include <QFileDialog>
 #include <QFileInfo>
+#include <QTime>
 
 #include <stdio.h>
 
@@ -14,6 +15,8 @@ MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
+    QTime time;
+    time.start();
     ui->setupUi(this);
     fea = NULL;
     ui->load->setShortcut(Qt::Key_L);
@@ -32,6 +35,44 @@ MainWindow::MainWindow(QWidget *parent) :
     if(!strcmp(paraIn,"select"))
     {
 
+    }
+    else if(!strcmp(paraIn,"all"))
+    {
+        QString modelList[15] = {"bigben",
+                                   "kxm",
+                                   "notredame",
+                                   "freeGodness",
+                                   "tajMahal",
+                                   "cctv3",
+                                   "BrandenburgGate",
+                                   "BritishMuseum",
+                                   "potalaPalace",
+                                   "capitol",
+                                   "Sacre",
+                                   "TengwangPavilion",
+                                   "mont",
+                                   "HelsinkiCathedral",
+                                   "BuckinghamPalace"};
+        for(int i=0;i<15;i++)
+        {
+            file = "/home/h005/Documents/vpDataSet/";
+            fileName = file.append(modelList[i]);
+            fileName.append("/model/");
+            fileName.append(modelList[i]);
+            fileName = fileName.append(".obj");
+
+            QFileInfo fileInfo(fileName);
+            QString path = fileInfo.absoluteDir().absolutePath().append("/");
+
+            fea = new Fea(fileName,path);
+
+            fea->setFeature(0);
+
+            delete fea;
+        }
+        int time_diff = time.elapsed();
+        float elapsed = time_diff /  1000.0;
+        qDebug() << "elapsed time: " << elapsed << "s" << endl;
     }
     else
     {

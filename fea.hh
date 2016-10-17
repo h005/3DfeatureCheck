@@ -190,6 +190,8 @@ private:
 
     void setBoundingBox3DAbs();
 
+    void setTiltAngle(glm::mat4 &modelView);
+
     /*  2D feature */
     // fill fea2D 0~4095
     void getColorDistribution();
