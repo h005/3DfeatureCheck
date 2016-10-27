@@ -30,6 +30,7 @@ private:
     std::vector<glm::vec3> centerList;
     int sX;
     int sZ;
+    int isCircle;
     QString sMatrixFile;
     QString sTexture;
     QString sObj;

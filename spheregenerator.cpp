@@ -7,7 +7,7 @@ SphereGenerator::SphereGenerator(QString fileName)
 
 void SphereGenerator::genObj()
 {
-
+    isCircle = 0;
     QFileInfo fileInfo(fileName);
     if(!fileInfo.exists())
     {
@@ -22,6 +22,7 @@ void SphereGenerator::genObj()
     sMatrixFile = QDir::cleanPath(QDir(baseDir).filePath(settings.value("sample/matrixfile").toString()));
     sTexture = QDir::cleanPath(QDir(baseDir).filePath(settings.value("sample/texture").toString()));
     sObj = QDir::cleanPath(QDir(baseDir).filePath(settings.value("sample/outputobj").toString()));
+    isCircle = settings.value("circle/circle").toInt();
 
     // initialize
     projList.clear();
@@ -61,6 +62,9 @@ void SphereGenerator::output()
 
     out << "# "<< centerList.size() << " vertices" << std::endl;
 
+    if(isCircle)
+        sZ++;
+
     float uStep = 1.0 / (float)(sX-1);
     float vStep = 1.0 / (float)(sZ-1);
 
@@ -89,18 +93,47 @@ void SphereGenerator::output()
 
     out << "s 1" << std::endl;
 
-    for(int i=0;i<sX-1;i++)
+    if(!isCircle)
     {
-        for(int j=1;j<sZ;j++)
+        for(int i=0;i<sX-1;i++)
         {
-            out << "f " << i * sZ + j << "/" << i * sZ + j << " ";
-            out << (i+1) * sZ + j << "/" << (i+1) * sZ + j << " ";
-            out << (i+1) * sZ + j + 1 << "/" << (i+1) * sZ + j + 1 << " ";
-            out << i * sZ + j + 1 << "/" << i * sZ + j + 1 << std::endl;
+            for(int j=1;j<sZ;j++)
+            {
+                out << "f " << i * sZ + j << "/" << i * sZ + j << " ";
+                out << (i+1) * sZ + j << "/" << (i+1) * sZ + j << " ";
+                out << (i+1) * sZ + j + 1 << "/" << (i+1) * sZ + j + 1 << " ";
+                out << i * sZ + j + 1 << "/" << i * sZ + j + 1 << std::endl;
+            }
         }
+        out << "# "<<(sX-1)*(sZ-1)<<" polygons"<<std::endl;
+    }
+    else
+    {
+        // 先完成环的那部分
+        sZ--;
+        for(int i=0;i<sX-1;i++)
+        {
+            for(int j=1;j<sZ;j++)
+            {
+                out << "f " << i * sZ + j << "/" << i * (sZ + 1) + j << " ";
+                out << (i+1) * sZ + j << "/" << (i+1) * (sZ + 1) + j << " ";
+                out << (i+1) * sZ + j + 1 << "/" << (i+1) * (sZ + 1) + j + 1 << " ";
+                out << i * sZ + j + 1 << "/" << i * (sZ + 1) + j + 1 << std::endl;
+            }
+        }
+
+        // 将环给衔接起来
+            for(int i=0;i<sX-1;i++)
+            {
+                out << "f " << i * sZ + 1 << "/" << (i + 1) * (sZ + 1) << " ";
+                out << (i+1) * sZ << "/" << (i+1) * (sZ + 1) - 1 << " ";
+                out << (i+2) * sZ << "/" << (i+2) * (sZ + 1) - 1 << " ";
+                out << (i+1) * sZ + 1 << "/" << (i+2) * (sZ + 1) << std::endl;
+            }
+
+        out << "# "<<(sX)*(sZ-1)<<" polygons"<<std::endl;
     }
 
-    out << "# "<<(sX-1)*(sZ-1)<<" polygons"<<std::endl;
     out.close();
 
     std::cout << "mtlFile "<<mtlFile.toStdString() << std::endl;

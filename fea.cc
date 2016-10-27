@@ -3316,7 +3316,7 @@ void Fea::exportSBM(QString file)
     // villa7
 //    float angle_x = glm::pi<float>() / 36.0 / MAX_X_LEN;
     // villa7_1
-    float angle_x = glm::pi<float>() / 8.0 / MAX_X_LEN;
+    float angle_x = glm::pi<float>() / 18.0 / MAX_X_LEN;
     float angle_z = 2.0 * glm::pi<float>() / MAX_Z_LEN;
 //    float angle_z = glm::pi<float>() / MAX_LEN;
     // zb Model parameters
