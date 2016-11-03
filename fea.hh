@@ -310,6 +310,8 @@ private:
 
     float floatAbs(float num);
 
+    glm::mat4 normalizedModelView(const glm::mat4 &mvMatrix);
+
 };
 
 

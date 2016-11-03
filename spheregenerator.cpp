@@ -190,7 +190,7 @@ void SphereGenerator::deComposeMV()
         glm::vec3 eye = - glm::transpose(R) * t;
         glm::vec3 center = glm::normalize(glm::transpose(R) * glm::vec3(0.f,0.f,-1.f)) + eye;
 
-        centerList.push_back(center);
+        centerList.push_back(eye);
     }
 }
 

@@ -3311,7 +3311,9 @@ void Fea::exportSBM(QString file)
 //    glm::mat4 proj = glm::perspective(glm::pi<float>() / 3, 4.0f / 3.0f, 1000.0f, 2000.f);
 //    float angle_x = 2.0*glm::pi<float>()/MAX_LEN;
 //    villa6 model
-    glm::mat4 proj = glm::perspective(glm::pi<float>() / 3, 4.0f / 3.0f, 4000.0f, 20000.f);
+//    glm::mat4 proj = glm::perspective(glm::pi<float>() / 3, 4.0f / 3.0f, 4000.0f, 20000.f);
+    // house 8 model & pavilion9 model
+    glm::mat4 proj = glm::perspective(glm::pi<float>() / 3, 4.0f / 3.0f, 0.5f, 10.f);
 //    float angle_x = glm::pi<float>() / 12.0 / MAX_LEN;
     // villa7
 //    float angle_x = glm::pi<float>() / 36.0 / MAX_X_LEN;
@@ -3348,9 +3350,14 @@ void Fea::exportSBM(QString file)
 //                           glm::vec3(0.f,1.f,0.f));
 
 // villa6 Model
-        glm::mat4 m_camera = glm::lookAt(glm::vec3(0.f,-11000.f,-800.f),
-                               glm::vec3(0.f,0.0f,0.0f),
-                               glm::vec3(0.f,0.f,1.f));
+//        glm::mat4 m_camera = glm::lookAt(glm::vec3(0.f,-11000.f,-800.f),
+//                               glm::vec3(0.f,0.0f,0.0f),
+//                               glm::vec3(0.f,0.f,1.f));
+
+// house8 Model
+    glm::mat4 m_camera = glm::lookAt(glm::vec3(0.f,-1.2f,0.f),
+                           glm::vec3(0.f,0.0f,0.3f),
+                           glm::vec3(0.f,0.f,1.f));
 
 
     std::ofstream fout(file.toStdString().c_str());
@@ -3366,6 +3373,7 @@ void Fea::exportSBM(QString file)
             glm::mat4 rotateX = glm::rotate(glm::mat4(1.f),anglex,glm::vec3(1.0,0.0,0.0));
             glm::mat4 rotateZ = glm::rotate(glm::mat4(1.f),anglez,glm::vec3(0.0,0.0,1.0));
             mv = m_camera * rotateX * rotateZ;
+            mv = normalizedModelView(mv);
             // print out
             fout << "img" ;
             fout.width(4);
@@ -3396,3 +3404,14 @@ float Fea::floatAbs(float num)
 {
     return num < 0 ? -num : num;
 }
+
+glm::mat4 Fea::normalizedModelView(const glm::mat4 &mvMatrix)
+{
+    glm::mat3 R = glm::mat3(mvMatrix);
+    float c = glm::length(R[0]);
+    glm::mat4 normalizedModelView = mvMatrix;
+    normalizedModelView /= c;
+    normalizedModelView[3][3] = 1.f;
+    return normalizedModelView;
+}
+

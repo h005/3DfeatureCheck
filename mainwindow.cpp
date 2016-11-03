@@ -183,7 +183,9 @@ void MainWindow::on_sightBall_clicked()
 //                               ".matrix",
 //                               tr("matrix (*.matrix)"));
 
-    QString fileName = "/home/h005/Documents/vpDataSet/villa7s/model/villa7s.matrix";
+//    QString fileName = "/home/h005/Documents/vpDataSet/villa7s/model/villa7s.matrix";
+//    QString fileName = "/home/h005/Documents/vpDataSet/house8/model/house8.matrix";
+    QString fileName = "/home/h005/Documents/vpDataSet/pavilion9/model/pavilion9.matrix";
 
     fea = new Fea();
 
