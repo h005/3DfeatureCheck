@@ -80,7 +80,8 @@ private:
     int NUM;
     int P_NUM;
 
-    // render image the same as background
+    // render image the same as background, in general cases image is the same as mask, when manipulate
+    // the foregorund pixels, suggest you use the mask.
     cv::Mat image;
     // 255 means background
     cv::Mat mask;
@@ -194,19 +195,19 @@ private:
 
     /*  2D feature */
     // fill fea2D 0~4095
-    void getColorDistribution();
+    void setColorDistribution();
     // 4096
-    void getHueCount();
+    void setHueCount();
     // 4097
-    void getBlur();
+    void setBlur();
     //  4098
-    void getContrast();
+    void setContrast();
     // 4099
-    void getBrightness();
+    void setBrightness();
     // rule of thirds
-    void getRuleOfThird();
+    void setRuleOfThird();
     // lighting feature
-    void getLightingFeature();
+    void setLightingFeature();
     // glcm
     void setGLCM();
     // saliecny
@@ -215,20 +216,23 @@ private:
     // add pca to fea2D
     void setPCA();
     // hog
-    void getHog();
+    void setHog();
     // compute PCA
     void computePCA();
     // 3D bounding box 2D x y axis theta
-    void get2DTheta();
+    void set2DTheta();
     // 3D bounding box 2D x y axis theta
-    void get2DThetaAbs();
+    void set2DThetaAbs();
     // color variance
-    void getColorEntropyVariance();
+    void setColorEntropyVariance();
     // color info including (RGB vlaue mean, HSV values (C1 in HSV space),  Hue histogram (5 bins and entropy) and Satuation)
     // ref Geometric Context from a Single Image ICCV 2005
-    void getColorInfo();
+    void setColorInfo();
     // ball coordinate
-    void getBallCoord();
+    void setBallCoord();
+    // subject brightness
+    void setSubjuctBrightness();
+
 
     void roundingBox2D(int &up,int &bottom,int &left,int &right);
 
@@ -309,6 +313,7 @@ private:
                          int &height);
 
     float floatAbs(float num);
+    double doubleAbs(double num);
 
     glm::mat4 normalizedModelView(const glm::mat4 &mvMatrix);
 

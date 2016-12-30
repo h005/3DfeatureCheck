@@ -206,7 +206,7 @@ void discrete_mean_curv_op( const MeshT&                        _m,
 
     // error handling
     if(_area < 0) std::cerr << "error: triangle area < 0\n";
-    if(isnan(_area))
+    if(std::isnan(_area))
     {
       REALT gamma = acos( ((p0-p1).normalize() | (p2-p1).normalize()) );
 

@@ -230,16 +230,16 @@ void Fea::setFeature(int mode)
             // 可以只计算mask对应部分的前景区域 2Dfea
             if(mode == 2 || mode == 0)
             {
-                getHueCount();
+                setHueCount();
                 // 不计算
 //                getBlur();
                 // 可以只计算mask对应部分的前景区域
-                getContrast(); // 直方图中占98%区域的宽度
+                setContrast(); // 直方图中占98%区域的宽度
                 // 可以只计算mask对应部分的前景区域
-                getBrightness();
+                setBrightness();
             }
             // 球面坐标系
-            getBallCoord();
+            setBallCoord();
 
 //#ifndef FOREGROUND
 
@@ -255,17 +255,19 @@ void Fea::setFeature(int mode)
 //#endif
             if(mode == 2 || mode == 0)
             {
-                getRuleOfThird();
+                setRuleOfThird();
                 // 各种不同方向的梯度叠加
-                getHog();
+                setHog();
 
 //                get2DTheta();
 
-                get2DThetaAbs();
+                set2DThetaAbs();
 
-                getColorEntropyVariance();
+                setColorEntropyVariance();
 
-                getColorInfo();
+                setColorInfo();
+
+//                setSubjuctBrightness();
 
             }
 
@@ -442,6 +444,12 @@ void Fea::setMat(float *img, int width, int height,int dstWidth,int dstHeight)
     cv::resize(image,image,cv::Size(dstWidth,dstHeight));
     // release memory
     image0.release();
+
+//    cv::namedWindow("image");
+//    cv::imshow("image",image);
+//    cv::waitKey(0);
+
+
 }
 
 void Fea::setProjectArea()
@@ -1413,6 +1421,7 @@ void Fea::setBoundingBox3DAbs()
     // p_model_z z
     dotval = glm::dot(render->p_model_z,axisz);
     cosTheta = dotval / (glm::length(render->p_model_z) * glm::length(axisz));
+//    cosTheta = floatAbs(cosTheta);
     theta = acos(cosTheta);
     fea3D.push_back(theta);
     fea3DName.push_back("boundingBox");
@@ -1451,7 +1460,7 @@ void Fea::setTiltAngle(glm::mat4 &modelView)
 
 }
 
-void Fea::getColorDistribution()
+void Fea::setColorDistribution()
 {
 #ifdef FOREGROUND
     double *hist = new double[NUM_Distribution];
@@ -1503,7 +1512,7 @@ void Fea::getColorDistribution()
     std::cout << "color distrbution done"<<" fea2D size "<<fea2D.size()<< std::endl;
 }
 
-void Fea::getHueCount()
+void Fea::setHueCount()
 {
     cv::Mat tmp = image2D32f3c;
 
@@ -1576,9 +1585,14 @@ void Fea::getHueCount()
 
 }
 
-void Fea::getBlur()
+///
+/// \brief Fea::setBlur
+/// compute blur / sharpness / clarity
+/// ref the design of high-level features for photo quality assessment
+///
+void Fea::setBlur()
 {
-#ifndef FOREGROUND
+//#ifndef FOREGROUND
     cv::Mat tmp = gray;
 //    qDebug()<<"blur "<<tmp.rows<<" "<<tmp.cols<<" "<<tmp.channels()<<endl;
 //    image2D.copyTo(tmp);
@@ -1625,15 +1639,15 @@ void Fea::getBlur()
     planes[1].release();
     magl.release();
 
-#else
+//#else
     return;
-#endif
+//#endif
 
 //    qDebug()<<" get blur ... "<<blur<<" ... done"<<endl;
 
 }
 
-void Fea::getContrast()
+void Fea::setContrast()
 {
     double widthRatio = 0.98;
 
@@ -1684,7 +1698,7 @@ void Fea::getContrast()
 
 }
 
-void Fea::getBrightness()
+void Fea::setBrightness()
 {
     cv::Mat tmp = gray;
 //    image2D.copyTo(tmp);
@@ -1715,7 +1729,7 @@ void Fea::getBrightness()
 //    qDebug()<<"get Brightness ... "<<brightness<<endl;
 }
 
-void Fea::getRuleOfThird()
+void Fea::setRuleOfThird()
 {
     double centroidRow  = 0;
     double centroidCol = 0;
@@ -1765,7 +1779,7 @@ void Fea::getRuleOfThird()
 
 }
 
-void Fea::getLightingFeature()
+void Fea::setLightingFeature()
 {
     // feature lighting
     double fl = 0;
@@ -1951,7 +1965,7 @@ void Fea::setPCA()
     }
 }
 
-void Fea::getHog()
+void Fea::setHog()
 {
     // ref http://blog.csdn.net/yangtrees/article/details/7463431
     // ref http://blog.csdn.net/raodotcong/article/details/6239431
@@ -2022,7 +2036,7 @@ void Fea::computePCA()
 /// 之间的最小夹角
 /// 后三个是三个坐标轴投影之后两两之间的夹角
 ///
-void Fea::get2DTheta()
+void Fea::set2DTheta()
 {
     // Gyy 2b
     glm::vec3 axis_x = glm::vec3(1,0,0);
@@ -2135,7 +2149,7 @@ void Fea::get2DTheta()
 /// 后三个是三个坐标轴投影之后亮亮之间的夹角(absoute value without the difference of positive direction)
 /// 我想了一下，还是感觉这个特征应该是属于3D特征的
 ///
-void Fea::get2DThetaAbs()
+void Fea::set2DThetaAbs()
 {
     // bocaGyy 2b
     glm::vec3 axis_x = glm::vec3(1,0,0);
@@ -2328,7 +2342,7 @@ void Fea::roundingBox(cv::Mat &boxImage)
 
 }
 
-void Fea::getColorEntropyVariance()
+void Fea::setColorEntropyVariance()
 {
     double *hist = new double[NUM_Distribution];
     memset(hist,0,sizeof(double)*NUM_Distribution);
@@ -2402,7 +2416,7 @@ void Fea::getColorEntropyVariance()
 /// Hue, histogram (5 bins) and entropy
 /// Saturation, histogram (3 bins) and entropy
 ///
-void Fea::getColorInfo()
+void Fea::setColorInfo()
 {
     // rgb mean
     double bgrMean[3] = {0,0,0};
@@ -2510,7 +2524,7 @@ void Fea::getColorInfo()
 //    qDebug() << entropy << endl;
 }
 
-void Fea::getBallCoord()
+void Fea::setBallCoord()
 {
     // ref https://zh.wikipedia.org/wiki/%E7%90%83%E5%BA%A7%E6%A8%99%E7%B3%BB
     glm::mat4 mv = m_viewList[t_case] *  m_modelList[t_case];
@@ -2532,6 +2546,58 @@ void Fea::getBallCoord()
     fea3D.push_back(fani);
     fea3DName.push_back("ballCoord");
     std::cout << "ballCoord done "<<" fea3D size "<<fea3D.size()<< std::endl;
+}
+
+///
+/// \brief Fea::getSubjuctBrightness
+/// this function was careted to compute subject brightness
+/// ref Multi-level photo quality assessment with multi-view features
+/// page 4  f19 f20
+///
+void Fea::setSubjuctBrightness()
+{
+    // image2D32f3c is hsv image
+    // f19 = | H_subject - H_background |;
+    // f20 = | V_subject - V_background |;
+    double f19 = 0.0, f20 = 0.0;
+    double h_subject = 0.0, h_background = 0.0;
+    double v_subject = 0.0, v_background = 0.0;
+    double subject_counter = 0.0;
+    double background_counter = 0.0;
+
+    for(int i=0;i<mask.rows;i++)
+    {
+        for(int j = 0;j<mask.cols;j++)
+        {
+            if(mask.at<uchar>(i,j) != 255)
+            {
+                h_subject += image2D32f3c.at<cv::Vec3f>(i,j)[0];
+                v_subject += image2D32f3c.at<cv::Vec3f>(i,j)[2];
+                subject_counter++;
+            }
+            else
+            {
+                h_background += image2D32f3c.at<cv::Vec3f>(i,j)[0];
+                h_background += image2D32f3c.at<cv::Vec3f>(i,j)[2];
+                background_counter++;
+            }
+        }
+    }
+
+    h_subject /= subject_counter;
+    v_subject /= subject_counter;
+    h_background /= background_counter;
+    v_background /= background_counter;
+
+    f19 = doubleAbs(h_subject - h_background);
+    f20 = doubleAbs(v_subject - v_background);
+
+    fea2D.push_back(f19);
+    fea2D.push_back(f20);
+
+    fea2DName.push_back("ContrastBrightness");
+    fea2DName.push_back("ContrastBrightness");
+
 }
 
 ///
@@ -3401,6 +3467,11 @@ void Fea::exportSBM(QString file)
 }
 
 float Fea::floatAbs(float num)
+{
+    return num < 0 ? -num : num;
+}
+
+double Fea::doubleAbs(double num)
 {
     return num < 0 ? -num : num;
 }

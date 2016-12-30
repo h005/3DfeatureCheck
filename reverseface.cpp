@@ -145,9 +145,9 @@ void ReverseFace::setRelation(std::vector<int> &indices)
         int tmpArray[3] = {indices[i*3], indices[i*3+1],indices[i*3+2]};
         std::sort(tmpArray,tmpArray+3);
         std::vector< std::pair<int,int> > pairs;
-        pairs.push_back(std::make_pair<int,int>(tmpArray[0],tmpArray[1]));
-        pairs.push_back(std::make_pair<int,int>(tmpArray[0],tmpArray[2]));
-        pairs.push_back(std::make_pair<int,int>(tmpArray[1],tmpArray[2]));
+        pairs.push_back(std::make_pair<int&,int&>(tmpArray[0],tmpArray[1]));
+        pairs.push_back(std::make_pair<int&,int&>(tmpArray[0],tmpArray[2]));
+        pairs.push_back(std::make_pair<int&,int&>(tmpArray[1],tmpArray[2]));
 
         // attention 大本钟模型，存在一条边被多个三角形共用的情况！
         // 解决方案: 直接删除后面共用边的三角形
@@ -166,7 +166,7 @@ void ReverseFace::setRelation(std::vector<int> &indices)
 //                Q_ASSERT(it->second < 3);
             }
             else
-                edges.insert(std::make_pair<std::pair<int,int>,int>(pairs[j],1));
+                edges.insert(std::make_pair< std::pair<int,int>&,int >(pairs[j],1));
         }
         if(flag)
         {
@@ -195,7 +195,7 @@ void ReverseFace::setRelation(std::vector<int> &indices)
                     adjTable.erase(it);
                 }
                 else
-                    adjTable.insert( std::make_pair< std::pair<int,int>, int>(pairs[j],i));
+                    adjTable.insert( std::make_pair< std::pair<int,int>&, int& >(pairs[j],i));
             }
         }
     }
@@ -264,18 +264,18 @@ bool ReverseFace::checkOrder(std::vector<int> &indices, int ind1, int ind2)
     std::set< std::pair<int,int> > pair1;
     std::vector< std::pair<int,int> > pair2;
 
-    std::pair<int,int> pair = std::make_pair<int,int>(indices[ind1*3],indices[ind1*3+1]);
+    std::pair<int,int> pair = std::make_pair<int&, int&>(indices[ind1*3],indices[ind1*3+1]);
     pair1.insert(pair);
-    pair = std::make_pair<int,int>(indices[ind1*3+1],indices[ind1*3+2]);
+    pair = std::make_pair<int&, int&>(indices[ind1*3+1],indices[ind1*3+2]);
     pair1.insert(pair);
-    pair = std::make_pair<int,int>(indices[ind1*3+2],indices[ind1*3]);
+    pair = std::make_pair<int&, int&>(indices[ind1*3+2],indices[ind1*3]);
     pair1.insert(pair);
 
-    pair = std::make_pair<int,int>(indices[ind2*3],indices[ind2*3+1]);
+    pair = std::make_pair<int&, int&>(indices[ind2*3],indices[ind2*3+1]);
     pair2.push_back(pair);
-    pair = std::make_pair<int,int>(indices[ind2*3+1],indices[ind2*3+2]);
+    pair = std::make_pair<int&, int&>(indices[ind2*3+1],indices[ind2*3+2]);
     pair2.push_back(pair);
-    pair = std::make_pair<int,int>(indices[ind2*3+2],indices[ind2*3]);
+    pair = std::make_pair<int&, int&>(indices[ind2*3+2],indices[ind2*3]);
     pair2.push_back(pair);
 
     for(int i=0;i<3;i++)
