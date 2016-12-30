@@ -38,7 +38,8 @@ MainWindow::MainWindow(QWidget *parent) :
     }
     else if(!strcmp(paraIn,"all"))
     {
-        QString modelList[15] = {"bigben",
+
+        QString modelList[20] = {"bigben",
                                    "kxm",
                                    "notredame",
                                    "freeGodness",
@@ -52,8 +53,14 @@ MainWindow::MainWindow(QWidget *parent) :
                                    "TengwangPavilion",
                                    "mont",
                                    "HelsinkiCathedral",
-                                   "BuckinghamPalace"};
-        for(int i=0;i<15;i++)
+                                   "BuckinghamPalace",
+                                   "castle",
+                                   "house8",
+                                   "njuSample",
+                                   "pavilion9",
+                                   "villa7s"};
+
+        for(int i=0;i<20;i++)
         {
             file = "/home/h005/Documents/vpDataSet/";
             fileName = file.append(modelList[i]);
@@ -179,13 +186,13 @@ void MainWindow::on_load3D_clicked()
 void MainWindow::on_sightBall_clicked()
 {
     // this function was used to export the matrix file on the sight ball
-//    QString fileName = QFileDialog::getSaveFileName(this, tr("Save File"),
-//                               ".matrix",
-//                               tr("matrix (*.matrix)"));
+    QString fileName = QFileDialog::getSaveFileName(this, tr("Save File"),
+                               ".matrix",
+                               tr("matrix (*.matrix)"));
 
 //    QString fileName = "/home/h005/Documents/vpDataSet/villa7s/model/villa7s.matrix";
 //    QString fileName = "/home/h005/Documents/vpDataSet/house8/model/house8.matrix";
-    QString fileName = "/home/h005/Documents/vpDataSet/pavilion9/model/pavilion9.matrix";
+//    QString fileName = "/home/h005/Documents/vpDataSet/pavilion9/model/pavilion9.matrix";
 
     fea = new Fea();
 
