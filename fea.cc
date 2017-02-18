@@ -97,9 +97,6 @@ void Fea::setFeature(int mode)
         render->setMeshSaliencyPara(exImporter);
         for(int i=0;i<render->p_vecMesh.size();i++)
         {
-//            qDebug() << "mean curvature index " << i << endl;
-            if(i == 217)
-                qDebug() << "debug..." << endl;
             MeanCurvature<MyMesh> *tmpMean = new MeanCurvature<MyMesh>(render->p_vecMesh[i]);
             GaussCurvature<MyMesh> *tmpGauss = new GaussCurvature<MyMesh>(render->p_vecMesh[i]);
             a.push_back(tmpMean);
@@ -267,7 +264,9 @@ void Fea::setFeature(int mode)
 
                 setColorInfo();
 
-//                setSubjuctBrightness();
+                setSubjuctBrightness();
+
+                setBlur();
 
             }
 
@@ -1422,7 +1421,7 @@ void Fea::setBoundingBox3DAbs()
     // p_model_z z
     dotval = glm::dot(render->p_model_z,axisz);
     cosTheta = dotval / (glm::length(render->p_model_z) * glm::length(axisz));
-//    cosTheta = floatAbs(cosTheta);
+    cosTheta = floatAbs(cosTheta);
     theta = acos(cosTheta);
     fea3D.push_back(theta);
     fea3DName.push_back("boundingBox");
@@ -2595,8 +2594,8 @@ void Fea::setSubjuctBrightness()
     fea2D.push_back(f19);
     fea2D.push_back(f20);
 
-    fea2DName.push_back("ContrastBrightness");
-    fea2DName.push_back("ContrastBrightness");
+    fea2DName.push_back("SubjectBrightness");
+    fea2DName.push_back("SubjectBrightness");
 
 }
 
