@@ -97,9 +97,6 @@ void Fea::setFeature(int mode)
         render->setMeshSaliencyPara(exImporter);
         for(int i=0;i<render->p_vecMesh.size();i++)
         {
-//            qDebug() << "mean curvature index " << i << endl;
-            if(i == 217)
-                qDebug() << "debug..." << endl;
             MeanCurvature<MyMesh> *tmpMean = new MeanCurvature<MyMesh>(render->p_vecMesh[i]);
             GaussCurvature<MyMesh> *tmpGauss = new GaussCurvature<MyMesh>(render->p_vecMesh[i]);
             a.push_back(tmpMean);
@@ -267,7 +264,9 @@ void Fea::setFeature(int mode)
 
                 setColorInfo();
 
-//                setSubjuctBrightness();
+                setSubjuctBrightness();
+
+                setBlur();
 
             }
 
@@ -1354,6 +1353,7 @@ void Fea::setBoundingBox3DAbs()
     glm::vec4 axisz = glm::vec4(0,0,1,0);
 
     std::cout << "bounding box 3d "<<std::endl;
+
     // p_model_x x
     dotval = glm::dot(render->p_model_x,axisx);
     cosTheta = dotval / (glm::length(render->p_model_x) * glm::length(axisx));
@@ -1361,7 +1361,7 @@ void Fea::setBoundingBox3DAbs()
     theta = acos(cosTheta);
     fea3D.push_back(theta);
     fea3DName.push_back("boundingBox");
-//    std::cout << "x x" << std::endl;
+
     // p_model_x y
     dotval = glm::dot(render->p_model_x,axisy);
     cosTheta = dotval / (glm::length(render->p_model_x) * glm::length(axisy));
@@ -1369,7 +1369,7 @@ void Fea::setBoundingBox3DAbs()
     theta = acos(cosTheta);
     fea3D.push_back(theta);
     fea3DName.push_back("boundingBox");
-    //    std::cout << "x y" << std::endl;
+
     // p_model_x z
     dotval = glm::dot(render->p_model_x,axisz);
     cosTheta = dotval / (glm::length(render->p_model_x) * glm::length(axisz));
@@ -1377,7 +1377,7 @@ void Fea::setBoundingBox3DAbs()
     theta = acos(cosTheta);
     fea3D.push_back(theta);
     fea3DName.push_back("boundingBox");
-//    std::cout << "x z" << std::endl;
+
     // p_model_y x
     dotval = glm::dot(render->p_model_y,axisx);
     cosTheta = dotval / (glm::length(render->p_model_y) * glm::length(axisx));
@@ -1385,7 +1385,7 @@ void Fea::setBoundingBox3DAbs()
     theta = acos(cosTheta);
     fea3D.push_back(theta);
     fea3DName.push_back("boundingBox");
-//    std::cout << "y x" << std::endl;
+
     // p_model_y y
     dotval = glm::dot(render->p_model_y,axisy);
     cosTheta = dotval / (glm::length(render->p_model_y) * glm::length(axisy));
@@ -1393,7 +1393,7 @@ void Fea::setBoundingBox3DAbs()
     theta = acos(cosTheta);
     fea3D.push_back(theta);
     fea3DName.push_back("boundingBox");
-//    std::cout << "y y" << std::endl;
+
     // p_model_y z
     dotval = glm::dot(render->p_model_y,axisz);
     cosTheta = dotval / (glm::length(render->p_model_y) * glm::length(axisz));
@@ -1401,7 +1401,7 @@ void Fea::setBoundingBox3DAbs()
     theta = acos(cosTheta);
     fea3D.push_back(theta);
     fea3DName.push_back("boundingBox");
-//    std::cout << "y z" << std::endl;
+
     // p_model_z x
     dotval = glm::dot(render->p_model_z,axisx);
     cosTheta = dotval / (glm::length(render->p_model_z) * glm::length(axisx));
@@ -1409,7 +1409,7 @@ void Fea::setBoundingBox3DAbs()
     theta = acos(cosTheta);
     fea3D.push_back(theta);
     fea3DName.push_back("boundingBox");
-//    std::cout << "z x" << std::endl;
+
     // p_model_z y
     dotval = glm::dot(render->p_model_z,axisy);
     cosTheta = dotval / (glm::length(render->p_model_z) * glm::length(axisy));
@@ -1417,15 +1417,14 @@ void Fea::setBoundingBox3DAbs()
     theta = acos(cosTheta);
     fea3D.push_back(theta);
     fea3DName.push_back("boundingBox");
-//    std::cout << "z y" << std::endl;
+
     // p_model_z z
     dotval = glm::dot(render->p_model_z,axisz);
     cosTheta = dotval / (glm::length(render->p_model_z) * glm::length(axisz));
-//    cosTheta = floatAbs(cosTheta);
+    cosTheta = floatAbs(cosTheta);
     theta = acos(cosTheta);
     fea3D.push_back(theta);
     fea3DName.push_back("boundingBox");
-//    std::cout << "z z" << std::endl;
     std::cout <<"bounding box done "<<" fea3D size "<<fea3D.size()<<std::endl;
 }
 
@@ -2595,8 +2594,13 @@ void Fea::setSubjuctBrightness()
     fea2D.push_back(f19);
     fea2D.push_back(f20);
 
+<<<<<<< HEAD
+    fea2DName.push_back("SubjectBrightness");
+    fea2DName.push_back("SubjectBrightness");
+=======
     fea2DName.push_back("ContrastBrightness");
     fea2DName.push_back("ContrastBrightness");
+>>>>>>> 520e8e36a9cc10b191cee545fb89d6b1480f83ab
 
 }
 
