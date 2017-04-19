@@ -2594,13 +2594,8 @@ void Fea::setSubjuctBrightness()
     fea2D.push_back(f19);
     fea2D.push_back(f20);
 
-<<<<<<< HEAD
-    fea2DName.push_back("SubjectBrightness");
-    fea2DName.push_back("SubjectBrightness");
-=======
     fea2DName.push_back("ContrastBrightness");
     fea2DName.push_back("ContrastBrightness");
->>>>>>> 520e8e36a9cc10b191cee545fb89d6b1480f83ab
 
 }
 
