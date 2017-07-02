@@ -24,7 +24,14 @@ SOURCES += main.cpp\
     ufface.cpp \
     reverseface.cpp \
     spheregenerator.cpp \
-    vpsample.cpp
+    vpsample.cpp \
+    feature/lineSegmentFeature/vpdetection.cpp \
+    feature/lineSegmentFeature/lsd.cpp \
+    feature/lineSegmentFeature/linesegmentfea.cpp \
+    feature/lineSegmentFeature/linesegmentstart.cpp \
+    feature/gistFeature/gist.cpp \
+    feature/gistFeature/standalone_image.cpp \
+    feature/gistFeature/libgist.cpp
 
 HEADERS  += mainwindow.h \
     abstractfeature.hh \
@@ -42,7 +49,14 @@ HEADERS  += mainwindow.h \
     ufface.h \
     predefine.h \
     reverseface.h \
-    spheregenerator.h
+    spheregenerator.h \
+    feature/lineSegmentFeature/vpdetection.h \
+    feature/lineSegmentFeature/lsd.h \
+    feature/lineSegmentFeature/linesegmentfea.h \
+    feature/gistFeature/gist.h \
+    feature/gistFeature/standalone_image.h \
+    feature/gistFeature/libgist.h \
+    feature/gistFeature/clany/clany_defs.h
 
 FORMS    += mainwindow.ui
 
@@ -123,6 +137,10 @@ LIBS += -lGLEW -lGLU -lGL
 
 # glm
 INCLUDEPATH += usr/include/glm
+
+# fftw3
+LIBS += -L/usr/local/lib/ \
+        -lfftw3f
 
 #opencv
 INCLUDEPATH += /usr/local/include \

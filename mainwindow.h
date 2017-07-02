@@ -36,6 +36,11 @@ private slots:
     void on_sphereGen_clicked();
 
 private:
+    void readInModelList(QStringList &modelList);
+
+    void readInModelListAll(QStringList &modelList);
+
+private:
     Ui::MainWindow *ui;
     Fea *fea;
 };

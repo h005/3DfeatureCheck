@@ -4,7 +4,10 @@
 #include <QtDebug>
 #include <QSettings>
 #include "predefine.h"
-
+#include <iomanip>
+#include "feature/lineSegmentFeature/linesegmentfea.h"
+#include "feature/gistFeature/gist.h"
+#include "feature/gistFeature/standalone_image.h"
 
 Fea::Fea(QString fileName, QString path)
 {
@@ -268,6 +271,7 @@ void Fea::setFeature(int mode)
 
                 setBlur();
 
+                setLineSegmentFeature();
             }
 
             image2D.release();
@@ -378,6 +382,29 @@ void Fea::setMMPara(QString mmFile)
 #endif
 
     fclose(stdin);
+}
+
+void Fea::setFeatureGist(QStringList &modelList)
+{
+    for(int i=0;i<modelList.size();i++)
+    {
+        QStringList fileList;
+        setFileList(modelList.at(i),fileList);
+//        setGistFeature();
+        generateGistFeature(modelList.at(i),fileList);
+//        std::cout << "gist " << modelList.at(i).toStdString() << std::endl;
+    }
+}
+
+void Fea::setFeatureLsd(QStringList &modelList)
+{
+    for(int i=0;i<modelList.size();i++)
+    {
+        QStringList fileList;
+        setFileList(modelList.at(i),fileList);
+        generateLineSegmentFeature(modelList.at(i),fileList);
+//        std::cout << "line segment detection " << modelList.at(i).toStdString() << std::endl;
+    }
 }
 
 
@@ -1732,32 +1759,36 @@ void Fea::setRuleOfThird()
 {
     double centroidRow  = 0;
     double centroidCol = 0;
-    // ref http://mathworld.wolfram.com/GeometricCentroid.html
-    double mess = 0;
+    setCentroid(centroidRow, centroidCol);
 
-//    qDebug()<<"getRuleOfThird .. "<<mask.rows<<" "<<mask.cols<<endl;
+//    double centroidRow  = 0;
+//    double centroidCol = 0;
+//    // ref http://mathworld.wolfram.com/GeometricCentroid.html
+//    double mess = 0;
 
-    for(int i=0;i<mask.rows;i++)
-        for(int j=0;j<mask.cols;j++)
-            if(mask.at<uchar>(i,j) != 255)
-            {
-                mess ++;
-                centroidRow += i;
-                centroidCol += j;
-            }
+////    qDebug()<<"getRuleOfThird .. "<<mask.rows<<" "<<mask.cols<<endl;
 
-    if(mess)
-    {
-        centroidRow /= mess;
-        centroidCol /= mess;
-    }
+//    for(int i=0;i<mask.rows;i++)
+//        for(int j=0;j<mask.cols;j++)
+//            if(mask.at<uchar>(i,j) != 255)
+//            {
+//                mess ++;
+//                centroidRow += i;
+//                centroidCol += j;
+//            }
 
-    //    scale to [0,1]
-    if(mask.rows && mask.cols)
-    {
-        centroidRow /= mask.rows;
-        centroidCol /= mask.cols;
-    }
+//    if(mess)
+//    {
+//        centroidRow /= mess;
+//        centroidCol /= mess;
+//    }
+
+//    //    scale to [0,1]
+//    if(mask.rows && mask.cols)
+//    {
+//        centroidRow /= mask.rows;
+//        centroidCol /= mask.cols;
+//    }
 
     double ruleOfThirdRow[2] = {1.0/3.0,2.0/3.0};
     double ruleOfThirdCol[2] = {1.0/3.0,2.0/3.0};
@@ -2598,6 +2629,219 @@ void Fea::setSubjuctBrightness()
     fea2DName.push_back("ContrastBrightness");
 
 }
+///
+/// \brief Fea::setLineSegmentFeature
+///
+/// the line segments can be seperated to 3 parts, and they all converging to the vanishing point
+///
+/// for each segment, we compute its angle between the x axis, and then
+/// get the histogram and compute its variance as well as the entropy,
+/// for each cluster, get the average line, and compute the cross point between the diagonal line,
+/// we extract the distance between the point and the center of the architecture as the feature.
+///
+/// In a word, we compute the histogram, variance, entropy and the min(distance) as the features
+///
+/// In this function, we scale the angles to the [0,pi/2]
+///
+void Fea::setLineSegmentFeature()
+{
+    int NUM_Hist = 9;
+
+    double centroidRow = 0.0;
+    double centroidCol = 0.0;
+    setCentroid(centroidRow, centroidCol);
+
+    // line segment detection
+    LineSegmentFea *lsf = new LineSegmentFea();
+
+    // thLength should be reated to the image size, so I set it as a ratio
+//    double thLength = 30;
+    double thLength = 3.0 / 64.0 * std::max(image2D.cols, image2D.rows);
+    lsf->initial(image2D, thLength);
+//    lsf->LineDetect( image2D, thLength);
+    // cam
+
+    std::vector<double> angleHist(NUM_Hist,0);
+    double variance = 0.0;
+    double entropy = 0.0;
+//    double distance = 0.0;
+
+    lsf->setHist_v_e(angleHist, variance, entropy);
+
+    for(int i=0;i<NUM_Hist;i++)
+    {
+        fea2D.push_back(angleHist[i]);
+        fea2DName.push_back("LineSegment");
+    }
+
+    fea2D.push_back(variance);
+    fea2D.push_back(entropy);
+    fea2DName.push_back("LineSegment");
+    fea2DName.push_back("LineSegment");
+
+    double val_lb2ru = 0.0;
+    double val_lu2rb = 0.0;
+    lsf->setMinDiagonalAngle(val_lb2ru, val_lu2rb);
+
+    fea2D.push_back(val_lb2ru);
+    fea2D.push_back(val_lu2rb);
+
+    fea2DName.push_back("LineSegment");
+    fea2DName.push_back("LineSegment");
+
+//    lsf->setDistance(distance);
+
+}
+
+void Fea::generateGistFeature(QString model, QStringList &fileList)
+{
+    const cls::GISTParams DEFAULT_PARAMS {true, 32, 32, 1, 3, {8, 8, 4}};
+    QString gistFile = "/home/h005/Documents/vpDataSet/tools/vpData/" + model + "/vpFea/" + model + ".gist";
+    std::fstream outGist;
+    outGist.open(gistFile.toStdString(), std::fstream::out);
+    Mat src;
+    for(int i=0;i<fileList.size();i++)
+    {
+        src = imread(fileList.at(i).toStdString());
+        if (src.empty()) {
+            cerr << "No input image!" << endl;
+            exit(1);
+        }
+
+        vector<float> result;
+        cls::GIST gist_ext(DEFAULT_PARAMS);
+        gist_ext.extract(src, result);
+        outGist << fileList.at(i).toStdString() << std::endl;
+        for (const auto & val : result) {
+            outGist << fixed << setprecision(4) << val << " ";
+        }
+        outGist << endl;
+
+//        std::cout << fileList.at(i).toStdString() << std::endl;
+        printf("%s\n",fileList.at(i).toStdString().c_str());
+    }
+    src.release();
+    outGist.close();
+
+}
+
+void Fea::generateLineSegmentFeature(QString model, QStringList &fileList)
+{
+    QString lsdFile = "/home/h005/Documents/vpDataSet/tools/vpData/" + model + "/vpFea/" + model + ".lsd";
+    std::fstream outLsd;
+    outLsd.open(lsdFile.toStdString(), std::fstream::out);
+
+    for(int i=0;i<fileList.size();i++)
+    {
+        image2D = imread(fileList.at(i).toStdString());
+
+        int NUM_Hist = 9;
+        // line segment detection
+        LineSegmentFea *lsf = new LineSegmentFea();
+        // thLength should be reated to the image size, so I set it as a ratio
+    //    double thLength = 30;
+        double thLength = 3.0 / 64.0 * std::max(image2D.cols, image2D.rows);
+
+        lsf->initial(image2D, thLength);
+
+        std::vector<double> angleHist(NUM_Hist,0);
+        double variance = 0.0;
+        double entropy = 0.0;
+        std::vector<double> clusterSize;
+        lsf->setHist_v_e(angleHist, variance, entropy);
+        lsf->setClusterSize(clusterSize);
+
+
+        outLsd << fileList.at(i).toStdString() << std::endl;
+        for(int i=0;i<NUM_Hist;i++)
+            outLsd << angleHist[i] << " ";
+
+        for(int i=0;i<clusterSize.size();i++)
+            outLsd << clusterSize[i] << " ";
+
+        outLsd << variance << " ";
+        outLsd << entropy << std::endl;
+        std::cout << fileList.at(i).toStdString() << std::endl;
+    }
+
+    outLsd.close();
+    image2D.release();
+
+}
+
+void Fea::setFileList(QString model, QStringList &fileList)
+{
+    fileList.clear();
+    QString basePath = "/home/h005/Documents/vpDataSet/";
+
+    QString matrixFile = basePath + model + "/model/" + model + ".matrix";
+    std::fstream finMatrix;
+    finMatrix.open(matrixFile.toStdString(),std::fstream::in);
+    string fileName;
+    while(finMatrix >> fileName)
+    {
+        QFileInfo fileInfo(QString(fileName.c_str()));
+        QString myFileName = basePath + model + "/imgs/" + fileInfo.fileName();
+        fileList << myFileName;
+        // it should be i < 8,
+        // but there is still remains a '\n'
+        // after finMatrix >> fileName,
+        // so here should be i < 9
+        for(int i=0;i<9;i++)
+            std::getline(finMatrix,fileName);
+    }
+    finMatrix.close();
+//    for(int i=0;i<fileList.size();i++)
+//        std::cout << fileList.at(i).toStdString() << std::endl;
+
+}
+
+///
+/// \brief Fea::setCentroid
+/// \param centroidRow
+/// \param centroidCol
+///
+/// this function was created to compute Geometric Centroid of an image
+/// and was used in the function of setRuleOfThird()
+/// and the setLineSegmentFeature()
+///
+///
+void Fea::setCentroid(double &centroidRow, double &centroidCol)
+{
+    centroidRow = 0.0;
+    centroidCol = 0.0;
+    // ref http://mathworld.wolfram.com/GeometricCentroid.html
+    double mess = 0;
+
+//    qDebug()<<"getRuleOfThird .. "<<mask.rows<<" "<<mask.cols<<endl;
+
+    for(int i=0;i<mask.rows;i++)
+        for(int j=0;j<mask.cols;j++)
+            if(mask.at<uchar>(i,j) != 255)
+            {
+                mess ++;
+                centroidRow += i;
+                centroidCol += j;
+            }
+
+    if(mess)
+    {
+        centroidRow /= mess;
+        centroidCol /= mess;
+    }
+
+    //    scale to [0,1]
+    if(mask.rows && mask.cols)
+    {
+        centroidRow /= mask.rows;
+        centroidCol /= mask.cols;
+    }
+    else
+    {
+        centroidRow = 0.0;
+        centroidCol = 0.0;
+    }
+}
 
 ///
 /// \brief Fea::roundingBox2D  bounding box of 2D image after rendering
@@ -3363,6 +3607,9 @@ void Fea::exportSBM(QString file)
     int MAX_X_LEN = 16;
     int MAX_Z_LEN = 64;
 
+//    int MAX_X_LEN = 8;
+//    int MAX_Z_LEN = 32;
+
     glm::mat4 mv;
     // villa5 model
 //        glm::mat4 proj = glm::perspective(glm::pi<float>() / 3, 4.0f / 3.0f, 5.0f, 80.f);
@@ -3383,8 +3630,11 @@ void Fea::exportSBM(QString file)
     // villa7
 //    float angle_x = glm::pi<float>() / 36.0 / MAX_X_LEN;
     // villa7_1
-    float angle_x = glm::pi<float>() / 18.0 / MAX_X_LEN;
-    float angle_z = 2.0 * glm::pi<float>() / MAX_Z_LEN;
+    float angle_x = glm::pi<float>() / 36.0 / MAX_X_LEN;
+//    float angle_z = 2.0 * glm::pi<float>() / MAX_Z_LEN;
+    // njuSample and njuActivity
+    float angle_z = glm::pi<float>() / 2.0 / MAX_Z_LEN;
+
 //    float angle_z = glm::pi<float>() / MAX_LEN;
     // zb Model parameters
 //    glm::mat4 m_camera = glm::lookAt(glm::vec3(0.f,0.f,80.f),
@@ -3434,7 +3684,8 @@ void Fea::exportSBM(QString file)
             // rotate with x axis
             float anglex = angle_x * i;
             // rotate with z axis
-            float anglez = angle_z * j - glm::pi<float>() / 2.0;
+            // add an angle bias
+            float anglez = angle_z * j - glm::pi<float>() / 2.0 + glm::pi<float>() / 4.0;
             glm::mat4 rotateX = glm::rotate(glm::mat4(1.f),anglex,glm::vec3(1.0,0.0,0.0));
             glm::mat4 rotateZ = glm::rotate(glm::mat4(1.f),anglez,glm::vec3(0.0,0.0,1.0));
             mv = m_camera * rotateX * rotateZ;
@@ -3444,6 +3695,65 @@ void Fea::exportSBM(QString file)
             fout.width(4);
             fout.fill('0');
 //            fout << i*MAX_LEN + j << ".jpg"<<std::endl;
+            fout << ind++ << ".jpg" << std::endl;
+
+            // mv matrix
+            for(int k1 = 0;k1 < 4;k1++)
+            {
+                for(int k2 = 0;k2 < 4;k2++)
+                    fout << mv[k2][k1] << " ";
+                fout << std::endl;
+            }
+            // proj matrix
+            for(int k1 = 0;k1 < 4;k1++)
+            {
+                for(int k2 = 0;k2 < 4;k2++)
+                    fout << proj[k2][k1] << " ";
+                fout << std::endl;
+            }
+        }
+    }
+    std::cout <<MAX_Z_LEN<<" export done" << std::endl;
+}
+
+void Fea::exportSBM_featureCheckModelNet40(QString file)
+{
+    int MAX_X_LEN = 16;
+    int MAX_Z_LEN = 16;
+
+    glm::mat4 mv;
+
+    glm::mat4 proj = glm::perspective(glm::pi<float>() / 3, 4.0f / 3.0f, 0.5f, 10.f);
+
+    float angle_x = glm::pi<float>() / MAX_X_LEN;
+    float angle_z = 2.0 * glm::pi<float>() / MAX_Z_LEN;
+
+    glm::mat4 m_camera = glm::lookAt(glm::vec3(0.f, 0.f, 1.5f),
+                                     glm::vec3(0.f, 0.f, 0.f),
+                                     glm::vec3(0.f, 1.f, 0.f));
+
+    std::ofstream fout(file.toStdString().c_str());
+
+    int ind = 1;
+    for(int i=0; i < MAX_X_LEN; i++)
+    {
+        for(int j=0; j < MAX_Z_LEN; j++)
+        {
+            // roate with x axis
+            float anglex = - angle_x * i;
+            // roate with z axis
+            float anglez = - angle_z * j + glm::pi<float>() / 2.0;
+            glm::mat4 rotateX = glm::rotate(glm::mat4(1.f),
+                                            anglex,
+                                            glm::vec3(1.0,0.0,0.0));
+            glm::mat4 rotateZ = glm::rotate(glm::mat4(1.f),
+                                            anglez,
+                                            glm::vec3(0.0,0.0,1.0));
+            mv = m_camera * rotateX * rotateZ;
+            mv = normalizedModelView(mv);
+            // print out
+            fout.width(6);
+            fout.fill('0');
             fout << ind++ << ".jpg" << std::endl;
 
             // mv matrix

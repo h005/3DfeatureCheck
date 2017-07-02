@@ -18,12 +18,14 @@ MainWindow::MainWindow(QWidget *parent) :
     QTime time;
     time.start();
     ui->setupUi(this);
-    fea = NULL;
     ui->load->setShortcut(Qt::Key_L);
     ui->process->setShortcut(Qt::Key_P);
     ui->showImage->setShortcut(Qt::Key_S);
 
+    fea = NULL;
+
     char paraIn[50];
+    // read in the parameters
     scanf("%s",paraIn);
     QString file = "/home/h005/Documents/vpDataSet/";
     QString fileName = file.append(QString(paraIn));
@@ -32,35 +34,33 @@ MainWindow::MainWindow(QWidget *parent) :
     fileName = fileName.append(".obj");
     QFileInfo info(fileName);
 
+    // select means control with the ui
     if(!strcmp(paraIn,"select"))
     {
 
     }
-    else if(!strcmp(paraIn,"all"))
+    else if(!strcmp(paraIn,"gist")) // compute the gist feautre
     {
+        // read in the models for feature extraction
+        QStringList modelList;
+        readInModelList(modelList);
+        fea = new Fea();
+        fea->setFeatureGist(modelList);
+    }
+    else if(!strcmp(paraIn,"lsd")) // compute the line segment direction feature
+    {
+        // read in the models for feature extraction
+        QStringList modelList;
+        readInModelList(modelList);
+        fea = new Fea();
+        fea->setFeatureLsd(modelList);
+    }
+    else if(!strcmp(paraIn,"all")) // compute all the models
+    {
+        QStringList modelList;
+        readInModelListAll(modelList);
 
-        QString modelList[20] = {"bigben",
-                                   "kxm",
-                                   "notredame",
-                                   "freeGodness",
-                                   "tajMahal",
-                                   "cctv3",
-                                   "BrandenburgGate",
-                                   "BritishMuseum",
-                                   "potalaPalace",
-                                   "capitol",
-                                   "Sacre",
-                                   "TengwangPavilion",
-                                   "mont",
-                                   "HelsinkiCathedral",
-                                   "BuckinghamPalace",
-                                   "castle",
-                                   "house8",
-                                   "njuSample",
-                                   "pavilion9",
-                                   "villa7s"};
-
-        for(int i=0;i<20;i++)
+        for(int i=0;i<modelList.length();i++)
         {
             file = "/home/h005/Documents/vpDataSet/";
             fileName = file.append(modelList[i]);
@@ -81,12 +81,12 @@ MainWindow::MainWindow(QWidget *parent) :
         float elapsed = time_diff /  1000.0;
         qDebug() << "elapsed time: " << elapsed << "s" << endl;
     }
-    else
+    else // compute one of the model
     {
         while(!info.exists())
         {
             if(strcmp(paraIn,"exit")==0)
-                return;
+                exit(0);
             std::cout << "model path error: model " << fileName.toStdString() << " doesn't exists "<< std::endl;
             scanf("%s",paraIn);
             file = "/home/h005/Documents/vpDataSet/";
@@ -197,6 +197,7 @@ void MainWindow::on_sightBall_clicked()
     fea = new Fea();
 
     fea->exportSBM(fileName);
+//    fea->exportSBM_featureCheckModelNet40(fileName);
 
 }
 
@@ -254,4 +255,42 @@ void MainWindow::on_sphereGen_clicked()
         SphereGenerator *sGen = new SphereGenerator(fileName);
         sGen->genObj();
         qDebug()<< "generate done" << endl;
+}
+
+void MainWindow::readInModelList(QStringList &modelList)
+{
+    modelList.clear();
+    char paraIn[50];
+    scanf("%s",paraIn);
+    if(!strcmp(paraIn,"all"))
+        readInModelListAll(modelList);
+    else
+        modelList << QString(paraIn);
+    return;
+}
+
+void MainWindow::readInModelListAll(QStringList &modelList)
+{
+    modelList.clear();
+    modelList << "bigben"
+              << "kxm"
+              << "notredame"
+              << "freeGodness"
+              << "tajMahal"
+              << "cctv3"
+              << "BrandenburgGate"
+              << "BritishMuseum"
+              << "potalaPalace"
+              << "capitol"
+              << "Sacre"
+              << "TengwangPavilion"
+              << "mont"
+              << "HelsinkiCathedral"
+              << "BuckinghamPalace"
+              << "castle"
+              << "njuSample"
+              << "njuActivity";
+//                  << "house8"
+//                  << "pavilion9"
+//                  << "villa7s"
 }

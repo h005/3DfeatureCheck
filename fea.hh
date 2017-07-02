@@ -120,11 +120,18 @@ public:
 
     void exportSBM(QString file);
 
+    void exportSBM_featureCheckModelNet40(QString file);
+
     void viewpointSample(QString v_matrixPath, int sampleIndex, int numSamples, QString output, QString configPath);
 
     void setFeature(int mode);
 
     void setMMPara(QString matrixPath);
+
+    // this function was created to compute the gist features in the modelList
+    void setFeatureGist(QStringList &modelList);
+    // this function was created to compute the line segment direction features in the modelList
+    void setFeatureLsd(QStringList &modelList);
 
     ~Fea();
 
@@ -232,7 +239,19 @@ private:
     void setBallCoord();
     // subject brightness
     void setSubjuctBrightness();
+    // line segment features
+    void setLineSegmentFeature();
 
+
+    void generateGistFeature(QString model, QStringList &fileList);
+
+    void generateLineSegmentFeature(QString model, QStringList &fileList);
+
+    // helper function
+    void setFileList(QString model, QStringList &fileList);
+
+
+    void setCentroid(double &centroidRow, double &centroidCol);
 
     void roundingBox2D(int &up,int &bottom,int &left,int &right);
 
