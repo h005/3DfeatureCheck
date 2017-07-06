@@ -46,6 +46,7 @@ MainWindow::MainWindow(QWidget *parent) :
         readInModelList(modelList);
         fea = new Fea();
         fea->setFeatureGist(modelList);
+        std::cout << "gist feature done" << std::endl;
     }
     else if(!strcmp(paraIn,"lsd")) // compute the line segment direction feature
     {
@@ -54,6 +55,7 @@ MainWindow::MainWindow(QWidget *parent) :
         readInModelList(modelList);
         fea = new Fea();
         fea->setFeatureLsd(modelList);
+        std::cout << "line segment detection done" << std::endl;
     }
     else if(!strcmp(paraIn,"all")) // compute all the models
     {
@@ -272,24 +274,26 @@ void MainWindow::readInModelList(QStringList &modelList)
 void MainWindow::readInModelListAll(QStringList &modelList)
 {
     modelList.clear();
-    modelList << "bigben"
-              << "kxm"
-              << "notredame"
-              << "freeGodness"
-              << "tajMahal"
-              << "cctv3"
-              << "BrandenburgGate"
-              << "BritishMuseum"
-              << "potalaPalace"
-              << "capitol"
-              << "Sacre"
-              << "TengwangPavilion"
-              << "mont"
-              << "HelsinkiCathedral"
-              << "BuckinghamPalace"
-              << "castle"
-              << "njuSample"
-              << "njuActivity";
+//    modelList << "bigben"
+//              << "kxm"
+//              << "notredame"
+//              << "freeGodness"
+//              << "tajMahal"
+//              << "cctv3"
+//              << "BrandenburgGate"
+//              << "BritishMuseum"
+//              << "potalaPalace";
+//    modelList << "capitol"
+//              << "Sacre"
+//              << "TengwangPavilion"
+//              << "mont"
+//              << "HelsinkiCathedral"
+//              << "BuckinghamPalace"
+//              << "castle";
+    modelList << "njuSample"
+              << "njuSample2"
+              << "njuActivity"
+              << "njuActivity2";
 //                  << "house8"
 //                  << "pavilion9"
 //                  << "villa7s"

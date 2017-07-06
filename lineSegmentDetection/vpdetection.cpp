@@ -89,7 +89,6 @@ void VPDetection::getVPHypVia2Lines( std::vector<std::vector<cv::Point3d> > &vpH
     {
         int idx1 = rand() % num;
         int idx2 = rand() % num;
-        // if num == 1 this will caused forever loop!
         while ( idx2 == idx1 )
         {
             idx2 = rand() % num;

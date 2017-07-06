@@ -123,16 +123,25 @@ void LineSegmentFea::setHist_v_e(std::vector<double> &angleHist,
         }
     }
 */
-    assert(countItem);
+//    assert(countItem);
 
     double mean = 0.0;
     // normalize hist
-    for(int i=0; i < nBins ; i++)
+    if(countItem != 0.0)
     {
-        mean += angleHist[i] * (step / 2.0 + i * step);
-        angleHist[i] = angleHist[i] / countItem;
+        for(int i=0; i < nBins ; i++)
+        {
+            mean += angleHist[i] * (step / 2.0 + i * step);
+            angleHist[i] = angleHist[i] / countItem;
+        }
+        mean /= countItem;
     }
-    mean /= countItem;
+    else
+    {
+        for(int i=0; i < nBins; i++)
+            angleHist[i] = 0.0;
+        mean = 0.0;
+    }
 
     entropy = 0.0;
     for(int i=0; i < nBins; i++)
@@ -151,6 +160,14 @@ void LineSegmentFea::setHist_v_e(std::vector<double> &angleHist,
 void LineSegmentFea::setClusterSize(std::vector<double> &clusterSize)
 {
     clusterSize.clear();
+    if(lines.size() == 0 || lines.size() == 1)
+    {
+        clusterSize.push_back(0);
+        clusterSize.push_back(0);
+        clusterSize.push_back(0);
+        return;
+    }
+
     clusterSize.push_back(clusters[0].size());
     clusterSize.push_back(clusters[1].size());
     clusterSize.push_back(clusters[2].size());
@@ -292,6 +309,8 @@ void LineSegmentFea::initial(Mat &image,
     // clusters Line segment clustering results of each vanishing point
     VPDetection detector;
     // there are some info in the run function
+    if(lines.size() == 0 || lines.size() == 1)
+        return;
     detector.run( lines, pp, f, vps, clusters );
 
 //    drawClusters( image );

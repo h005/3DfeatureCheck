@@ -1448,7 +1448,7 @@ void Fea::setBoundingBox3DAbs()
     // p_model_z z
     dotval = glm::dot(render->p_model_z,axisz);
     cosTheta = dotval / (glm::length(render->p_model_z) * glm::length(axisz));
-    cosTheta = floatAbs(cosTheta);
+//    cosTheta = floatAbs(cosTheta);
     theta = acos(cosTheta);
     fea3D.push_back(theta);
     fea3DName.push_back("boundingBox");
@@ -2565,9 +2565,9 @@ void Fea::setBallCoord()
     double theta = PI + atan(sqrt(camera[0] * camera[0] + camera[1] * camera[1]) / camera[2]); 
     double fani;
     if(camera[0] == 0)
-        fani = 0;
+        fani = PI/2.0;
     else
-    fani = atan(camera[1] / camera[0]);
+        fani = atan(camera[1] / camera[0]);
 //    std::cout << "ball coord" << std::endl;
 //    std::cout << theta << " " << fani << std::endl;
     fea3D.push_back(theta);
@@ -2739,8 +2739,8 @@ void Fea::generateLineSegmentFeature(QString model, QStringList &fileList)
         // line segment detection
         LineSegmentFea *lsf = new LineSegmentFea();
         // thLength should be reated to the image size, so I set it as a ratio
-    //    double thLength = 30;
-        double thLength = 3.0 / 64.0 * std::max(image2D.cols, image2D.rows);
+        double thLength = 30;
+//        double thLength = 3.0 / 64.0 * std::max(image2D.cols, image2D.rows);
 
         lsf->initial(image2D, thLength);
 
@@ -2748,19 +2748,36 @@ void Fea::generateLineSegmentFeature(QString model, QStringList &fileList)
         double variance = 0.0;
         double entropy = 0.0;
         std::vector<double> clusterSize;
-        lsf->setHist_v_e(angleHist, variance, entropy);
-        lsf->setClusterSize(clusterSize);
 
+
+        lsf->setHist_v_e(angleHist, variance, entropy);
+
+        lsf->setClusterSize(clusterSize);
 
         outLsd << fileList.at(i).toStdString() << std::endl;
         for(int i=0;i<NUM_Hist;i++)
             outLsd << angleHist[i] << " ";
 
+        double sumClusterSize = 0.0;
         for(int i=0;i<clusterSize.size();i++)
-            outLsd << clusterSize[i] << " ";
+            sumClusterSize += clusterSize[i];
+        if(sumClusterSize)
+            for(int i=0;i<clusterSize.size();i++)
+                outLsd << clusterSize[i] / sumClusterSize << " ";
+        else
+            for(int i=0;i<clusterSize.size();i++)
+                outLsd << clusterSize[i] << " ";
 
         outLsd << variance << " ";
-        outLsd << entropy << std::endl;
+        outLsd << entropy << " ";
+
+        double val_lb2ru = 0.0;
+        double val_lu2rb = 0.0;
+        lsf->setMinDiagonalAngle(val_lb2ru, val_lu2rb);
+
+        outLsd << val_lb2ru << " ";
+        outLsd << val_lu2rb << std::endl;
+
         std::cout << fileList.at(i).toStdString() << std::endl;
     }
 
@@ -3630,7 +3647,7 @@ void Fea::exportSBM(QString file)
     // villa7
 //    float angle_x = glm::pi<float>() / 36.0 / MAX_X_LEN;
     // villa7_1
-    float angle_x = glm::pi<float>() / 36.0 / MAX_X_LEN;
+    float angle_x = glm::pi<float>() / 72.0 / MAX_X_LEN;
 //    float angle_z = 2.0 * glm::pi<float>() / MAX_Z_LEN;
     // njuSample and njuActivity
     float angle_z = glm::pi<float>() / 2.0 / MAX_Z_LEN;
@@ -3670,7 +3687,7 @@ void Fea::exportSBM(QString file)
 //                               glm::vec3(0.f,0.f,1.f));
 
 // house8 Model
-    glm::mat4 m_camera = glm::lookAt(glm::vec3(0.f,-1.2f,0.f),
+    glm::mat4 m_camera = glm::lookAt(glm::vec3(0.f,-1.2f,0.1f),
                            glm::vec3(0.f,0.0f,0.3f),
                            glm::vec3(0.f,0.f,1.f));
 
