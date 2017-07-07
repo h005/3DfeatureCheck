@@ -27,7 +27,7 @@ MainWindow::MainWindow(QWidget *parent) :
     char paraIn[50];
     // read in the parameters
     scanf("%s",paraIn);
-    QString file = "/home/h005/Documents/vpDataSet/";
+    QString file = "/home/" + QString(USERNAME) + "/Documents/vpDataSet/";
     QString fileName = file.append(QString(paraIn));
     fileName.append("/model/");
     fileName.append(QString(paraIn));
@@ -60,11 +60,14 @@ MainWindow::MainWindow(QWidget *parent) :
     else if(!strcmp(paraIn,"all")) // compute all the models
     {
         QStringList modelList;
-        readInModelListAll(modelList);
+        int mode;
+        std::cin >> mode;
+        readInModelListAll(modelList,mode);
+
 
         for(int i=0;i<modelList.length();i++)
         {
-            file = "/home/h005/Documents/vpDataSet/";
+            file = "/home/" + QString(USERNAME) + "/Documents/vpDataSet/";
             fileName = file.append(modelList[i]);
             fileName.append("/model/");
             fileName.append(modelList[i]);
@@ -91,7 +94,7 @@ MainWindow::MainWindow(QWidget *parent) :
                 exit(0);
             std::cout << "model path error: model " << fileName.toStdString() << " doesn't exists "<< std::endl;
             scanf("%s",paraIn);
-            file = "/home/h005/Documents/vpDataSet/";
+            file = "/home/" + QString(USERNAME) + "/Documents/vpDataSet/";
             fileName = file.append(QString(paraIn));
             fileName.append("/model/");
             fileName.append(QString(paraIn));
@@ -271,29 +274,72 @@ void MainWindow::readInModelList(QStringList &modelList)
     return;
 }
 
-void MainWindow::readInModelListAll(QStringList &modelList)
+void MainWindow::readInModelListAll(QStringList &modelList, int mode)
 {
     modelList.clear();
-//    modelList << "bigben"
-//              << "kxm"
-//              << "notredame"
-//              << "freeGodness"
-//              << "tajMahal"
-//              << "cctv3"
-//              << "BrandenburgGate"
-//              << "BritishMuseum"
-//              << "potalaPalace";
-//    modelList << "capitol"
-//              << "Sacre"
-//              << "TengwangPavilion"
-//              << "mont"
-//              << "HelsinkiCathedral"
-//              << "BuckinghamPalace"
-//              << "castle";
-    modelList << "njuSample"
-              << "njuSample2"
-              << "njuActivity"
-              << "njuActivity2";
+    if(mode == 0)
+    {
+        modelList << "bigben"
+                  << "kxm"
+                  << "notredame"
+                  << "freeGodness"
+                  << "tajMahal"
+                  << "cctv3"
+                  << "BrandenburgGate"
+                  << "BritishMuseum"
+                  << "potalaPalace"
+                  << "capitol"
+                  << "Sacre"
+                  << "TengwangPavilion"
+                  << "mont"
+                  << "HelsinkiCathedral"
+                  << "BuckinghamPalace"
+                  << "castle"
+                  << "njuSample"
+                  << "njuSample2"
+                  << "njuSample3"
+                  << "njuActivity"
+                  << "njuActivity2";
+        return;
+    }
+    if(mode == 1)
+    {
+        modelList << "bigben"
+                  << "kxm"
+                  << "notredame"
+                  << "freeGodness"
+                  << "tajMahal"
+                  << "cctv3"
+                  << "BrandenburgGate"
+                  << "BritishMuseum"
+                  << "potalaPalace"
+                  << "capitol"
+                  << "Sacre"
+                  << "TengwangPavilion"
+                  << "mont"
+                  << "HelsinkiCathedral";
+        return;
+    }
+    if(mode == 2)
+    {
+        modelList << "BuckinghamPalace"
+                  << "castle"
+                  << "njuSample"
+                  << "njuSample2"
+                  << "njuSample3"
+                  << "njuActivity"
+                  << "njuActivity2";
+        return;
+    }
+    if(mode == 3)
+    {
+        modelList << "njuSample"
+                  << "njuSample2"
+                  << "njuSample3"
+                  << "njuActivity"
+                  << "njuActivity2";
+        return;
+    }
 //                  << "house8"
 //                  << "pavilion9"
 //                  << "villa7s"

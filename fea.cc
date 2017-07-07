@@ -215,6 +215,8 @@ void Fea::setFeature(int mode)
 
 #endif
 
+            setBoundingBox3D();
+
             setOutlierCount();
 
             setBoundingBox3DAbs();
@@ -1387,7 +1389,7 @@ void Fea::setBoundingBox3DAbs()
     cosTheta = floatAbs(cosTheta);
     theta = acos(cosTheta);
     fea3D.push_back(theta);
-    fea3DName.push_back("boundingBox");
+    fea3DName.push_back("boundingBoxAbs");
 
     // p_model_x y
     dotval = glm::dot(render->p_model_x,axisy);
@@ -1395,7 +1397,7 @@ void Fea::setBoundingBox3DAbs()
     cosTheta = floatAbs(cosTheta);
     theta = acos(cosTheta);
     fea3D.push_back(theta);
-    fea3DName.push_back("boundingBox");
+    fea3DName.push_back("boundingBoxAbs");
 
     // p_model_x z
     dotval = glm::dot(render->p_model_x,axisz);
@@ -1403,7 +1405,7 @@ void Fea::setBoundingBox3DAbs()
     cosTheta = floatAbs(cosTheta);
     theta = acos(cosTheta);
     fea3D.push_back(theta);
-    fea3DName.push_back("boundingBox");
+    fea3DName.push_back("boundingBoxAbs");
 
     // p_model_y x
     dotval = glm::dot(render->p_model_y,axisx);
@@ -1411,7 +1413,7 @@ void Fea::setBoundingBox3DAbs()
     cosTheta = floatAbs(cosTheta);
     theta = acos(cosTheta);
     fea3D.push_back(theta);
-    fea3DName.push_back("boundingBox");
+    fea3DName.push_back("boundingBoxAbs");
 
     // p_model_y y
     dotval = glm::dot(render->p_model_y,axisy);
@@ -1419,7 +1421,7 @@ void Fea::setBoundingBox3DAbs()
     cosTheta = floatAbs(cosTheta);
     theta = acos(cosTheta);
     fea3D.push_back(theta);
-    fea3DName.push_back("boundingBox");
+    fea3DName.push_back("boundingBoxAbs");
 
     // p_model_y z
     dotval = glm::dot(render->p_model_y,axisz);
@@ -1427,7 +1429,7 @@ void Fea::setBoundingBox3DAbs()
     cosTheta = floatAbs(cosTheta);
     theta = acos(cosTheta);
     fea3D.push_back(theta);
-    fea3DName.push_back("boundingBox");
+    fea3DName.push_back("boundingBoxAbs");
 
     // p_model_z x
     dotval = glm::dot(render->p_model_z,axisx);
@@ -1435,7 +1437,7 @@ void Fea::setBoundingBox3DAbs()
     cosTheta = floatAbs(cosTheta);
     theta = acos(cosTheta);
     fea3D.push_back(theta);
-    fea3DName.push_back("boundingBox");
+    fea3DName.push_back("boundingBoxAbs");
 
     // p_model_z y
     dotval = glm::dot(render->p_model_z,axisy);
@@ -1443,15 +1445,15 @@ void Fea::setBoundingBox3DAbs()
     cosTheta = floatAbs(cosTheta);
     theta = acos(cosTheta);
     fea3D.push_back(theta);
-    fea3DName.push_back("boundingBox");
+    fea3DName.push_back("boundingBoxAbs");
 
     // p_model_z z
     dotval = glm::dot(render->p_model_z,axisz);
     cosTheta = dotval / (glm::length(render->p_model_z) * glm::length(axisz));
-//    cosTheta = floatAbs(cosTheta);
+    cosTheta = floatAbs(cosTheta);
     theta = acos(cosTheta);
     fea3D.push_back(theta);
-    fea3DName.push_back("boundingBox");
+    fea3DName.push_back("boundingBoxAbs");
     std::cout <<"bounding box done "<<" fea3D size "<<fea3D.size()<<std::endl;
 }
 
@@ -2671,13 +2673,13 @@ void Fea::setLineSegmentFeature()
     for(int i=0;i<NUM_Hist;i++)
     {
         fea2D.push_back(angleHist[i]);
-        fea2DName.push_back("LineSegment");
+        fea2DName.push_back("LineSegment1");
     }
 
     fea2D.push_back(variance);
     fea2D.push_back(entropy);
-    fea2DName.push_back("LineSegment");
-    fea2DName.push_back("LineSegment");
+    fea2DName.push_back("LineSegment1");
+    fea2DName.push_back("LineSegment1");
 
     double val_lb2ru = 0.0;
     double val_lu2rb = 0.0;
@@ -2686,8 +2688,8 @@ void Fea::setLineSegmentFeature()
     fea2D.push_back(val_lb2ru);
     fea2D.push_back(val_lu2rb);
 
-    fea2DName.push_back("LineSegment");
-    fea2DName.push_back("LineSegment");
+    fea2DName.push_back("LineSegment1");
+    fea2DName.push_back("LineSegment1");
 
 //    lsf->setDistance(distance);
 
@@ -2696,7 +2698,7 @@ void Fea::setLineSegmentFeature()
 void Fea::generateGistFeature(QString model, QStringList &fileList)
 {
     const cls::GISTParams DEFAULT_PARAMS {true, 32, 32, 1, 3, {8, 8, 4}};
-    QString gistFile = "/home/h005/Documents/vpDataSet/tools/vpData/" + model + "/vpFea/" + model + ".gist";
+    QString gistFile = "/home/" + QString(USERNAME) + "/Documents/vpDataSet/tools/vpData/" + model + "/vpFea/" + model + ".gist";
     std::fstream outGist;
     outGist.open(gistFile.toStdString(), std::fstream::out);
     Mat src;
@@ -2727,7 +2729,7 @@ void Fea::generateGistFeature(QString model, QStringList &fileList)
 
 void Fea::generateLineSegmentFeature(QString model, QStringList &fileList)
 {
-    QString lsdFile = "/home/h005/Documents/vpDataSet/tools/vpData/" + model + "/vpFea/" + model + ".lsd";
+    QString lsdFile = "/home/" + QString(USERNAME) + "/Documents/vpDataSet/tools/vpData/" + model + "/vpFea/" + model + ".lsd";
     std::fstream outLsd;
     outLsd.open(lsdFile.toStdString(), std::fstream::out);
 
@@ -2789,7 +2791,7 @@ void Fea::generateLineSegmentFeature(QString model, QStringList &fileList)
 void Fea::setFileList(QString model, QStringList &fileList)
 {
     fileList.clear();
-    QString basePath = "/home/h005/Documents/vpDataSet/";
+    QString basePath = "/home/" + QString(USERNAME) + "/Documents/vpDataSet/";
 
     QString matrixFile = basePath + model + "/model/" + model + ".matrix";
     std::fstream finMatrix;

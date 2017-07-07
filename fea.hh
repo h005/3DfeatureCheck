@@ -28,6 +28,8 @@
 #define CoWidth 64
 #define CoHeight 64
 
+#define USERNAME "hejw005"
+
 class Fea
 {
 //    static const int FEA_NUM = 13;

@@ -38,7 +38,7 @@ private slots:
 private:
     void readInModelList(QStringList &modelList);
 
-    void readInModelListAll(QStringList &modelList);
+    void readInModelListAll(QStringList &modelList, int mode = 0);
 
 private:
     Ui::MainWindow *ui;
