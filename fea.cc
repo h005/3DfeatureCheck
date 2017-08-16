@@ -276,6 +276,8 @@ void Fea::setFeature(int mode)
                 setLineSegmentFeature();
             }
 
+            setAreaRatio(m_projectionList[t_case]);
+
             image2D.release();
 
             image.release();
@@ -286,6 +288,7 @@ void Fea::setFeature(int mode)
 
             image2D32f3c.release();
         }
+//        std::cout << "generate done" << std::endl;
 //        break;
         if(!fileNameOutputFlag)
         {
@@ -407,6 +410,165 @@ void Fea::setFeatureLsd(QStringList &modelList)
         generateLineSegmentFeature(modelList.at(i),fileList);
 //        std::cout << "line segment detection " << modelList.at(i).toStdString() << std::endl;
     }
+}
+
+void Fea::setFeatureROI(int mode,QString model)
+{
+    // input
+    QString roiVertexFile = "/home/" + QString(USERNAME) + "/Documents/vpDataSet/" + model + "/model/" + model + "PurifyInterest.txt";
+    // load in the roiVertexFile
+    std::vector<float> roi_vertex;
+    std::ifstream roiIn;
+    roiIn.open(roiVertexFile.toStdString(), std::fstream::in);
+    float tmpval;
+    while(roiIn >> tmpval)
+        roi_vertex.push_back(tmpval);
+    roiIn.close();
+
+    // input normals
+//    QString normalsVertexFile = "/home/" + QString(USERNAME) + "/Documents/vpDataSet/" + model + "/model/" + model + "_Normal.txt";
+//    // load in the normals
+    std::vector<float> normal_vertex;
+//    std::ifstream normal_in;
+//    normal_in.open(normalsVertexFile.toStdString(), std::fstream::in);
+//    while(normal_in >> tmpval)
+//        normal_vertex.push_back(tmpval);
+//    normal_in.close();
+
+    // output
+    QString roiFile = "/home/" + QString(USERNAME) + "/Documents/vpDataSet/tools/vpData/" + model + "/vpFea/" + model + ".roi";
+    std::ofstream roiOut;
+    roiOut.open(roiFile.toStdString(), std::fstream::out);
+#ifdef CHECK
+    glm::mat4 m_model_tmp;
+
+    glm::mat4 m_view_tmp;
+
+    MeanCurvature<MyMesh> a(mesh);
+    GaussCurvature<MyMesh> b(mesh);
+
+#else
+//     for compute
+    // 3D feature
+    std::vector< MeanCurvature<MyMesh>* > a;
+    std::vector< GaussCurvature<MyMesh>* > b;
+    if(mode  == 3 || mode  == 0)
+    {
+        render->setMeshSaliencyPara(exImporter);
+        for(int i=0;i<render->p_vecMesh.size();i++)
+        {
+            MeanCurvature<MyMesh> *tmpMean = new MeanCurvature<MyMesh>(render->p_vecMesh[i]);
+            GaussCurvature<MyMesh> *tmpGauss = new GaussCurvature<MyMesh>(render->p_vecMesh[i]);
+            a.push_back(tmpMean);
+            b.push_back(tmpGauss);
+        }
+    }
+    render->setAreaAllFaces();
+    std::cout << "AreaAllFaces " << render->areaAllFaces << std::endl;
+    std::cout << "case : " << t_case << std::endl;
+#ifndef FOREGROUND
+    // 关于PCA这里还有问题，是否要将前景物体提取出来然后再进行PCA计算？目前没有这么做
+//    computePCA();
+#endif
+
+#endif // without CHECK
+
+    t_case = 0;
+    for(; t_case < NUM ; t_case++)
+    {
+        // render
+#ifdef CHECK
+
+        computeModel(m_view_tmp,m_model_tmp);
+
+        render->setMVP(m_model_tmp,m_view_tmp,m_projection);
+#else
+
+        render->setMVP(m_modelList[t_case],m_viewList[t_case],m_projectionList[t_case]);
+#endif
+
+        bool res = render->rendering(t_case);
+
+        if(res)
+        {
+
+            render->setParameters();
+
+            render->setVerticeNormals();
+            normal_vertex = render->p_verticeNormals;
+            //used for check the image
+            //  render->showImage();
+            int width  = 0;
+            int height = 0;
+
+            // read image2D used for 3D model to save proj and depth image
+            image2D = cv::imread(fileName.at(t_case).toStdString().c_str());
+//            std::cout << fileName.at(t_case).toStdString() << std::endl;
+            qDebug() << fileName.at(t_case) << endl;
+            if(mode == 2 || mode  ==0)
+            {
+                cv::cvtColor(image2D,gray,CV_BGR2GRAY);
+
+                image2D32f3c = cv::Mat(image2D.rows,image2D.cols,CV_32FC3,cv::Scalar(0,0,0));
+                // it is useful to convert CV_8UC3 to CV_32FC3
+                image2D.convertTo(image2D32f3c,CV_32FC3,1/255.0);
+                cv::cvtColor(image2D32f3c,image2D32f3c,CV_BGR2HSV);
+            }
+
+            width = image2D.cols;
+            height = image2D.rows;
+
+
+#ifdef CHECK
+//            render->storeImage(path,QString::number(t_case));
+#else
+            // store rgb and depth img
+            // need a folder named depth and rgb
+            if(mode == 3 || mode  == 0)
+                render->storeImage(path,fileName.at(t_case),width,height);
+#endif
+
+            setMat(render->p_img,render->p_width,render->p_height,width,height);
+
+            setMask();
+
+            double roiVal;
+            setRoi(roiVal, m_modelList[t_case] * m_viewList[t_case], roi_vertex, normal_vertex);
+            roiOut << roiVal << std::endl;
+
+
+            image2D.release();
+
+            image.release();
+
+            mask.release();
+
+            gray.release();
+
+            image2D32f3c.release();
+        }
+//        std::cout << "generate done" << std::endl;
+//        break;
+//        if(!fileNameOutputFlag)
+//        {
+//            printFeaName();
+//            fileNameOutputFlag = !fileNameOutputFlag;
+//        }
+
+//        printOut(mode);
+
+        clear();
+
+
+
+        qDebug() << "fea cases : "<< t_case << endl;
+
+    }
+    roiOut.close();
+
+    qDebug() << "done" << endl;
+
+
 }
 
 
@@ -534,11 +696,11 @@ void Fea::setProjectArea()
 
     int pos = fileName0.lastIndexOf('/');
 
-    QString fileName = fileName0.remove(0,pos+1);
+    QString filename = fileName0.remove(0,pos+1);
 
 
 
-    QString projPath = path + QString("proj/").append(fileName);
+    QString projPath = path + QString("proj/").append(filename);
 
 //    cv::flip(img,img,0);
 
@@ -553,7 +715,7 @@ void Fea::setProjectArea()
     img.release();
     std::cout<<"fea projectArea "<<res<<" fea3D size "<<fea3D.size()<<std::endl;
 
-    QString maskPath = path + QString("mask/").append(fileName);
+    QString maskPath = path + QString("mask/").append(filename);
     pos = maskPath.lastIndexOf('.');
     maskPath.replace(pos+1,5,"png");
 
@@ -1486,6 +1648,132 @@ void Fea::setTiltAngle(glm::mat4 &modelView)
     fea3DName.push_back("ztitleAngle");
     fea3D.push_back(angle);
 
+}
+
+///
+/// \brief Fea::setAreaRatio
+///
+/// WARNNING: call this function as the last feature!
+///
+/// this function was created to compute the area raito between the
+/// area in the image to the whole project area.
+///
+/// our projection matrix has six parameters names:
+/// near, far, bottom, top, left, and right.
+/// and the way to compute the ratio is enlarge the bottom, top, left, and right
+/// we set the
+/// [bottom, top, left, right] = 3 * [bottom, top, left, right];
+/// we can get the image named im.
+/// so the original image area is
+/// imOriginal = im(size(im,1)/3:size(im,1)/3*2,size(im,2)/3:size(im,2)/3*2);
+/// so the areaRatio is the Area(imOriginal) / Area(im);
+///
+void Fea::setAreaRatio(glm::mat4 &projMatrix)
+{
+    double res = 0.0;
+    glm::mat4 enlargedProjMatrix;
+    decomposeProjMatrix(projMatrix,enlargedProjMatrix);
+    render->setMVP(m_modelList[t_case],m_viewList[t_case],enlargedProjMatrix);
+    render->rendering(t_case);
+    render->setParameters();
+    setMat(render->p_img,render->p_width,render->p_height,image.cols,image.rows);
+
+    double areaTotal = 0.0;
+    if(image.channels() == 3)
+    {
+        for(int i=0;i<image.rows;i++)
+            for(int j=0;j<image.cols;j++)
+                if(image.at<cv::Vec3b>(i,j)[0]!=255
+                   || image.at<cv::Vec3b>(i,j)[1]!=255
+                   || image.at<cv::Vec3b>(i,j)[2]!=255)
+                areaTotal++;
+    }
+    else
+    {
+        for(int i=0;i<image.rows;i++)
+            for(int j=0;j<image.cols;j++)
+                if(image.at<uchar>(i,j)!=255)
+                    areaTotal++;
+    }
+
+    cv::Point2i from(image.rows / 3, image.cols / 3);
+    cv::Point2i to(image.rows / 3 * 2, image.cols / 3 * 2);
+    double area = 0.0;
+    if(image.channels() == 3)
+    {
+        for(int i = from.x; i< to.x; i++)
+            for(int j = from.y; j < to.y; j++)
+                if(image.at<cv::Vec3b>(i,j)[0]==0
+                   || image.at<cv::Vec3b>(i,j)[1]==0
+                   || image.at<cv::Vec3b>(i,j)[2]==0)
+                    area++;
+    }
+    else
+    {
+        for(int i = from.x; i< to.x; i++)
+            for(int j = from.y; j < to.y; j++)
+                if(image.at<uchar>(i,j)==0)
+                    area++;
+    }
+
+    res = area / areaTotal;
+    fea3D.push_back(res);
+    fea3DName.push_back("areaRatio");
+
+    // save to mask folder
+    QString fileName0 = fileName.at(t_case);
+    int pos = fileName0.lastIndexOf('/');
+    QString filename = fileName0.remove(0,pos+1);
+    QString maskPath = path + QString("mask/").append(filename);
+    pos = maskPath.lastIndexOf('.');
+    maskPath.replace(pos,8,"_.jpg");
+    IplImage *saveImage = new IplImage(image);
+    cvSaveImage(maskPath.toStdString().c_str(),saveImage);
+    delete saveImage;
+}
+
+///
+/// \brief Fea::setRoi
+/// \param roiVal the result of the roi value in this viewpoint
+/// \param modelView
+/// \param v_roi the vector of the interest value of each vertex
+///
+void Fea::setRoi(double &roiVal, glm::mat4 modelView,
+                 std::vector<float> &v_roi,
+                 std::vector<float> &normal_vertex)
+{
+    roiVal = 0.0;
+    glm::vec4 eye = glm::vec4(0.0,0.0,1.0,0.0);
+    for(int i=0;i<render->p_isVertexVisible.size();i++)
+    {
+        if(render->p_isVertexVisible[i])
+        {
+            glm::vec4 vertexNormal(normal_vertex[i*3],
+                    normal_vertex[i*3+1],
+                    normal_vertex[i*3+2],0.0);
+            vertexNormal = modelView * vertexNormal;
+            double dotval = glm::dot(eye,vertexNormal);
+            if(dotval >= 0.0)
+                continue;
+            double cosTheta = dotval / (glm::length(vertexNormal) * glm::length(eye));
+            roiVal += v_roi[i] * sqrt(abs(cosTheta));
+//            roiVal += sqrt(abs(cosTheta));
+        }
+    }
+}
+
+void Fea::decomposeProjMatrix(glm::mat4 &proj,
+                              glm::mat4 &enlargedProjMatrix)
+{
+    // ref https://stackoverflow.com/questions/10830293/decompose-projection-matrix44-to-left-right-bottom-top-near-and-far-boundary
+    float near = proj[3][2] / (proj[2][2] - 1);
+    float far = proj[3][2] / (proj[2][2] + 1);
+    float bottom = near * (proj[2][1] - 1) / proj[1][1];
+    float top = near * (proj[2][1] + 1) / proj[1][1];
+    float left = near * (proj[2][0] - 1) / proj[0][0];
+    float right = near * (proj[2][0] + 1) / proj[0][0];
+
+    enlargedProjMatrix = glm::frustum(3*left, 3* right, 3 * bottom, 3 * top, near, far);
 }
 
 void Fea::setColorDistribution()
@@ -2778,7 +3066,17 @@ void Fea::generateLineSegmentFeature(QString model, QStringList &fileList)
         lsf->setMinDiagonalAngle(val_lb2ru, val_lu2rb);
 
         outLsd << val_lb2ru << " ";
-        outLsd << val_lu2rb << std::endl;
+        outLsd << val_lu2rb << " ";
+
+        lsf->setHist_diagonal(angleHist,"lb2ru");
+        for(int i=0;i<angleHist.size();i++)
+            outLsd << angleHist[i] << " ";
+
+        lsf->setHist_diagonal(angleHist,"lu2rb");
+        for(int i=0;i<angleHist.size();i++)
+            outLsd << angleHist[i] << " ";
+
+        outLsd << std::endl;
 
         std::cout << fileList.at(i).toStdString() << std::endl;
     }
@@ -3689,7 +3987,7 @@ void Fea::exportSBM(QString file)
 //                               glm::vec3(0.f,0.f,1.f));
 
 // house8 Model
-    glm::mat4 m_camera = glm::lookAt(glm::vec3(0.f,-1.2f,0.1f),
+    glm::mat4 m_camera = glm::lookAt(glm::vec3(0.f,-1.0f,0.01f),
                            glm::vec3(0.f,0.0f,0.3f),
                            glm::vec3(0.f,0.f,1.f));
 

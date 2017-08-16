@@ -31,6 +31,8 @@ public:
 
     void setParameters();
 
+    void setVerticeNormals();
+
     void setAreaAllFaces();
 
     void setMeshSaliencyPara(ExternalImporter<MyMesh> *exImporter);
@@ -76,6 +78,7 @@ public:
     std::vector<bool> p_isVertexVisible;
     std::vector<GLuint> p_VisibleFaces;
     std::vector<GLfloat> p_verticesMvp;
+    std::vector<GLfloat> p_verticeNormals;
     glm::mat4 p_model;
     std::vector<MyMesh> p_vecMesh;
     std::vector< std::vector<int> > p_indiceArray;

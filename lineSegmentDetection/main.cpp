@@ -75,9 +75,11 @@ void drawClusters( cv::Mat &img, std::vector<std::vector<double> > &lines, std::
         cv::Point pt_s = cv::Point( lines[idx][0], lines[idx][1]);
         cv::Point pt_e = cv::Point( lines[idx][2], lines[idx][3]);
         cv::Point pt_m = ( pt_s + pt_e ) * 0.5;
-
+//        std::cout << pt_s.x << " " << pt_s.y << std::endl;
+//        std::cout << pt_e.x << " " << pt_e.y << std::endl;
         cv::line( img, pt_s, pt_e, cv::Scalar(0,0,0), 2, CV_AA );
     }
+
 
     for ( int i = 0; i < clusters.size(); ++i )
     {
@@ -92,14 +94,16 @@ void drawClusters( cv::Mat &img, std::vector<std::vector<double> > &lines, std::
             cv::line( img, pt_s, pt_e, lineColors[i], 2, CV_AA );
         }
     }
+
+
 }
 
 
 
 int main()
 {
-//    string inPutImage = "/home/h005/Documents/QtProject/3DfeatureCheck/lineSegmentDetection/P1020171.jpg";
-    string inPutImage = "/home/h005/Documents/vpDataSet/notredame/imgs/alexindigo_380947116.jpg";
+    string inPutImage = "/home/h005/Documents/QtProject/3DfeatureCheck/lineSegmentDetection/P1020171.jpg";
+//    string inPutImage = "/home/h005/Documents/vpDataSet/notredame/imgs/alexindigo_380947116.jpg";
 
     cv::Mat image= cv::imread( inPutImage );
     if ( image.empty() )

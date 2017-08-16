@@ -25,6 +25,9 @@ public:
                      double &variance,
                      double &entropy);
 
+    // set Hist of diagonal lb2ru
+    void setHist_diagonal(std::vector<double> &angleHist, std::string direction);
+
     void setClusterSize(std::vector<double> &clusterSize);
 
     void setMinDiagonalAngle(double &val_lb2ru, double &val_lu2rb);
@@ -40,6 +43,8 @@ private:
 
     // get the angle by acos function
     double getAngleXaxis(cv::Point2d &vec);
+
+    double getAngleDiagonal(cv::Point2d &vec, std::string direction);
 
     double getDiagonalAngleVal(cv::Point2d & vec, std::string direction);
 
