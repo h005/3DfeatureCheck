@@ -426,14 +426,14 @@ void Fea::setFeatureROI(int mode,QString model)
     roiIn.close();
 
     // input normals
-//    QString normalsVertexFile = "/home/" + QString(USERNAME) + "/Documents/vpDataSet/" + model + "/model/" + model + "_Normal.txt";
+    QString normalsVertexFile = "/home/" + QString(USERNAME) + "/Documents/vpDataSet/" + model + "/model/" + model + "_Normal.txt";
 //    // load in the normals
     std::vector<float> normal_vertex;
-//    std::ifstream normal_in;
-//    normal_in.open(normalsVertexFile.toStdString(), std::fstream::in);
-//    while(normal_in >> tmpval)
-//        normal_vertex.push_back(tmpval);
-//    normal_in.close();
+    std::ifstream normal_in;
+    normal_in.open(normalsVertexFile.toStdString(), std::fstream::in);
+    while(normal_in >> tmpval)
+        normal_vertex.push_back(tmpval);
+    normal_in.close();
 
     // output
     QString roiFile = "/home/" + QString(USERNAME) + "/Documents/vpDataSet/tools/vpData/" + model + "/vpFea/" + model + ".roi";
@@ -1753,7 +1753,7 @@ void Fea::setRoi(double &roiVal, glm::mat4 modelView,
                     normal_vertex[i*3+2],0.0);
             vertexNormal = modelView * vertexNormal;
             double dotval = glm::dot(eye,vertexNormal);
-            if(dotval >= 0.0)
+            if(dotval == 0.0)
                 continue;
             double cosTheta = dotval / (glm::length(vertexNormal) * glm::length(eye));
             roiVal += v_roi[i] * sqrt(abs(cosTheta));
@@ -3942,15 +3942,17 @@ void Fea::exportSBM(QString file)
 //    villa6 model
 //    glm::mat4 proj = glm::perspective(glm::pi<float>() / 3, 4.0f / 3.0f, 4000.0f, 20000.f);
     // house 8 model & pavilion9 model
-    glm::mat4 proj = glm::perspective(glm::pi<float>() / 3, 4.0f / 3.0f, 0.5f, 10.f);
+    glm::mat4 proj = glm::perspective(glm::pi<float>() / 3, 4.0f / 3.0f, 0.1f, 10.f);
 //    float angle_x = glm::pi<float>() / 12.0 / MAX_LEN;
     // villa7
 //    float angle_x = glm::pi<float>() / 36.0 / MAX_X_LEN;
     // villa7_1
-    float angle_x = glm::pi<float>() / 72.0 / MAX_X_LEN;
+//    float angle_x = glm::pi<float>() / 72.0 / MAX_X_LEN;
+    float angle_x = glm::pi<float>() / 72.0 / MAX_X_LEN / 3.0;
 //    float angle_z = 2.0 * glm::pi<float>() / MAX_Z_LEN;
     // njuSample and njuActivity
-    float angle_z = glm::pi<float>() / 2.0 / MAX_Z_LEN;
+//    float angle_z = glm::pi<float>() / 2.0 / MAX_Z_LEN;
+     float angle_z = glm::pi<float>() * 2.0 / MAX_Z_LEN;
 
 //    float angle_z = glm::pi<float>() / MAX_LEN;
     // zb Model parameters
@@ -3999,10 +4001,11 @@ void Fea::exportSBM(QString file)
         for(int j=0;j<MAX_Z_LEN;j++)
         {
             // rotate with x axis
-            float anglex = angle_x * i;
+            float anglex = angle_x * i + glm::pi<float>() / 72.0 / 2.0;
             // rotate with z axis
             // add an angle bias
-            float anglez = angle_z * j - glm::pi<float>() / 2.0 + glm::pi<float>() / 4.0;
+//            float anglez = angle_z * j - glm::pi<float>() / 2.0 + glm::pi<float>() / 4.0;
+            float anglez = angle_z * j - glm::pi<float>() / 2.0;
             glm::mat4 rotateX = glm::rotate(glm::mat4(1.f),anglex,glm::vec3(1.0,0.0,0.0));
             glm::mat4 rotateZ = glm::rotate(glm::mat4(1.f),anglez,glm::vec3(0.0,0.0,1.0));
             mv = m_camera * rotateX * rotateZ;
