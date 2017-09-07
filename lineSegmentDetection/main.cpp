@@ -69,6 +69,7 @@ void drawClusters( cv::Mat &img, std::vector<std::vector<double> > &lines, std::
     lineColors[1] = cv::Scalar( 0, 0, 0 );
     lineColors[2] = cv::Scalar( 0, 0, 0 );
 
+
 //    for ( int i=0; i<lines.size(); ++i )
 //    {
 //        int idx = i;
@@ -78,6 +79,7 @@ void drawClusters( cv::Mat &img, std::vector<std::vector<double> > &lines, std::
 
 //        cv::line( img, pt_s, pt_e, cv::Scalar(0,0,0), 2, CV_AA );
 //    }
+
 
     for ( int i = 0; i < clusters.size(); ++i )
     {
@@ -92,16 +94,23 @@ void drawClusters( cv::Mat &img, std::vector<std::vector<double> > &lines, std::
             cv::line( img, pt_s, pt_e, lineColors[i], 2, CV_AA );
         }
     }
+
+
 }
 
 
 
 int main()
 {
+<<<<<<< HEAD
 //    string inPutImage = "/home/h005/Documents/QtProject/3DfeatureCheck/lineSegmentDetection/P1020171.jpg";
     string inPutImage = "/home/hejw005/Documents/vpForTvcg/Figures/feature/img0099.jpg";
 //"/home/hejw005/Documents/vpDataSet/notredame/imgs/alexindigo_380947116.jpg
     std::cout << inPutImage << std::endl;
+=======
+    string inPutImage = "/home/h005/Documents/QtProject/3DfeatureCheck/lineSegmentDetection/P1020171.jpg";
+//    string inPutImage = "/home/h005/Documents/vpDataSet/notredame/imgs/alexindigo_380947116.jpg";
+>>>>>>> 15230808640d9de55afb5e2fe786603650e781d5
 
     cv::Mat image= cv::imread( inPutImage );
     if ( image.empty() )

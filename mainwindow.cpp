@@ -53,6 +53,8 @@ MainWindow::MainWindow(QWidget *parent) :
         // read in the models for feature extraction
         QStringList modelList;
         readInModelList(modelList);
+        std::cout << "modelList size: ";
+        std::cout << modelList.size() << std::endl;
         fea = new Fea();
         fea->setFeatureLsd(modelList);
         std::cout << "line segment detection done" << std::endl;
@@ -85,6 +87,30 @@ MainWindow::MainWindow(QWidget *parent) :
         int time_diff = time.elapsed();
         float elapsed = time_diff /  1000.0;
         qDebug() << "elapsed time: " << elapsed << "s" << endl;
+    }
+    else if(!strcmp(paraIn,"roi"))
+    {
+        // load in model
+        std::cin >> paraIn;
+        file = "/home/" + QString(USERNAME) + "/Documents/vpDataSet/";
+        fileName = file.append(QString(paraIn));
+        fileName.append("/model/");
+        fileName.append(QString(paraIn));
+        fileName.append("_Roi_Purify.off");
+//        fileName.append(".obj");
+        info.setFile(fileName);
+
+        ui->modelPath->setText(fileName);
+
+        QFileInfo fileInfo(fileName);
+        QString path = fileInfo.absoluteDir().absolutePath().append("/");
+
+        fea = new Fea(fileName, path);
+        //
+        fea->setFeatureROI(0,QString(paraIn));
+
+        delete fea;
+
     }
     else // compute one of the model
     {
@@ -298,6 +324,7 @@ void MainWindow::readInModelListAll(QStringList &modelList, int mode)
                   << "njuSample"
                   << "njuSample2"
                   << "njuSample3"
+                  << "njuSample5"
                   << "njuActivity"
                   << "njuActivity2";
         return;
@@ -325,17 +352,14 @@ void MainWindow::readInModelListAll(QStringList &modelList, int mode)
         modelList << "BuckinghamPalace"
                   << "castle"
                   << "njuSample"
-                  << "njuSample2"
-                  << "njuSample3"
-                  << "njuActivity"
-                  << "njuActivity2";
+                  << "njuSample2";
+
         return;
     }
     if(mode == 3)
     {
-        modelList << "njuSample"
-                  << "njuSample2"
-                  << "njuSample3"
+        modelList << "njuSample3"
+                  << "njuSample5"
                   << "njuActivity"
                   << "njuActivity2";
         return;

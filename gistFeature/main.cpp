@@ -104,6 +104,7 @@ void setModelList(QStringList &modelList)
 
 //    modelList.clear();
 //    modelList << "njuSample3";
+
 }
 
 void setFileList(QString model, QStringList &fileList)

@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <map>
 #include <GL/glew.h>
+//#include <QOpenGLFunctions_3_3_Core>
 #include <iostream>
 #include <vector>
 #include <QtDebug>
@@ -237,6 +238,25 @@ public:
 
         return vertices;
     }
+
+
+    void getVerticeNormals(std::vector<GLfloat> &vertexNormals)
+    {
+        vertexNormals.clear();;
+        typename MeshT::VertexIter v_it, v_end(m_mesh.vertices_end());
+        for (v_it = m_mesh.vertices_begin(); v_it != v_end; v_it++){
+//            typename MeshT::Point pos = m_mesh.point(*v_it);
+//            vertices.push_back(pos[0]);
+//            vertices.push_back(pos[1]);
+//            vertices.push_back(pos[2]);
+
+            typename MeshT::Point normal = m_mesh.normal(*v_it);
+            vertexNormals.push_back(normal[0]);
+            vertexNormals.push_back(normal[1]);
+            vertexNormals.push_back(normal[2]);
+        }
+    }
+
 
     void init_vertices(GLuint vertexPositionID)
     {

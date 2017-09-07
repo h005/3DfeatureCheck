@@ -28,7 +28,7 @@
 #define CoWidth 64
 #define CoHeight 64
 
-#define USERNAME "hejw005"
+#define USERNAME "h005"
 
 class Fea
 {
@@ -134,6 +134,8 @@ public:
     void setFeatureGist(QStringList &modelList);
     // this function was created to compute the line segment direction features in the modelList
     void setFeatureLsd(QStringList &modelList);
+    // this function was created to compute the surface of region of interest in the modelList
+    void setFeatureROI(int mode, QString model);
 
     ~Fea();
 
@@ -201,6 +203,14 @@ private:
     void setBoundingBox3DAbs();
 
     void setTiltAngle(glm::mat4 &modelView);
+
+    // reviewer 1, similar to outlier count
+    // the area in the image to the whole image
+    void setAreaRatio(glm::mat4 &projMatrix);
+
+    void setRoi(double &roiVal, glm::mat4 modelView, std::vector<float> &v_roi, std::vector<float> &normal_vertex);
+
+    void decomposeProjMatrix(glm::mat4 &porjMatrix, glm::mat4 &enlargedProjMatrix);
 
     /*  2D feature */
     // fill fea2D 0~4095

@@ -164,8 +164,9 @@ void Render::initial()
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, colorRenderBuffer);
 
     glBindFramebuffer(GL_FRAMEBUFFER,0);
-
+    std::cout << "loadShaders before" << std::endl;
     m_programID = LoadShaders("shader/simpleShader.vert","shader/simpleShader.frag");
+    std::cout << "loadShaders done" << std::endl;
     GLuint vertexNormal_modelspaceID = glGetAttribLocation(m_programID, "vertexNormal_modelspace");
     GLuint vertexPosition_modelspaceID = glGetAttribLocation(m_programID,"vertexPosition_modelspace");
     m_helper.fbo_init(vertexPosition_modelspaceID,vertexNormal_modelspaceID);
@@ -544,7 +545,8 @@ void Render::setParameters()
 
         bool pointOutsideScreen = true;
         // 在3*3邻域内找相似的深度值
-        for (int i = -1; i <= 1; i++)
+        for (int i = -1; i <= 1; i++){
+
             for (int j = -1; j <= 1; j++) {
 
                 int x = (int)ax + i, y = (int)ay + j;
@@ -553,13 +555,18 @@ void Render::setParameters()
                     GLfloat winZ = p_img[y * p_height + x];
 
                     // 它们的z-buffer值相差不大，表示这是一个可见点
-                    if (abs(winZ - finalZ) < 0.00015) {
+                    GLfloat zAbs = winZ - finalZ > 0 ? winZ - finalZ : finalZ - winZ;
+//                    std::cout << " z buffer value " << zAbs << std::endl;
+                    if (zAbs < 0.015) {
                         isVisible = true;
                         break;
                     }
                 }
 
             }
+            if(isVisible)
+                break;
+        }
         if (pointOutsideScreen) {
             // 渲染出的点在可视区域外
             p_outsidePointsNum++;
@@ -603,6 +610,11 @@ void Render::setParameters()
 
     doneCurrent();
 
+}
+
+void Render::setVerticeNormals()
+{
+    m_helper.getVerticeNormals(p_verticeNormals);
 }
 
 void Render::setAreaAllFaces()

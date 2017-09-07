@@ -157,6 +157,53 @@ void LineSegmentFea::setHist_v_e(std::vector<double> &angleHist,
 
 }
 
+///
+/// \brief LineSegmentFea::setHist_diagonal
+/// \param angleHist
+/// \param direction
+///
+/// each line in this function contains two points
+/// and they are given as (cols, rows)
+///
+///
+void LineSegmentFea::setHist_diagonal(std::vector<double> &angleHist, string direction)
+{
+    const double pi = acos(-1);
+    int nBins = angleHist.size();
+//    angleHist.clear();
+    for(int i=0;i<angleHist.size();i++)
+        angleHist[i] = 0;
+    double step = pi / (double)nBins;
+    double countItem = 0.0;
+
+    for(int idx = 0; idx < lines.size(); idx++)
+    {
+        cv::Point pt_s = cv::Point( lines[idx][0], lines[idx][1] );
+        cv::Point pt_e = cv::Point( lines[idx][2], lines[idx][3] );
+
+        cv::Point2d vec = cv::Point2d(pt_e.x - pt_s.x,
+                                      pt_e.y - pt_s.y);
+
+        double angle = getAngleDiagonal(vec, direction);
+//        std::cout << vec.x << " " << vec.y << std::endl;
+        if(isnan(angle))
+            continue;
+        int index = (int)(angle / step);
+        if(index == nBins)
+            index--;
+        assert(index < nBins);
+        angleHist[index]++;
+        countItem++;
+    }
+    // normalize the hist
+    if(countItem)
+        for(int i=0; i < nBins; i++)
+            angleHist[i] = angleHist[i] / countItem;
+    else
+        for(int i=0; i < nBins; i++)
+            angleHist[i] = 0.0;
+}
+
 void LineSegmentFea::setClusterSize(std::vector<double> &clusterSize)
 {
     clusterSize.clear();
@@ -185,6 +232,38 @@ double LineSegmentFea::getAngleXaxis(Point2d &vec)
     }
     double angle = vecX.dot(vec) / val;
     return acos(angle);
+}
+
+double LineSegmentFea::getAngleDiagonal(Point2d &vec, string direction)
+{
+    Point2d diaVec;
+    if(direction == "lb2ru")
+    {
+        diaVec.x = imgCols;
+        diaVec.y = -imgRows;
+    }
+    else if(direction == "lu2rb")
+    {
+        diaVec.x = imgCols;
+        diaVec.y = imgRows;
+    }
+    else
+    {
+        std::cout << "diagonal direction error" << std::endl;
+        assert(0);
+    }
+    double lenVec = sqrt(vec.dot(vec));
+    if(lenVec < 1e-10)
+    {
+        std::cout << "warning: line segment length appears zero" << std::endl;
+        return 0.0;
+    }
+    double lenDiaVec = sqrt(diaVec.dot(diaVec));
+    double angle = diaVec.dot(vec) / lenVec / lenDiaVec;
+    if(angle > 1.0)
+        angle = 1.0;
+    return acos(angle);
+
 }
 
 double LineSegmentFea::getDiagonalAngleVal(Point2d &vec, string direction)

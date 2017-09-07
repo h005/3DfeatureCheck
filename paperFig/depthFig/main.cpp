@@ -76,9 +76,50 @@ void MyColorEnhance(QString src,QString dest)
 
 }
 
+void saveImg()
+{
+    QString imgFile = "/home/h005/Downloads/depth.txt";
+    QString imgFileOut = "/home/h005/Downloads/depth2.txt";
+    std::fstream fin;
+    std::fstream fout;
+    fin.open(imgFile.toStdString(),std::fstream::in);
+    fout.open(imgFileOut.toStdString(), std::fstream::out);
+
+    int rows, cols;
+    fin >> rows >> cols;
+    fout << rows << " " << cols << std::endl;
+    cv::Mat img;
+    int val;
+    img.create(rows,cols,CV_16UC1);
+    for(int i=0;i<rows;i++)
+    {
+        for(int j=0;j<cols;j++)
+        {
+            fin >> val;
+            fout << val << " ";
+            img.at<ushort>(i,j) = val;
+        }
+        fout << std::endl;
+    }
+
+
+
+    cv::namedWindow("img");
+    cv::imshow("img",img);
+    cv::waitKey(0);
+
+    fin.close();
+    fout.close();
+
+    cv::imwrite("/home/h005/Downloads/depth.png",img);
+    std::cout << "done" << std::endl;
+}
+
 int main()
 {
     QString file = "/home/h005/Documents/vpDataSet/kxm/model/depth/img0826.jpg.jpg";
     QString dest = "/home/h005/Documents/vpDataSet/kxm/model/depth/img0826depth.png";
     MyColorEnhance(file,dest);
+
+//    saveImg();
 }
