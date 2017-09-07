@@ -39,6 +39,8 @@ public:
 
     void initial();
 
+    GLuint LoadShaders(const char * vertex_file_path,const char * fragment_file_path);
+
     void resizeGL(int width,int height);
 
     QSize sizeHint() const;

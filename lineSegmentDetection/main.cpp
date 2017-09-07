@@ -65,19 +65,19 @@ void drawClusters( cv::Mat &img, std::vector<std::vector<double> > &lines, std::
 
     //draw lines
     std::vector<cv::Scalar> lineColors( 3 );
-    lineColors[0] = cv::Scalar( 0, 0, 255 );
-    lineColors[1] = cv::Scalar( 0, 255, 0 );
-    lineColors[2] = cv::Scalar( 255, 0, 0 );
+    lineColors[0] = cv::Scalar( 0, 0, 0 );
+    lineColors[1] = cv::Scalar( 0, 0, 0 );
+    lineColors[2] = cv::Scalar( 0, 0, 0 );
 
-    for ( int i=0; i<lines.size(); ++i )
-    {
-        int idx = i;
-        cv::Point pt_s = cv::Point( lines[idx][0], lines[idx][1]);
-        cv::Point pt_e = cv::Point( lines[idx][2], lines[idx][3]);
-        cv::Point pt_m = ( pt_s + pt_e ) * 0.5;
+//    for ( int i=0; i<lines.size(); ++i )
+//    {
+//        int idx = i;
+//        cv::Point pt_s = cv::Point( lines[idx][0], lines[idx][1]);
+//        cv::Point pt_e = cv::Point( lines[idx][2], lines[idx][3]);
+//        cv::Point pt_m = ( pt_s + pt_e ) * 0.5;
 
-        cv::line( img, pt_s, pt_e, cv::Scalar(0,0,0), 2, CV_AA );
-    }
+//        cv::line( img, pt_s, pt_e, cv::Scalar(0,0,0), 2, CV_AA );
+//    }
 
     for ( int i = 0; i < clusters.size(); ++i )
     {
@@ -99,7 +99,9 @@ void drawClusters( cv::Mat &img, std::vector<std::vector<double> > &lines, std::
 int main()
 {
 //    string inPutImage = "/home/h005/Documents/QtProject/3DfeatureCheck/lineSegmentDetection/P1020171.jpg";
-    string inPutImage = "/home/h005/Documents/vpDataSet/notredame/imgs/alexindigo_380947116.jpg";
+    string inPutImage = "/home/hejw005/Documents/vpForTvcg/Figures/feature/img0099.jpg";
+//"/home/hejw005/Documents/vpDataSet/notredame/imgs/alexindigo_380947116.jpg
+    std::cout << inPutImage << std::endl;
 
     cv::Mat image= cv::imread( inPutImage );
     if ( image.empty() )
@@ -108,7 +110,7 @@ int main()
     }
 
     // LSD line segment detection
-    double thLength = 30.0;
+    double thLength = 50.0;
     std::vector<std::vector<double> > lines;
     LineDetect( image, thLength, lines );
 
@@ -124,9 +126,14 @@ int main()
     VPDetection detector;
     detector.run( lines, pp, f, vps, clusters );
 
-    drawClusters( image, lines, clusters );
+    string maskImg = "/home/hejw005/Documents/vpForTvcg/Figures/feature/img0099_.jpg";
+    cv::Mat maskImage = cv::imread(maskImg);
+
+    drawClusters( maskImage, lines, clusters );
     for(int i=0;i<vps.size();i++)
         std::cout << "vps " << vps[i] << std::endl;
-    imshow("",image);
+    imshow("",maskImage);
     cv::waitKey( 0 );
+    string outputImg = "/home/hejw005/Documents/vpForTvcg/Figures/feature/img0099__.jpg";
+    cv::imwrite(outputImg,maskImage);
 }

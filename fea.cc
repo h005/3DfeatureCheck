@@ -25,6 +25,15 @@ Fea::Fea(QString fileName, QString path)
         return ;
     }
 
+//    if(!exImporter->read_mesh(mesh,"/home/hejw005/Documents/vpDataSet/model12/model/surfaceInterest/model12.off"))
+//    {
+//        std::cerr << "Error: Cannot read mesh from "<<std::endl;
+//        return ;
+//    }
+
+//    exImporter->outputMesh(mesh,"/home/hejw005/Documents/vpDataSet/model12/model/model12Purify_");
+//    exit(0);
+
 #ifdef OUTPUT_OFF
     QString offName = fileName;
     int tmpPos = offName.lastIndexOf('.');

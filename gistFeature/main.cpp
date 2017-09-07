@@ -11,6 +11,8 @@
 #include <QString>
 #include <QFileInfo>
 
+#define USERNAME "hejw005"
+
 using namespace std;
 using namespace cv;
 using namespace cls;
@@ -42,7 +44,7 @@ int main()
 void setGistFeature(QString model, QStringList &fileList)
 {
 
-    QString gistFile = "/home/h005/Documents/vpDataSet/tools/vpData/" + model + "/vpFea/" + model + ".gist960";
+    QString gistFile = "/home/" + QString(USERNAME) + "/Documents/vpDataSet/tools/vpData/" + model + "/vpFea/" + model + ".gist960";
     std::fstream outGist;
     outGist.open(gistFile.toStdString(), std::fstream::out);
     Mat src;
@@ -90,8 +92,9 @@ void setModelList(QStringList &modelList)
               << "BuckinghamPalace"
               << "castle"
               << "njuSample"
-              << "njuActivity"
               << "njuSample2"
+              << "njuSample3"
+              << "njuActivity"
               << "njuActivity2";
 
 //              << "model5"
@@ -99,15 +102,15 @@ void setModelList(QStringList &modelList)
     //                  << "pavilion9"
     //                  << "villa7s"
 
-    modelList.clear();
-    modelList << "njuSample3";
+//    modelList.clear();
+//    modelList << "njuSample3";
 }
 
 void setFileList(QString model, QStringList &fileList)
 {
 
     fileList.clear();
-    QString basePath = "/home/h005/Documents/vpDataSet/";
+    QString basePath = "/home/" + QString(USERNAME) + "/Documents/vpDataSet/";
 
     QString matrixFile = basePath + model + "/model/" + model + ".matrix";
     std::fstream finMatrix;
