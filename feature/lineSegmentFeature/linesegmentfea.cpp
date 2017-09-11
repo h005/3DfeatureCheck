@@ -369,6 +369,11 @@ void LineSegmentFea::drawClusters(cv::Mat &img)
     }
 }
 
+void LineSegmentFea::setVanishPoints(std::vector<Point2d> &vp2D)
+{
+    vp2D = this->vp2D;
+}
+
 
 void LineSegmentFea::initial(Mat &image,
                              double thLength)
@@ -391,6 +396,14 @@ void LineSegmentFea::initial(Mat &image,
     if(lines.size() == 0 || lines.size() == 1)
         return;
     detector.run( lines, pp, f, vps, clusters );
+
+    vp2D.clear();
+    vp2D.resize(3);
+    for ( int i = 0; i < 3; ++ i )
+    {
+        vp2D[i].x =  vps[i].x * f / vps[i].z + pp.x;
+        vp2D[i].y =  vps[i].y * f / vps[i].z + pp.y;
+    }
 
 //    drawClusters( image );
 //    for(int i=0;i<vps.size();i++)

@@ -59,6 +59,18 @@ MainWindow::MainWindow(QWidget *parent) :
         fea->setFeatureLsd(modelList);
         std::cout << "line segment detection done" << std::endl;
     }
+    else if(!strcmp(paraIn,"lsdVnf")) // compute the line segment direction as well as the vanish feature
+    {
+        // read in the models for feature extraction
+        QStringList modelList;
+        readInModelList(modelList);
+        std::cout << "modelList size: ";
+        std::cout << modelList.size() << std::endl;
+        fea = new Fea();
+        fea->setFeatureLsd(modelList);
+        std::cout << "line segment detection Vanish Line feature done" << std::endl;
+
+    }
     else if(!strcmp(paraIn,"all")) // compute all the models
     {
         QStringList modelList;

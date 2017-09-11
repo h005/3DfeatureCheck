@@ -37,6 +37,9 @@ public:
 
     void drawClusters( cv::Mat &img);
 
+    // set Vanish points
+    void setVanishPoints(std::vector<cv::Point2d> &vp2D);
+
 private:
     // get teh angel by asin function
     double getAngleYaxis(cv::Point2d &vec);
@@ -51,6 +54,8 @@ private:
 private:
     std::vector< std::vector<double> > lines;
     std::vector< std::vector<int> > clusters;
+
+    std::vector<cv::Point2d> vp2D;
 
     int imgRows;
     int imgCols;

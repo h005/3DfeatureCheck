@@ -8,6 +8,11 @@
 #include "feature/lineSegmentFeature/linesegmentfea.h"
 #include "feature/gistFeature/gist.h"
 #include "feature/gistFeature/standalone_image.h"
+#include <opencv2/core/utility.hpp>
+#include <opencv2/saliency.hpp>
+#include <algorithm>
+
+using namespace saliency;
 
 Fea::Fea(QString fileName, QString path)
 {
@@ -417,6 +422,19 @@ void Fea::setFeatureLsd(QStringList &modelList)
         QStringList fileList;
         setFileList(modelList.at(i),fileList);
         generateLineSegmentFeature(modelList.at(i),fileList);
+//        generateLSD_VanishLine(modelList.at(i),fileList);
+//        std::cout << "line segment detection " << modelList.at(i).toStdString() << std::endl;
+    }
+}
+
+void Fea::setFeatureLsdVanish(QStringList &modelList)
+{
+    for(int i=0;i<modelList.size();i++)
+    {
+        QStringList fileList;
+        setFileList(modelList.at(i),fileList);
+//        generateLineSegmentFeature(modelList.at(i),fileList);
+        generateLSD_VanishLine(modelList.at(i),fileList);
 //        std::cout << "line segment detection " << modelList.at(i).toStdString() << std::endl;
     }
 }
@@ -2108,6 +2126,73 @@ void Fea::setRuleOfThird()
 
 }
 
+///
+/// \brief Fea::setRuleOfThirds_withoutPhotos
+///
+/// compute the rule of thirds with the the saliency area determined
+/// with the saliency function in opencv
+///
+///
+void Fea::setRuleOfThirds_withoutPhotos()
+{
+    double res = 100000.0;
+    double centroidRow = 0;
+    double centroidCol = 0;
+//    setCentroid();
+    // abstract saliency mask
+    std::string algorithm[2] = {"SPECTRAL_RESIDUAL","BING"};
+    Saliency::create(algorithm[0]);
+    Ptr<Saliency> saliencyAlgorithm = Saliency::create(algorithm[0]);
+    if( saliencyAlgorithm == NULL)
+    {
+        cout << "***Error in the instantiation of the saliency algorithm...***\n";
+        return ;
+    }
+
+    cv::Mat binaryMap;
+//    cv::Mat src = cv::imread(imgFile.toStdString());
+    cv::Mat src;
+    image2D.copyTo(src);
+    cv::resize(src,src,cv::Size(480,320));
+
+    if(algorithm[0].find("SPECTRAL_RESIDUAL") == 0)
+    {
+        cv::Mat saliencyMap;
+        if(saliencyAlgorithm->computeSaliency(src, saliencyMap))
+        {
+            StaticSaliencySpectralResidual spec;
+            spec.computeBinaryMap(saliencyMap, binaryMap);
+            // binaryMap is a mat with one channel and uchar type for element.
+//            qDebug() << "channels " << binaryMap.channels() << endl;
+//            channels = 1
+//            cv::imshow( "Saliency Map", saliencyMap );
+//            cv::imshow( "Original Image", src );
+//            cv::imshow( "Binary Map", binaryMap );
+//            cv::waitKey( 0 );
+            setCentroid(centroidRow, centroidCol, binaryMap);
+            double ruleOfThirdRow[2] = {1.0/3.0,2.0/3.0};
+            double ruleOfThirdCol[2] = {1.0/3.0,2.0/3.0};
+
+            for(int i=0;i<2;i++)
+                for(int j=0;j<2;j++)
+                {
+                    double tmp = sqrt((centroidRow - ruleOfThirdRow[i])*(centroidRow - ruleOfThirdRow[i])
+                                      +(centroidCol - ruleOfThirdCol[j])*(centroidCol - ruleOfThirdCol[j]));
+                    res = res < tmp ? res : tmp;
+                }
+
+        }
+        else
+            res = 100000.0;
+    }
+    else
+    {
+        cout << "***Error in the instantiation of the saliency algorithm...***\n";
+//        return ;
+    }
+    src.release();
+}
+
 void Fea::setLightingFeature()
 {
     // feature lighting
@@ -3052,11 +3137,11 @@ void Fea::generateLineSegmentFeature(QString model, QStringList &fileList)
         lsf->setHist_v_e(angleHist, variance, entropy);
 
         lsf->setClusterSize(clusterSize);
-
+        // angle hist
         outLsd << fileList.at(i).toStdString() << std::endl;
         for(int i=0;i<NUM_Hist;i++)
             outLsd << angleHist[i] << " ";
-
+        // cluster size
         double sumClusterSize = 0.0;
         for(int i=0;i<clusterSize.size();i++)
             sumClusterSize += clusterSize[i];
@@ -3066,7 +3151,7 @@ void Fea::generateLineSegmentFeature(QString model, QStringList &fileList)
         else
             for(int i=0;i<clusterSize.size();i++)
                 outLsd << clusterSize[i] << " ";
-
+        // variance entropy
         outLsd << variance << " ";
         outLsd << entropy << " ";
 
@@ -3092,6 +3177,121 @@ void Fea::generateLineSegmentFeature(QString model, QStringList &fileList)
 
     outLsd.close();
     image2D.release();
+
+}
+
+void Fea::generateLSD_VanishLine(QString model, QStringList &fileList)
+{
+    QString lsdFile = "/home/" + QString(USERNAME) + "/Documents/vpDataSet/tools/vpData/" + model + "/vpFea/" + model + ".lsd";
+    QString vnfFile = "/home/" + QString(USERNAME) + "/Documents/vpDataSet/tools/vpData/" + model + "/vpFea/" + model + ".vnf";
+    std::fstream outLsd;
+    std::fstream outVnf;
+    outLsd.open(lsdFile.toStdString(), std::fstream::out);
+    outVnf.open(vnfFile.toStdString(), std::fstream::out);
+    for(int i=0;i<fileList.size();i++)
+    {
+        image2D = imread(fileList.at(i).toStdString());
+
+        int NUM_Hist = 9;
+        // line segment detection
+        LineSegmentFea *lsf = new LineSegmentFea();
+        // thLength should be reated to the image size, so I set it as a ratio
+        double thLength = 30;
+//        double thLength = 3.0 / 64.0 * std::max(image2D.cols, image2D.rows);
+
+        lsf->initial(image2D, thLength);
+
+        std::vector<double> angleHist(NUM_Hist,0);
+        double variance = 0.0;
+        double entropy = 0.0;
+        std::vector<double> clusterSize;
+
+
+//////  lsd feature
+        lsf->setHist_v_e(angleHist, variance, entropy);
+        lsf->setClusterSize(clusterSize);
+        // angle hist
+        outLsd << fileList.at(i).toStdString() << std::endl;
+        for(int i=0;i<NUM_Hist;i++)
+            outLsd << angleHist[i] << " ";
+        // cluster size
+        double sumClusterSize = 0.0;
+        for(int i=0;i<clusterSize.size();i++)
+            sumClusterSize += clusterSize[i];
+        if(sumClusterSize)
+            for(int i=0;i<clusterSize.size();i++)
+                outLsd << clusterSize[i] / sumClusterSize << " ";
+        else
+            for(int i=0;i<clusterSize.size();i++)
+                outLsd << clusterSize[i] << " ";
+        // variance entropy
+        outLsd << variance << " ";
+        outLsd << entropy << " ";
+
+/*
+        double val_lb2ru = 0.0;
+        double val_lu2rb = 0.0;
+        lsf->setMinDiagonalAngle(val_lb2ru, val_lu2rb);
+
+        outLsd << val_lb2ru << " ";
+        outLsd << val_lu2rb << " ";
+
+        lsf->setHist_diagonal(angleHist,"lb2ru");
+        for(int i=0;i<angleHist.size();i++)
+            outLsd << angleHist[i] << " ";
+
+        lsf->setHist_diagonal(angleHist,"lu2rb");
+        for(int i=0;i<angleHist.size();i++)
+            outLsd << angleHist[i] << " ";
+*/
+        outLsd << std::endl;
+
+////// vanish line feature
+        outVnf << fileList.at(i).toStdString() << std::endl;
+        std::vector<cv::Point2d> vps;
+        vps.clear();
+        lsf->setVanishPoints(vps);
+        std::vector<cv::Point2d> lines;
+        lines.clear();
+        lines.push_back(cv::Point2d(vps[1] - vps[0]));
+        lines.push_back(cv::Point2d(vps[2] - vps[1]));
+        lines.push_back(cv::Point2d(vps[0] - vps[2]));
+        cv::Point2d horizon(1.0,0.0);
+        double minVal = doubleAbs(getAngle(lines[0],horizon));
+        minVal = minVal < doubleAbs(getAngle(lines[1],horizon)) ? minVal : doubleAbs(getAngle(lines[1],horizon));
+        minVal = minVal < doubleAbs(getAngle(lines[2],horizon)) ? minVal : doubleAbs(getAngle(lines[2],horizon));
+        // the first element is the min angle with the horizontal line
+
+        std::vector<double> angles;
+        angles.push_back(getAngle(cv::Point2d(-lines[0].x, -lines[0].y), lines[1]));
+        angles.push_back(getAngle(lines[0], cv::Point2d(-lines[2].x, -lines[2].y)));
+        angles.push_back(getAngle(cv::Point2d(-lines[1].x, -lines[1].y), lines[2]));
+        std::sort(angles.begin(),angles.end());
+        outVnf << minVal << " ";
+        for(int i=0;i<angles.size();i++)
+            outVnf << angles[i] << " ";
+        outVnf << angles[0] << " ";
+        outVnf << angles[2] << " ";
+
+        double var = 0.0;
+        double meanVal = 0.0;
+        for(int i=0;i<angles.size();i++)
+            meanVal += angles[i];
+        meanVal /= angles.size();
+        for(int i=0;i<angles.size();i++)
+            var = var + (angles[i] - meanVal) * (angles[i] - meanVal);
+        var /= angles.size();
+
+        outVnf << var << std::endl;
+
+
+        std::cout << fileList.at(i).toStdString() << std::endl;
+    }
+
+    outLsd.close();
+    outVnf.close();
+    image2D.release();
+
 
 }
 
@@ -3133,6 +3333,43 @@ void Fea::setFileList(QString model, QStringList &fileList)
 ///
 ///
 void Fea::setCentroid(double &centroidRow, double &centroidCol)
+{
+    centroidRow = 0.0;
+    centroidCol = 0.0;
+    // ref http://mathworld.wolfram.com/GeometricCentroid.html
+    double mess = 0;
+
+//    qDebug()<<"getRuleOfThird .. "<<mask.rows<<" "<<mask.cols<<endl;
+
+    for(int i=0;i<mask.rows;i++)
+        for(int j=0;j<mask.cols;j++)
+            if(mask.at<uchar>(i,j) != 255)
+            {
+                mess ++;
+                centroidRow += i;
+                centroidCol += j;
+            }
+
+    if(mess)
+    {
+        centroidRow /= mess;
+        centroidCol /= mess;
+    }
+
+    //    scale to [0,1]
+    if(mask.rows && mask.cols)
+    {
+        centroidRow /= mask.rows;
+        centroidCol /= mask.cols;
+    }
+    else
+    {
+        centroidRow = 0.0;
+        centroidCol = 0.0;
+    }
+}
+
+void Fea::setCentroid(double &centroidRow, double &centroidCol, Mat &mask)
 {
     centroidRow = 0.0;
     centroidCol = 0.0;
@@ -4112,6 +4349,18 @@ float Fea::floatAbs(float num)
 double Fea::doubleAbs(double num)
 {
     return num < 0 ? -num : num;
+}
+
+double Fea::getAngle(Point2d u, Point2d v)
+{
+    double angle = 0.0;
+    if(u.dot(u) == 0 || v.dot(v) == 0)
+        angle = 0.0;
+    else
+    {
+        double cosTheta = u.ddot(v) / (sqrt(u.ddot(u) * v.ddot(v)));
+        angle = acos(cosTheta);
+    }
 }
 
 glm::mat4 Fea::normalizedModelView(const glm::mat4 &mvMatrix)

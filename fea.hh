@@ -134,6 +134,8 @@ public:
     void setFeatureGist(QStringList &modelList);
     // this function was created to compute the line segment direction features in the modelList
     void setFeatureLsd(QStringList &modelList);
+    // this function was created to compute the line segment direction and the vanish feature in the modelList
+    void setFeatureLsdVanish(QStringList &modelList);
     // this function was created to compute the surface of region of interest in the modelList
     void setFeatureROI(int mode, QString model);
 
@@ -225,6 +227,8 @@ private:
     void setBrightness();
     // rule of thirds
     void setRuleOfThird();
+    // rule of thirds without model
+    void setRuleOfThirds_withoutPhotos();
     // lighting feature
     void setLightingFeature();
     // glcm
@@ -259,11 +263,14 @@ private:
 
     void generateLineSegmentFeature(QString model, QStringList &fileList);
 
+    void generateLSD_VanishLine(QString model, QStringList &fileList);
     // helper function
     void setFileList(QString model, QStringList &fileList);
 
 
     void setCentroid(double &centroidRow, double &centroidCol);
+
+    void setCentroid(double &centroidRow, double &centroidCol, cv::Mat &mask);
 
     void roundingBox2D(int &up,int &bottom,int &left,int &right);
 
@@ -345,6 +352,7 @@ private:
 
     float floatAbs(float num);
     double doubleAbs(double num);
+    double getAngle(cv::Point2d u, cv::Point2d v);
 
     glm::mat4 normalizedModelView(const glm::mat4 &mvMatrix);
 
