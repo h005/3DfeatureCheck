@@ -67,7 +67,7 @@ MainWindow::MainWindow(QWidget *parent) :
         std::cout << "modelList size: ";
         std::cout << modelList.size() << std::endl;
         fea = new Fea();
-        fea->setFeatureLsd(modelList);
+        fea->setFeatureLsdVanish(modelList);
         std::cout << "line segment detection Vanish Line feature done" << std::endl;
 
     }

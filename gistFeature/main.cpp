@@ -11,7 +11,8 @@
 #include <QString>
 #include <QFileInfo>
 
-#define USERNAME "hejw005"
+//#define USERNAME "hejw005"
+#define USERNAME "h005"
 
 using namespace std;
 using namespace cv;
@@ -75,32 +76,33 @@ void setGistFeature(QString model, QStringList &fileList)
 void setModelList(QStringList &modelList)
 {
     modelList.clear();
-    modelList << "bigben"
-              << "kxm"
-              << "notredame"
-              << "freeGodness"
-              << "tajMahal"
-              << "cctv3"
-              << "BrandenburgGate"
-              << "BritishMuseum"
-              << "potalaPalace"
-              << "capitol"
-              << "Sacre"
-              << "TengwangPavilion"
-              << "mont"
-              << "HelsinkiCathedral"
-              << "BuckinghamPalace"
-              << "castle"
-              << "njuSample"
-              << "njuSample2"
-              << "njuSample3"
-              << "njuActivity"
-              << "njuActivity2";
+//    modelList << "bigben"
+//              << "kxm"
+//              << "notredame"
+//              << "freeGodness"
+//              << "tajMahal"
+//              << "cctv3"
+//              << "BrandenburgGate"
+//              << "BritishMuseum"
+//              << "potalaPalace"
+//              << "capitol"
+//              << "Sacre"
+//              << "TengwangPavilion"
+//              << "mont"
+//              << "HelsinkiCathedral"
+//              << "BuckinghamPalace"
+//              << "castle"
+//              << "njuSample"
+//              << "njuSample2"
+//              << "njuSample3"
+//              << "njuActivity"
+//              << "njuActivity2";
 
 //              << "model5"
     //                  << "house8"
     //                  << "pavilion9"
     //                  << "villa7s"
+    modelList << "sumSang";
 
 //    modelList.clear();
 //    modelList << "njuSample3";

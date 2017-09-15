@@ -3079,8 +3079,10 @@ void Fea::setLineSegmentFeature()
 
 void Fea::generateGistFeature(QString model, QStringList &fileList)
 {
-    const cls::GISTParams DEFAULT_PARAMS {true, 32, 32, 1, 3, {8, 8, 4}};
-    QString gistFile = "/home/" + QString(USERNAME) + "/Documents/vpDataSet/tools/vpData/" + model + "/vpFea/" + model + ".gist";
+    // const cls::GISTParams DEFAULT_PARAMS {true, 32, 32, 4, 3, {8, 8, 4}}; with 960 dimension
+    // const cls::GISTParams DEFAULT_PARAMS {true, 32, 32, 1, 3, {8, 8, 4}};
+    const cls::GISTParams DEFAULT_PARAMS {true, 32, 32, 4, 3, {8, 8, 4}};
+    QString gistFile = "/home/" + QString(USERNAME) + "/Documents/vpDataSet/tools/vpData/" + model + "/vpFea/" + model + ".gist960";
     std::fstream outGist;
     outGist.open(gistFile.toStdString(), std::fstream::out);
     Mat src;
